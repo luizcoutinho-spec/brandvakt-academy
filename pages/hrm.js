@@ -159,14 +159,14 @@ const HRM_DATA = {
 
   /* Department risk */
   depts: [
-    { id:'dir',  name:'Diretoria',  icon:'💼', members:12,  score:58, phishing:45, training:72, password:61, access:55, inactivity:40 },
-    { id:'fin',  name:'Financeiro', icon:'💰', members:67,  score:63, phishing:72, training:58, password:54, access:48, inactivity:33 },
-    { id:'com',  name:'Comercial',  icon:'📞', members:89,  score:48, phishing:52, training:65, password:42, access:38, inactivity:28 },
-    { id:'ti',   name:'TI',         icon:'💻', members:48,  score:18, phishing:12, training:88, password:15, access:22, inactivity:8  },
-    { id:'rh',   name:'RH',         icon:'👥', members:34,  score:29, phishing:25, training:79, password:28, access:31, inactivity:18 },
-    { id:'mkt',  name:'Marketing',  icon:'📣', members:42,  score:41, phishing:48, training:68, password:38, access:35, inactivity:22 },
-    { id:'jur',  name:'Jurídico',   icon:'⚖️', members:18,  score:22, phishing:18, training:85, password:20, access:25, inactivity:12 },
-    { id:'ops',  name:'Operações',  icon:'⚙️', members:31,  score:74, phishing:81, training:42, password:68, access:72, inactivity:58 },
+    { id:'dir',  name:'Diretoria',  icon:'💼', members:12,  score:58, phishing:45, training:72, password:61, access:55, inactivity:40, certs:38 },
+    { id:'fin',  name:'Financeiro', icon:'💰', members:67,  score:63, phishing:72, training:58, password:54, access:48, inactivity:33, certs:55 },
+    { id:'com',  name:'Comercial',  icon:'📞', members:89,  score:48, phishing:52, training:65, password:42, access:38, inactivity:28, certs:20 },
+    { id:'ti',   name:'TI',         icon:'💻', members:48,  score:18, phishing:12, training:88, password:15, access:22, inactivity:8,  certs:5  },
+    { id:'rh',   name:'RH',         icon:'👥', members:34,  score:29, phishing:25, training:79, password:28, access:31, inactivity:18, certs:12 },
+    { id:'mkt',  name:'Marketing',  icon:'📣', members:42,  score:41, phishing:48, training:68, password:38, access:35, inactivity:22, certs:18 },
+    { id:'jur',  name:'Jurídico',   icon:'⚖️', members:18,  score:22, phishing:18, training:85, password:20, access:25, inactivity:12, certs:8  },
+    { id:'ops',  name:'Operações',  icon:'⚙️', members:31,  score:74, phishing:81, training:42, password:68, access:72, inactivity:58, certs:62 },
   ],
 
   /* Individual users */
@@ -295,18 +295,26 @@ window.renderPage_risk = function() {
 };
 
 window.initPage_risk = function() {
-  ensureChartJS(() => {
-    if (HRM.tab === 'dashboard') initHRMDashCharts();
-    if (HRM.tab === 'matriz')    initHRMMatrixChart();
-  });
+  hrmRunCharts(HRM.tab);
 };
 
-function ensureChartJS(cb) {
-  if (window.Chart) { setTimeout(cb, 60); return; }
-  const s = document.createElement('script');
-  s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-  s.onload = () => setTimeout(cb, 60);
-  document.head.appendChild(s);
+/* Double rAF ensures DOM is fully painted before chart init */
+function hrmRunCharts(tab) {
+  function tryLoad(cb) {
+    if (window.Chart) {
+      requestAnimationFrame(() => requestAnimationFrame(cb));
+    } else {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+      s.onload = () => requestAnimationFrame(() => requestAnimationFrame(cb));
+      document.head.appendChild(s);
+    }
+  }
+  tryLoad(() => {
+    if (tab === 'dashboard') initHRMDashCharts();
+    if (tab === 'matriz')    initHRMMatrixChart();
+    if (tab === 'relatorio') initHRMReportChart();
+  });
 }
 
 window.hrmTab = function(tab) {
@@ -325,11 +333,7 @@ window.hrmTab = function(tab) {
   body.style.opacity = '0';
   body.innerHTML = (renderers[tab] || renderHRMDashboard)();
   requestAnimationFrame(() => { body.style.transition = 'opacity 0.25s'; body.style.opacity = '1'; });
-  ensureChartJS(() => {
-    if (tab === 'dashboard') initHRMDashCharts();
-    if (tab === 'matriz')    initHRMMatrixChart();
-    if (tab === 'relatorio') initHRMReportChart();
-  });
+  hrmRunCharts(tab);
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -476,32 +480,46 @@ function renderHRMDashboard() {
   </div>`;
 }
 
+function hrmDestroyChart(key) {
+  try { if (HRM.charts[key]) { HRM.charts[key].destroy(); HRM.charts[key] = null; } } catch(e) {}
+}
+
 function initHRMDashCharts() {
   if (!window.Chart) return;
-  if (HRM.charts.dashLine) { HRM.charts.dashLine.destroy(); }
+  hrmDestroyChart('dashLine');
   const ctx = document.getElementById('hrm-dash-line');
   if (!ctx) return;
+  /* Force explicit canvas dimensions */
+  ctx.style.display = 'block'; ctx.style.width = '100%'; ctx.style.height = '200px';
+  const parent = ctx.closest('.hrm-card');
+  if (parent) parent.style.minHeight = '260px';
   Chart.defaults.color = '#94a3b8';
   HRM.charts.dashLine = new Chart(ctx, {
     type: 'line',
     data: {
       labels: HRM_DATA.history.map(h => h.month),
       datasets: [{
-        label: 'Human Risk Score', data: HRM_DATA.history.map(h => h.score),
-        borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.08)',
-        tension: 0.4, fill: true, pointRadius: 4, pointBackgroundColor: '#ef4444',
+        label: 'Human Risk Score',
+        data:  HRM_DATA.history.map(h => h.score),
+        borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.10)',
+        tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#ef4444',
+        borderWidth: 2,
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => `Risk: ${ctx.raw} — ${hl(ctx.raw)}` } } },
+      animation: { duration: 700 },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => `Score: ${c.raw} — ${hl(c.raw)}` } }
+      },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' } },
-        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' }, min: 0, max: 100,
-             title: { display: true, text: 'Score (0=seguro, 100=crítico)', color: '#6b7280', font: { size: 10 } } }
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' }, min: 0, max: 100 }
       }
     }
   });
+  requestAnimationFrame(() => { if (HRM.charts.dashLine) HRM.charts.dashLine.resize(); });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -783,9 +801,10 @@ function renderHRMMatriz() {
 
 function initHRMMatrixChart() {
   if (!window.Chart) return;
-  if (HRM.charts.matrix) HRM.charts.matrix.destroy();
+  hrmDestroyChart('matrix');
   const ctx = document.getElementById('hrm-matrix-chart');
   if (!ctx) return;
+  ctx.style.display = 'block'; ctx.style.width = '100%'; ctx.style.height = '180px';
   const factors = HRM_DATA.factors;
   const avgs = factors.map(f => Math.round(HRM_DATA.depts.reduce((s,d)=>s+(d[f.id]||0),0)/HRM_DATA.depts.length));
   HRM.charts.matrix = new Chart(ctx, {
@@ -794,12 +813,13 @@ function initHRMMatrixChart() {
       labels: factors.map(f => f.icon + ' ' + f.label.split(' ').slice(0,2).join(' ')),
       datasets: [{
         data: avgs,
-        backgroundColor: avgs.map(v => v<=30?'rgba(34,197,94,0.6)':v<=60?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)'),
-        borderRadius: 6,
+        backgroundColor: avgs.map(v => v<=30?'rgba(34,197,94,0.65)':v<=60?'rgba(245,158,11,0.70)':'rgba(239,68,68,0.70)'),
+        borderRadius: 6, borderWidth: 0,
       }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
+      animation: { duration: 700 },
       plugins: { legend: { display: false } },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
@@ -807,6 +827,7 @@ function initHRMMatrixChart() {
       }
     }
   });
+  requestAnimationFrame(() => { if (HRM.charts.matrix) HRM.charts.matrix.resize(); });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1109,31 +1130,35 @@ function renderHRMRelatorio() {
 
 function initHRMReportChart() {
   if (!window.Chart) return;
-  ['repLine','repBar'].forEach(k => { if (HRM.charts[k]) { HRM.charts[k].destroy(); } });
+  ['repLine','repBar'].forEach(k => hrmDestroyChart(k));
 
   const lineCtx = document.getElementById('hrm-rep-line');
   if (lineCtx) {
+    lineCtx.style.display = 'block'; lineCtx.style.width = '100%'; lineCtx.style.height = '180px';
     HRM.charts.repLine = new Chart(lineCtx, {
       type: 'line',
       data: {
-        labels: HRM_DATA.history.map(h=>h.month),
-        datasets: [{ label:'Score', data: HRM_DATA.history.map(h=>h.score), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.08)', tension:0.4, fill:true, pointRadius:3 }]
+        labels: HRM_DATA.history.map(h => h.month),
+        datasets: [{ label: 'Risk Score', data: HRM_DATA.history.map(h => h.score), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.10)', tension: 0.4, fill: true, pointRadius: 4, borderWidth: 2 }]
       },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7280',font:{size:10}}}, y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7280'},min:0,max:100} } }
+      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 700 }, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280', font: { size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' }, min: 0, max: 100 } } }
     });
+    requestAnimationFrame(() => { if (HRM.charts.repLine) HRM.charts.repLine.resize(); });
   }
 
   const barCtx = document.getElementById('hrm-rep-bar');
   if (barCtx) {
-    const depts = HRM_DATA.depts.sort((a,b)=>b.score-a.score);
+    barCtx.style.display = 'block'; barCtx.style.width = '100%'; barCtx.style.height = '180px';
+    const depts = [...HRM_DATA.depts].sort((a,b) => b.score - a.score);
     HRM.charts.repBar = new Chart(barCtx, {
       type: 'bar',
       data: {
-        labels: depts.map(d=>d.icon+' '+d.name),
-        datasets: [{ data:depts.map(d=>d.score), backgroundColor:depts.map(d=>d.score<=30?'rgba(34,197,94,0.65)':d.score<=60?'rgba(245,158,11,0.70)':'rgba(239,68,68,0.70)'), borderRadius:5 }]
+        labels: depts.map(d => d.icon + ' ' + d.name),
+        datasets: [{ data: depts.map(d => d.score), backgroundColor: depts.map(d => d.score<=30?'rgba(34,197,94,0.65)':d.score<=60?'rgba(245,158,11,0.70)':'rgba(239,68,68,0.70)'), borderRadius: 5, borderWidth: 0 }]
       },
-      options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#94a3b8',font:{size:10}}}, y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#6b7280'},min:0,max:100} } }
+      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 700 }, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' }, min: 0, max: 100 } } }
     });
+    requestAnimationFrame(() => { if (HRM.charts.repBar) HRM.charts.repBar.resize(); });
   }
 }
 
