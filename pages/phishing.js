@@ -630,15 +630,17 @@ function initPhDashboardCharts() {
           label: 'Taxa de Clique (%)',
           data:  PHISHING_MOCK.historico_mensal.map(h => h.clique),
           borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.10)',
-          tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#ef4444',
-          borderWidth: 2,
+          tension: 0.4, fill: true,
+          pointRadius: 5, pointHoverRadius: 5,      /* no growth on hover */
+          pointBackgroundColor: '#ef4444', borderWidth: 2,
         },
         {
           label: 'Taxa de Reporte (%)',
           data:  PHISHING_MOCK.historico_mensal.map(h => h.reporte),
           borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.10)',
-          tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#22c55e',
-          borderWidth: 2,
+          tension: 0.4, fill: true,
+          pointRadius: 5, pointHoverRadius: 5,      /* no growth on hover */
+          pointBackgroundColor: '#22c55e', borderWidth: 2,
         },
       ]
     },
@@ -646,7 +648,12 @@ function initPhDashboardCharts() {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 600 },
-      plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12, font: { size: 12 } } } },
+      /* Prevent re-animation when container resizes on hover */
+      transitions: { resize: { animation: { duration: 0 } } },
+      plugins: {
+        legend: { labels: { color: '#94a3b8', boxWidth: 12, font: { size: 12 } } },
+        tooltip: { animation: false },   /* instant tooltip — no morph */
+      },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' } },
         y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', callback: v => v + '%' }, min: 0, max: 55 }
@@ -673,16 +680,20 @@ function initPhDashboardCharts() {
         data: [naoAbriu, Math.max(0, total.abertos - total.cliques), total.cliques, total.reportou],
         backgroundColor: ['#3f3f46', '#00d4ff', '#ef4444', '#22c55e'],
         borderWidth: 0,
-        hoverOffset: 8,
+        hoverOffset: 0,     /* no segment expansion on hover */
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 600 },
+      transitions: { resize: { animation: { duration: 0 } } },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw.toLocaleString()} (${total.enviados > 0 ? Math.round(ctx.raw / total.enviados * 100) : 0}%)` } }
+        tooltip: {
+          animation: false,
+          callbacks: { label: ctx => `${ctx.label}: ${ctx.raw.toLocaleString()} (${total.enviados > 0 ? Math.round(ctx.raw / total.enviados * 100) : 0}%)` }
+        }
       },
       cutout: '68%'
     }
@@ -1521,7 +1532,8 @@ function initPhReportCharts() {
     options: {
       responsive: true, maintainAspectRatio: false,
       animation: { duration: 600 },
-      plugins: { legend: { display: false } },
+      transitions: { resize: { animation: { duration: 0 } } },
+      plugins: { legend: { display: false }, tooltip: { animation: false } },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' } },
         y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' } }

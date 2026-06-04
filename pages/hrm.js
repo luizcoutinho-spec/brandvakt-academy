@@ -509,9 +509,11 @@ function initHRMDashCharts() {
     options: {
       responsive: true, maintainAspectRatio: false,
       animation: { duration: 700 },
+      transitions: { resize: { animation: { duration: 0 } } },
+      elements: { point: { hoverRadius: 5 } },   /* no growth on hover */
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: c => `Score: ${c.raw} — ${hl(c.raw)}` } }
+        tooltip: { animation: false, callbacks: { label: c => `Score: ${c.raw} — ${hl(c.raw)}` } }
       },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' } },
@@ -820,7 +822,8 @@ function initHRMMatrixChart() {
     options: {
       responsive: true, maintainAspectRatio: false,
       animation: { duration: 700 },
-      plugins: { legend: { display: false } },
+      transitions: { resize: { animation: { duration: 0 } } },
+      plugins: { legend: { display: false }, tooltip: { animation: false } },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font: { size: 11 } } },
         y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' }, min: 0, max: 100 }
@@ -1139,9 +1142,9 @@ function initHRMReportChart() {
       type: 'line',
       data: {
         labels: HRM_DATA.history.map(h => h.month),
-        datasets: [{ label: 'Risk Score', data: HRM_DATA.history.map(h => h.score), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.10)', tension: 0.4, fill: true, pointRadius: 4, borderWidth: 2 }]
+        datasets: [{ label: 'Risk Score', data: HRM_DATA.history.map(h => h.score), borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.10)', tension: 0.4, fill: true, pointRadius: 4, pointHoverRadius: 4, borderWidth: 2 }]
       },
-      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 700 }, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280', font: { size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' }, min: 0, max: 100 } } }
+      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 700 }, transitions: { resize: { animation: { duration: 0 } } }, plugins: { legend: { display: false }, tooltip: { animation: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280', font: { size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' }, min: 0, max: 100 } } }
     });
     requestAnimationFrame(() => { if (HRM.charts.repLine) HRM.charts.repLine.resize(); });
   }
@@ -1156,7 +1159,7 @@ function initHRMReportChart() {
         labels: depts.map(d => d.icon + ' ' + d.name),
         datasets: [{ data: depts.map(d => d.score), backgroundColor: depts.map(d => d.score<=30?'rgba(34,197,94,0.65)':d.score<=60?'rgba(245,158,11,0.70)':'rgba(239,68,68,0.70)'), borderRadius: 5, borderWidth: 0 }]
       },
-      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 700 }, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' }, min: 0, max: 100 } } }
+      options: { responsive: true, maintainAspectRatio: false, animation: { duration: 700 }, transitions: { resize: { animation: { duration: 0 } } }, plugins: { legend: { display: false }, tooltip: { animation: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#94a3b8', font: { size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#6b7280' }, min: 0, max: 100 } } }
     });
     requestAnimationFrame(() => { if (HRM.charts.repBar) HRM.charts.repBar.resize(); });
   }
