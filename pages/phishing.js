@@ -459,20 +459,22 @@ window.renderPage_phishing = function () {
 };
 
 window.initPage_phishing = function () {
-  // Load Chart.js if not present
+  document.addEventListener('keydown', phEscHandler);
+  // Double requestAnimationFrame ensures DOM is fully painted before chart init
+  function tryCharts() {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (PH.tab === 'dashboard') initPhDashboardCharts();
+      if (PH.tab === 'relatorios') initPhReportCharts();
+    }));
+  }
   if (!window.Chart) {
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-    s.onload = () => { if (PH.tab === 'dashboard') initPhDashboardCharts(); if (PH.tab === 'relatorios') initPhReportCharts(); };
+    s.onload = tryCharts;
     document.head.appendChild(s);
   } else {
-    setTimeout(() => {
-      if (PH.tab === 'dashboard') initPhDashboardCharts();
-      if (PH.tab === 'relatorios') initPhReportCharts();
-    }, 50);
+    tryCharts();
   }
-  // Keyboard: ESC closes modals
-  document.addEventListener('keydown', phEscHandler);
 };
 
 function phEscHandler(e) { if (e.key === 'Escape') phCloseModal(); }
@@ -493,10 +495,10 @@ window.phTab = function(tab) {
     }[tab]();
     panel.style.opacity = '0';
     requestAnimationFrame(() => { panel.style.transition = 'opacity 0.25s'; panel.style.opacity = '1'; });
-    setTimeout(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
       if (tab === 'dashboard')  initPhDashboardCharts();
       if (tab === 'relatorios') initPhReportCharts();
-    }, 80);
+    }));
   }
 };
 
@@ -596,57 +598,96 @@ function renderPhDashboard(avgClick, avgReport, cRisk) {
 function initPhDashboardCharts() {
   if (!window.Chart) return;
 
-  // Destroy old
-  if (PH.charts.line)  { PH.charts.line.destroy(); }
-  if (PH.charts.donut) { PH.charts.donut.destroy(); }
+  // Destroy old instances
+  ['line','donut'].forEach(k => { if (PH.charts[k]) { try { PH.charts[k].destroy(); } catch(e){} PH.charts[k] = null; } });
 
-  const lineCtx = document.getElementById('ph-chart-line');
+  const lineCtx  = document.getElementById('ph-chart-line');
   const donutCtx = document.getElementById('ph-chart-donut');
   if (!lineCtx || !donutCtx) return;
 
-  const chartDefaults = { color: '#94a3b8', borderColor: 'rgba(255,255,255,0.06)' };
-  Chart.defaults.color = chartDefaults.color;
+  // Force parent containers to have explicit height so canvas gets dimensions
+  const lineParent  = lineCtx.closest('.ph-chart-card');
+  const donutParent = donutCtx.closest('.ph-chart-card');
+  if (lineParent)  { lineParent.style.minHeight  = '280px'; }
+  if (donutParent) { donutParent.style.minHeight = '280px'; }
+
+  // Set explicit canvas size
+  lineCtx.style.display  = 'block';
+  donutCtx.style.display = 'block';
+  lineCtx.style.width    = '100%';
+  donutCtx.style.width   = '100%';
+  lineCtx.style.height   = '200px';
+  donutCtx.style.height  = '200px';
+
+  Chart.defaults.color = '#94a3b8';
 
   PH.charts.line = new Chart(lineCtx, {
     type: 'line',
     data: {
-      labels: PHISHING_MOCK.historico_mensal.map(h=>h.mes),
+      labels: PHISHING_MOCK.historico_mensal.map(h => h.mes),
       datasets: [
-        { label:'Taxa de Clique (%)', data: PHISHING_MOCK.historico_mensal.map(h=>h.clique), borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.08)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#ef4444' },
-        { label:'Taxa de Reporte (%)', data: PHISHING_MOCK.historico_mensal.map(h=>h.reporte), borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,0.08)', tension:0.4, fill:true, pointRadius:4, pointBackgroundColor:'#22c55e' },
+        {
+          label: 'Taxa de Clique (%)',
+          data:  PHISHING_MOCK.historico_mensal.map(h => h.clique),
+          borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.10)',
+          tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#ef4444',
+          borderWidth: 2,
+        },
+        {
+          label: 'Taxa de Reporte (%)',
+          data:  PHISHING_MOCK.historico_mensal.map(h => h.reporte),
+          borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.10)',
+          tension: 0.4, fill: true, pointRadius: 5, pointBackgroundColor: '#22c55e',
+          borderWidth: 2,
+        },
       ]
     },
     options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:'#94a3b8', boxWidth:12 } } },
-      scales:{
-        x:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#6b7280' } },
-        y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#6b7280', callback: v=>v+'%' }, min:0, max:55 }
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600 },
+      plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12, font: { size: 12 } } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280', callback: v => v + '%' }, min: 0, max: 55 }
       }
     }
   });
+  // Force repaint after creation
+  requestAnimationFrame(() => { if (PH.charts.line) PH.charts.line.resize(); });
 
   // Aggregate donut data
-  const total = PHISHING_MOCK.campanhas.reduce((s,c)=>({
-    enviados: s.enviados+c.enviados,
-    abertos: s.abertos+c.abertos,
-    cliques: s.cliques+c.cliques,
-    reportou: s.reportou+c.reportou
-  }),{enviados:0,abertos:0,cliques:0,reportou:0});
-  const naoAbriu = total.enviados - total.abertos;
+  const total = PHISHING_MOCK.campanhas.reduce((s, c) => ({
+    enviados: s.enviados + c.enviados,
+    abertos:  s.abertos  + c.abertos,
+    cliques:  s.cliques  + c.cliques,
+    reportou: s.reportou + c.reportou
+  }), { enviados: 0, abertos: 0, cliques: 0, reportou: 0 });
+  const naoAbriu = Math.max(0, total.enviados - total.abertos);
 
   PH.charts.donut = new Chart(donutCtx, {
     type: 'doughnut',
     data: {
-      labels: ['Não Abriu','Abriu','Clicou','Reportou'],
-      datasets:[{ data:[naoAbriu, total.abertos-total.cliques, total.cliques, total.reportou], backgroundColor:['#3f3f46','#00d4ff','#ef4444','#22c55e'], borderWidth:0, hoverOffset:6 }]
+      labels: ['Não Abriu', 'Abriu', 'Clicou', 'Reportou'],
+      datasets: [{
+        data: [naoAbriu, Math.max(0, total.abertos - total.cliques), total.cliques, total.reportou],
+        backgroundColor: ['#3f3f46', '#00d4ff', '#ef4444', '#22c55e'],
+        borderWidth: 0,
+        hoverOffset: 8,
+      }]
     },
     options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label: ctx=>`${ctx.label}: ${ctx.raw.toLocaleString()} (${Math.round(ctx.raw/total.enviados*100)}%)` } } },
-      cutout:'68%'
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 600 },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw.toLocaleString()} (${total.enviados > 0 ? Math.round(ctx.raw / total.enviados * 100) : 0}%)` } }
+      },
+      cutout: '68%'
     }
   });
+  requestAnimationFrame(() => { if (PH.charts.donut) PH.charts.donut.resize(); });
 }
 
 // ── CAMPANHAS ─────────────────────────────────────────────────
@@ -1462,28 +1503,32 @@ function renderPhRelatorios() {
 
 function initPhReportCharts() {
   if (!window.Chart) return;
-  if (PH.charts.timeline) PH.charts.timeline.destroy();
+  if (PH.charts.timeline) { try { PH.charts.timeline.destroy(); } catch(e){} PH.charts.timeline = null; }
   const ctx = document.getElementById('ph-chart-timeline');
   if (!ctx) return;
+  ctx.style.display = 'block'; ctx.style.width = '100%'; ctx.style.height = '220px';
   PH.charts.timeline = new Chart(ctx, {
-    type:'bar',
-    data:{
-      labels:['08h','09h','10h','11h','12h','13h','14h','15h','16h','17h','18h','19h'],
-      datasets:[{
-        label:'Cliques',
-        data:[2,8,18,24,12,6,22,19,14,8,3,1],
-        backgroundColor:'rgba(239,68,68,0.6)', borderColor:'#ef4444', borderWidth:1, borderRadius:4
+    type: 'bar',
+    data: {
+      labels: ['08h','09h','10h','11h','12h','13h','14h','15h','16h','17h','18h','19h'],
+      datasets: [{
+        label: 'Cliques por Hora',
+        data:  [2,8,18,24,12,6,22,19,14,8,3,1],
+        backgroundColor: 'rgba(239,68,68,0.65)',
+        borderColor: '#ef4444', borderWidth: 1, borderRadius: 5,
       }]
     },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        x:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#6b7280' } },
-        y:{ grid:{ color:'rgba(255,255,255,0.05)' }, ticks:{ color:'#6b7280' } }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 600 },
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b7280' } }
       }
     }
   });
+  requestAnimationFrame(() => { if (PH.charts.timeline) PH.charts.timeline.resize(); });
 }
 
 window.phExportPDF = function() {
