@@ -88,8 +88,8 @@ window.renderPage_reports = function() {
 // ─────────────────────────────
 window.renderPage_assignments = function() {
   const lang = APP.lang;
-  const title = {pt:'Atribuições de Treinamento',en:'Training Assignments',es:'Asignaciones de Formación',fr:'Attributions de Formation',ar:'تكليفات التدريب'}[lang]||'Assignments';
-  const sub = {pt:'Gerencie obrigatoriedades e prazos de treinamento',en:'Manage training requirements and deadlines',es:'Gestione requisitos y plazos de formación',fr:'Gérez les obligations et délais de formation',ar:'إدارة متطلبات التدريب والمواعيد النهائية'}[lang]||'';
+  const title = {pt:'Atribuições de Treinamento',en:'Training Assignments',es:'Asignaciones de Formación',fr:'Attributions de Formation'}[lang]||'Assignments';
+  const sub = {pt:'Gerencie obrigatoriedades e prazos de treinamento',en:'Manage training requirements and deadlines',es:'Gestione requisitos y plazos de formación',fr:'Gérez les obligations et délais de formation'}[lang]||'';
 
   const assignments = [
     { course:'Phishing & Engenharia Social', target:'Todos os usuários', due:'31/12/2024', completion:87, status:'active', mandatory:true },
@@ -162,7 +162,7 @@ window.initPage_assignments = function() {
 // ─────────────────────────────
 window.renderPage_settings = function() {
   const lang = APP.lang;
-  const title = {pt:'Configurações',en:'Settings',es:'Configuración',fr:'Paramètres',ar:'الإعدادات'}[lang]||'Settings';
+  const title = {pt:'Configurações',en:'Settings',es:'Configuración',fr:'Paramètres'}[lang]||'Settings';
 
   return `
   <div style="display:flex;flex-direction:column;gap:22px;">
@@ -197,7 +197,6 @@ window.settingsPanel = function(idx) {
       <div class="input-group"><label>País Principal</label><select class="input"><option>🇧🇷 Brasil</option><option>🇺🇸 EUA</option><option>🇪🇺 Europa</option></select></div>
       <div class="input-group"><label>Fuso Horário</label><select class="input"><option>America/Sao_Paulo (UTC-3)</option><option>America/New_York (UTC-5)</option><option>Europe/London (UTC+0)</option><option>Asia/Riyadh (UTC+3)</option></select></div>
       <div class="input-group"><label>Moeda</label><select class="input"><option>BRL – Real Brasileiro</option><option>USD – Dólar</option><option>EUR – Euro</option><option>SAR – Riyal Saudita</option></select></div>
-      <div class="input-group"><label>Idioma Padrão</label><select class="input"><option>🇧🇷 Português</option><option>🇺🇸 English</option><option>🇪🇸 Español</option><option>🇫🇷 Français</option><option>🇸🇦 العربية</option></select></div>
     </div>
     <div class="divider"></div>
     <div style="display:flex;justify-content:flex-end;gap:8px;">
@@ -250,7 +249,7 @@ window.settingsPanel = function(idx) {
 // ─────────────────────────────
 window.renderPage_integrations = function() {
   const lang = APP.lang;
-  const title = {pt:'Integrações',en:'Integrations',es:'Integraciones',fr:'Intégrations',ar:'التكاملات'}[lang]||'Integrations';
+  const title = {pt:'Integrações',en:'Integrations',es:'Integraciones',fr:'Intégrations'}[lang]||'Integrations';
 
   const integrations = [
     { name:'Microsoft 365', desc:'Azure AD SSO, Teams notifications', icon:'🪟', status:'connected', cat:'Identity' },

@@ -123,7 +123,7 @@
     <div class="login-langs">
       <div class="login-lang-pill">🇧🇷 Português</div><div class="login-lang-pill">🇺🇸 English</div>
       <div class="login-lang-pill">🇪🇸 Español</div><div class="login-lang-pill">🇫🇷 Français</div>
-      <div class="login-lang-pill">🇸🇦 العربية</div><div class="login-lang-pill" style="opacity:.5">+75 more</div>
+      <div class="login-lang-pill" style="opacity:.5">+75 more</div>
     </div>
   </div>
 
@@ -163,7 +163,7 @@
       </div>
       <!-- Lang selector on login -->
       <div style="display:flex;gap:6px;margin-top:14px;justify-content:center;flex-wrap:wrap;">
-        ${['pt|🇧🇷|PT','en|🇺🇸|EN','es|🇪🇸|ES','fr|🇫🇷|FR','ar|🇸🇦|AR'].map(s=>{const[l,f,c]=s.split('|');return`<button onclick="setLangLogin('${l}','${f}','${c}')" style="background:none;border:1px solid var(--bg-border-light);border-radius:99px;padding:3px 10px;cursor:pointer;font-size:.72rem;color:var(--text-muted);transition:var(--transition);">${f} ${c}</button>`;}).join('')}
+        ${['pt|🇧🇷|PT','en|🇺🇸|EN','es|🇪🇸|ES','fr|🇫🇷|FR'].map(s=>{const[l,f,c]=s.split('|');return`<button onclick="setLangLogin('${l}','${f}','${c}')" style="background:none;border:1px solid var(--bg-border-light);border-radius:99px;padding:3px 10px;cursor:pointer;font-size:.72rem;color:var(--text-muted);transition:var(--transition);">${f} ${c}</button>`;}).join('')}
       </div>
       <button class="login-submit" onclick="goToMFA()" style="margin-top:16px;" id="btn-continue">Continuar →</button>
     </div>
@@ -260,7 +260,6 @@
           <div class="lang-dropdown-item" onclick="setLang('en','🇺🇸','EN',event)"><span class="lang-flag">🇺🇸</span> English</div>
           <div class="lang-dropdown-item" onclick="setLang('es','🇪🇸','ES',event)"><span class="lang-flag">🇪🇸</span> Español</div>
           <div class="lang-dropdown-item" onclick="setLang('fr','🇫🇷','FR',event)"><span class="lang-flag">🇫🇷</span> Français</div>
-          <div class="lang-dropdown-item" onclick="setLang('ar','🇸🇦','AR',event)"><span class="lang-flag">🇸🇦</span> العربية</div>
         </div>
       </div>
     </div>
@@ -290,7 +289,7 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="input-group"><label>Nome do Treinamento</label><input class="input" type="text" placeholder="Ex: Phishing Awareness"/></div>
         <div class="input-group"><label>Categoria</label><select class="input"><option>🛡 Cybersecurity</option><option>📋 Compliance</option><option>🔒 Privacidade</option><option>⚖️ Ética</option><option>🏢 Governança</option></select></div>
-        <div class="input-group"><label>Idioma</label><select class="input"><option>🇧🇷 Português</option><option>🇺🇸 English</option><option>🇪🇸 Español</option><option>🇫🇷 Français</option><option>🇸🇦 العربية</option></select></div>
+        <div class="input-group"><label>Idioma</label><select class="input"><option>🇧🇷 Português</option><option>🇺🇸 English</option><option>🇪🇸 Español</option><option>🇫🇷 Français</option></select></div>
         <div class="input-group"><label>País / Região</label><select class="input"><option>🌍 Global</option><option>🇧🇷 Brasil</option><option>🇺🇸 EUA</option><option>🇪🇺 Europa</option><option>🇸🇦 Oriente Médio</option></select></div>
         <div class="input-group"><label>Duração Estimada</label><input class="input" type="text" placeholder="30 min"/></div>
         <div class="input-group"><label>Emitir Certificado</label><select class="input"><option>✅ Sim, emitir certificado</option><option>❌ Não emitir</option></select></div>
@@ -327,7 +326,6 @@ const NAV_LABELS = {
   en:{overview:'Overview',dashboard:'Dashboard',training:'Training',library:'Library',trails:'Paths',compliance:'Compliance',assignments:'Assignments',certificates:'Certificates',risk:'Human Risk',people:'People',users:'Users',departments:'Departments',intel:'Intelligence',reports:'Reports',ai:'AI Assistant',admin:'Administration',settings:'Settings',integrations:'Integrations',tenant:'Switch Company'},
   es:{overview:'Resumen',dashboard:'Panel',training:'Formación',library:'Biblioteca',trails:'Rutas',compliance:'Cumplimiento',assignments:'Asignaciones',certificates:'Certificados',risk:'Riesgo Humano',people:'Personas',users:'Usuarios',departments:'Departamentos',intel:'Inteligencia',reports:'Informes',ai:'Asistente IA',admin:'Administración',settings:'Configuración',integrations:'Integraciones',tenant:'Cambiar Empresa'},
   fr:{overview:"Vue d'ensemble",dashboard:'Tableau de bord',training:'Formation',library:'Bibliothèque',trails:'Parcours',compliance:'Conformité',assignments:'Attributions',certificates:'Certificats',risk:'Risque Humain',people:'Personnes',users:'Utilisateurs',departments:'Départements',intel:'Intelligence',reports:'Rapports',ai:'Assistant IA',admin:'Administration',settings:'Paramètres',integrations:'Intégrations',tenant:"Changer d'Entreprise"},
-  ar:{overview:'نظرة عامة',dashboard:'لوحة التحكم',training:'التدريب',library:'المكتبة',trails:'المسارات',compliance:'الامتثال',assignments:'التكليفات',certificates:'الشهادات',risk:'مخاطر الإنسان',people:'الأشخاص',users:'المستخدمون',departments:'الأقسام',intel:'الذكاء',reports:'التقارير',ai:'مساعد الذكاء',admin:'الإدارة',settings:'الإعدادات',integrations:'التكاملات',tenant:'تغيير الشركة'},
 };
 
 function applyNavLabels() {
@@ -342,23 +340,16 @@ function applyNavLabels() {
     'modal-tenant-title':L.tenant,
   };
   Object.entries(map).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.textContent=val;});
-  const ph={'pt':'Buscar treinamentos, usuários, relatórios...','en':'Search trainings, users, reports...','es':'Buscar formaciones, usuarios, informes...','fr':'Rechercher formations, utilisateurs, rapports...','ar':'ابحث عن تدريبات، مستخدمين...'};
+  const ph={'pt':'Buscar treinamentos, usuários, relatórios...','en':'Search trainings, users, reports...','es':'Buscar formaciones, usuarios, informes...','fr':'Rechercher formations, utilisateurs, rapports...'};
   const si=document.getElementById('topbar-search-input'); if(si) si.placeholder=ph[APP.lang]||ph.pt;
-}
-
-// ── RTL ──
-function applyDir(lang) {
-  const isRTL = lang==='ar';
-  document.documentElement.dir = isRTL?'rtl':'ltr';
-  document.documentElement.lang = lang;
-  APP.dir = isRTL?'rtl':'ltr';
 }
 
 // ── Language ──
 function setLang(lang,flag,code,evt) {
   if(evt) evt.stopPropagation();
   APP.lang = lang;
-  applyDir(lang);
+  document.documentElement.lang = lang;
+  document.documentElement.dir = 'ltr'; // always LTR — Arabic removed
   document.getElementById('current-flag').textContent = flag;
   document.getElementById('current-lang-code').textContent = code;
   document.querySelectorAll('.lang-dropdown-item').forEach(el=>el.classList.remove('active'));
@@ -366,14 +357,13 @@ function setLang(lang,flag,code,evt) {
   closeLangDropdown();
   applyNavLabels();
   renderPage(APP.currentPage);
-  showToast(lang==='ar'?'تم تغيير اللغة':'Language: '+code,'info');
+  showToast('Language: '+code,'info');
 }
 function setLangLogin(lang,flag,code) {
   APP.lang = lang;
-  applyDir(lang);
-  const titles={pt:'Acesse sua plataforma',en:'Access your platform',es:'Accede a tu plataforma',fr:'Accédez à votre plateforme',ar:'الوصول إلى منصتك'};
-  const subs={pt:'Ambiente corporativo protegido',en:'Protected corporate environment',es:'Entorno corporativo protegido',fr:'Environnement corporatif protégé',ar:'بيئة مؤسسية محمية'};
-  const heroes={pt:'Conscientização Corporativa em Escala Global',en:'Corporate Awareness at Global Scale',es:'Concienciación Corporativa a Escala Global',fr:"Sensibilisation Corporative à l'Échelle Mondiale",ar:'التوعية المؤسسية على نطاق عالمي'};
+  const titles={pt:'Acesse sua plataforma',en:'Access your platform',es:'Accede a tu plataforma',fr:'Accédez à votre plateforme'};
+  const subs={pt:'Ambiente corporativo protegido',en:'Protected corporate environment',es:'Entorno corporativo protegido',fr:'Environnement corporatif protégé'};
+  const heroes={pt:'Conscientização Corporativa em Escala Global',en:'Corporate Awareness at Global Scale',es:'Concienciación Corporativa a Escala Global',fr:"Sensibilisation Corporative à l'Échelle Mondiale"};
   const e=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.textContent=v;};
   e('signin-title',titles[lang]);e('signin-sub',subs[lang]);e('hero-title',heroes[lang]);
 }

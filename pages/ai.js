@@ -4,7 +4,7 @@
 
 window.renderPage_ai = function () {
   const L = aiL[APP.lang] || aiL.pt;
-  const isRTL = APP.lang === 'ar';
+  const isRTL = false; // Arabic removed
 
   const suggestions = L.suggestions;
 
@@ -27,7 +27,6 @@ window.renderPage_ai = function () {
           <option value="en" ${APP.lang==='en'?'selected':''}>🇺🇸 English</option>
           <option value="es" ${APP.lang==='es'?'selected':''}>🇪🇸 Español</option>
           <option value="fr" ${APP.lang==='fr'?'selected':''}>🇫🇷 Français</option>
-          <option value="ar" ${APP.lang==='ar'?'selected':''}>🇸🇦 العربية</option>
         </select>
       </div>
     </div>
@@ -237,7 +236,7 @@ window.aiChangeLang = function() {
 function _aiAppendMessage(text, role) {
   const container = document.getElementById('ai-messages');
   if (!container) return;
-  const isRTL = APP.lang === 'ar';
+  
   const isUser = role === 'user';
   const L = aiL[APP.lang] || aiL.pt;
   const div = document.createElement('div');
@@ -338,7 +337,6 @@ const aiL = {
   },
   es:{ title:'Asistente IA', sub:'Inteligencia artificial especializada en formación corporativa', status_online:'En línea · GPT-4o', ai_name:'Brandvakt AI', ai_role:'Compliance & Training Intelligence', you:'Tú', now:'ahora', cap_title:'Capacidades', capabilities:[{icon:'🎯',label:'Recomendar formaciones personalizadas'},{icon:'🛤',label:'Crear rutas de aprendizaje'},{icon:'🔍',label:'Identificar lagunas de conocimiento'},{icon:'📊',label:'Generar informes ejecutivos'},{icon:'💬',label:'Responder dudas de cumplimiento'},{icon:'⚠️',label:'Analizar y priorizar riesgos humanos'},{icon:'🌍',label:'Soporte en 5 idiomas'}], suggest_title:'Sugerencias', suggestions:['¿Qué empleados necesitan formación urgente?','Genera un informe ejecutivo de cumplimiento','Crea una ruta para el departamento de TI','Analiza el riesgo de phishing','¿Qué certificados vencen en 30 días?'], history_title:'Conversaciones Recientes', history:['Análisis riesgo phishing','Informe GDPR noviembre','Ruta Operaciones'], quick_chips:['📊 Informe Ejecutivo','🛡 Riesgo Phishing','🎓 Nueva Ruta','📜 LGPD/GDPR'], input_ph:'Pregunta sobre formaciones, cumplimiento, riesgos... (Enter para enviar)', disclaimer:'Brandvakt AI puede cometer errores. Valide siempre la información crítica con su equipo de cumplimiento.', welcome_msg:'¡Hola! Soy <strong>Brandvakt AI</strong>, tu asistente especializado en formación corporativa, cumplimiento y gestión de riesgos. ¿En qué puedo ayudarte hoy?' },
   fr:{ title:'Assistant IA', sub:'Intelligence artificielle spécialisée en formation corporative', status_online:'En ligne · GPT-4o', ai_name:'Brandvakt AI', ai_role:'Compliance & Training Intelligence', you:'Vous', now:'maintenant', cap_title:'Capacités', capabilities:[{icon:'🎯',label:'Recommander des formations personnalisées'},{icon:'🛤',label:"Créer des parcours d'apprentissage"},{icon:'🔍',label:'Identifier les lacunes de connaissances'},{icon:'📊',label:'Générer des rapports exécutifs'},{icon:'💬',label:'Répondre aux questions de conformité'},{icon:'⚠️',label:'Analyser les risques humains'},{icon:'🌍',label:'Support en 5 langues'}], suggest_title:'Suggestions', suggestions:['Quels employés ont besoin de formation urgente?','Générer un rapport exécutif de conformité','Créer un parcours pour le département IT','Analyser le risque de phishing','Quels certificats expirent dans 30 jours?'], history_title:'Conversations Récentes', history:['Analyse risque phishing','Rapport RGPD novembre','Parcours Opérations'], quick_chips:['📊 Rapport Exécutif','🛡 Risque Phishing','🎓 Nouveau Parcours','📜 LGPD/GDPR'], input_ph:'Posez des questions sur les formations, la conformité, les risques... (Entrée pour envoyer)', disclaimer:'Brandvakt AI peut faire des erreurs. Validez toujours les informations critiques.', welcome_msg:'Bonjour! Je suis <strong>Brandvakt AI</strong>, votre assistant spécialisé en formation corporative et conformité. Comment puis-je vous aider?' },
-  ar:{ title:'مساعد الذكاء الاصطناعي', sub:'ذكاء اصطناعي متخصص في التدريب المؤسسي', status_online:'متصل · GPT-4o', ai_name:'Brandvakt AI', ai_role:'ذكاء الامتثال والتدريب', you:'أنت', now:'الآن', cap_title:'القدرات', capabilities:[{icon:'🎯',label:'التوصية بتدريبات مخصصة'},{icon:'🛤',label:'إنشاء مسارات تعلم'},{icon:'🔍',label:'تحديد ثغرات المعرفة'},{icon:'📊',label:'إنشاء تقارير تنفيذية'},{icon:'💬',label:'الإجابة على أسئلة الامتثال'},{icon:'⚠️',label:'تحليل وترتيب أولويات المخاطر البشرية'},{icon:'🌍',label:'دعم بـ 5 لغات'}], suggest_title:'اقتراحات', suggestions:['من يحتاج إلى تدريب عاجل؟','إنشاء تقرير امتثال تنفيذي','إنشاء مسار لقسم تقنية المعلومات','تحليل مخاطر التصيد الاحتيالي','ما الشهادات التي تنتهي خلال 30 يومًا؟'], history_title:'المحادثات الأخيرة', history:['تحليل مخاطر التصيد','تقرير GDPR نوفمبر','مسار العمليات'], quick_chips:['📊 تقرير تنفيذي','🛡 مخاطر التصيد','🎓 مسار جديد','📜 LGPD/GDPR'], input_ph:'اسأل عن التدريبات والامتثال والمخاطر... (Enter للإرسال)', disclaimer:'قد يرتكب Brandvakt AI أخطاء. تحقق دائمًا من المعلومات الهامة مع فريق الامتثال.', welcome_msg:'مرحبًا! أنا <strong>Brandvakt AI</strong>، مساعدك المتخصص في التدريب المؤسسي والامتثال وإدارة المخاطر. كيف يمكنني مساعدتك اليوم؟' },
 };
 
 window.initPage_ai = function() {

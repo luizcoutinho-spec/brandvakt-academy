@@ -130,7 +130,7 @@ window.renderPage_dashboard = function () {
   const topTrainings = [
     { name: 'Phishing & Engenharia Social',      category: 'Cybersecurity', completions: 312, rate: 94, lang: '🇧🇷🇺🇸🇪🇸' },
     { name: 'LGPD na Prática',                   category: 'Privacidade',   completions: 287, rate: 91, lang: '🇧🇷' },
-    { name: 'Código de Ética Empresarial',        category: 'Compliance',    completions: 274, rate: 89, lang: '🇧🇷🇺🇸🇫🇷🇸🇦' },
+    { name: 'Código de Ética Empresarial',        category: 'Compliance',    completions: 274, rate: 89, lang: '🇧🇷🇺🇸🇫🇷' },
     { name: 'Senhas Seguras e MFA',               category: 'Cybersecurity', completions: 251, rate: 96, lang: '🇧🇷🇺🇸🇪🇸' },
     { name: 'Home Office Seguro',                 category: 'Cybersecurity', completions: 228, rate: 88, lang: '🇧🇷🇺🇸' },
   ];

@@ -13,12 +13,12 @@ window.renderPage_certificates = function() {
     { id:'BVA-2024-001180', user:'Catalina Ruiz',   course:'Anticorrupção',               dept:'RH',       date:'2024-10-30', expires:'2025-10-30', lang:'es', score:95, status:'valid',   country:'🇪🇸' },
     { id:'BVA-2024-001120', user:'Claire Martin',   course:'LGPD na Prática',             dept:'Jurídico', date:'2024-09-15', expires:'2024-12-15', lang:'fr', score:97, status:'expiring',country:'🇫🇷' },
     { id:'BVA-2024-001050', user:'João Silva',      course:'Home Office Seguro',          dept:'TI',       date:'2024-08-10', expires:'2024-11-10', lang:'pt', score:75, status:'expired', country:'🇧🇷' },
-    { id:'BVA-2024-001204b',user:'Ahmed Al-Rashid', course:'Code of Ethics',              dept:'Operações',date:'2024-11-10', expires:'2025-11-10', lang:'ar', score:82, status:'valid',   country:'🇸🇦' },
+    { id:'BVA-2024-001204b',user:'Ahmed Al-Rashid', course:'Code of Ethics',              dept:'Operações',date:'2024-11-10', expires:'2025-11-10', lang: score:82, status:'valid',   country:'🇸🇦' },
   ];
 
   const statusColor  = { valid:'var(--brand-success)', expiring:'var(--brand-warning)', expired:'var(--brand-danger)' };
   const statusLabel  = { valid:L.status_valid, expiring:L.status_expiring, expired:L.status_expired };
-  const langFlags    = { pt:'🇧🇷', en:'🇺🇸', es:'🇪🇸', fr:'🇫🇷', ar:'🇸🇦' };
+  const langFlags    = { pt:'🇧🇷', en:'🇺🇸', es:'🇪🇸', fr:'🇫🇷' };
 
   return `
   <div style="display:flex;flex-direction:column;gap:22px;">
@@ -125,8 +125,8 @@ function openCertPreview(id, user, course, lang) {
 window.openCertPreview = openCertPreview;
 
 function certPreviewHTML(id, user, course, lang, L) {
-  const langFlags = { pt:'🇧🇷', en:'🇺🇸', es:'🇪🇸', fr:'🇫🇷', ar:'🇸🇦' };
-  const isRTL = lang === 'ar';
+  const langFlags = { pt:'🇧🇷', en:'🇺🇸', es:'🇪🇸', fr:'🇫🇷' };
+  const isRTL = false; // Arabic removed
   return `
   <div class="modal-header">
     <h3 class="modal-title">🏆 ${(L||certL.pt).btn_view} Certificado</h3>
@@ -209,7 +209,6 @@ const certL = {
   en:{ title:'Digital Certificates', sub:'Automatically issued upon completing trainings', btn_export:'Export', btn_validate:'Validate Certificate', kpi_total:'Total Issued', kpi_valid:'Valid', kpi_expiring:'Expiring in 30 days', kpi_expired:'Expired', kpi_langs:'Languages', table_title:'Certificate History', search_ph:'Search certificate or user...', all_status:'All', status_valid:'Valid', status_expiring:'Expiring', status_expired:'Expired', col_id:'ID', col_user:'User', col_course:'Training', col_lang:'Language', col_score:'Score', col_date:'Issued', col_expires:'Expiry', col_status:'Status', col_actions:'Actions', btn_view:'View', btn_download:'Download', btn_share:'Share' },
   es:{ title:'Certificados Digitales', sub:'Emitidos automáticamente al completar formaciones', btn_export:'Exportar', btn_validate:'Validar Certificado', kpi_total:'Total Emitidos', kpi_valid:'Válidos', kpi_expiring:'Vencen en 30 días', kpi_expired:'Expirados', kpi_langs:'Idiomas', table_title:'Historial de Certificados', search_ph:'Buscar certificado o usuario...', all_status:'Todos', status_valid:'Válido', status_expiring:'Por vencer', status_expired:'Expirado', col_id:'ID', col_user:'Usuario', col_course:'Formación', col_lang:'Idioma', col_score:'Nota', col_date:'Emitido', col_expires:'Validez', col_status:'Estado', col_actions:'Acciones', btn_view:'Ver', btn_download:'Descargar', btn_share:'Compartir' },
   fr:{ title:'Certificats Numériques', sub:'Émis automatiquement après les formations', btn_export:'Exporter', btn_validate:'Valider Certificat', kpi_total:'Total Émis', kpi_valid:'Valides', kpi_expiring:'Expirent dans 30 jours', kpi_expired:'Expirés', kpi_langs:'Langues', table_title:'Historique des Certificats', search_ph:'Rechercher certificat ou utilisateur...', all_status:'Tous', status_valid:'Valide', status_expiring:'Expirant', status_expired:'Expiré', col_id:'ID', col_user:'Utilisateur', col_course:'Formation', col_lang:'Langue', col_score:'Note', col_date:'Émis', col_expires:'Expiration', col_status:'Statut', col_actions:'Actions', btn_view:'Voir', btn_download:'Télécharger', btn_share:'Partager' },
-  ar:{ title:'الشهادات الرقمية', sub:'تُصدر تلقائيًا عند إكمال التدريبات', btn_export:'تصدير', btn_validate:'التحقق من الشهادة', kpi_total:'إجمالي الصادرة', kpi_valid:'صالحة', kpi_expiring:'تنتهي خلال 30 يومًا', kpi_expired:'منتهية', kpi_langs:'لغات', table_title:'سجل الشهادات', search_ph:'ابحث عن شهادة أو مستخدم...', all_status:'الكل', status_valid:'صالحة', status_expiring:'تنتهي قريبًا', status_expired:'منتهية', col_id:'المعرف', col_user:'المستخدم', col_course:'التدريب', col_lang:'اللغة', col_score:'الدرجة', col_date:'تاريخ الإصدار', col_expires:'تاريخ الانتهاء', col_status:'الحالة', col_actions:'الإجراءات', btn_view:'عرض', btn_download:'تحميل', btn_share:'مشاركة' },
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -370,5 +369,4 @@ const riskL = {
   en:{ title:'Human Risk Management', sub:'Monitoring human risk across the organization', btn_report:'Risk Report', org_score:'Organizational Human Risk Score', vs_month:'vs previous month', dept_risk:'Risk by Department', high_risk_users:'High Risk Users', btn_notify_mgrs:'Notify Managers', btn_plan:'Action Plan', risk_low:'Low Risk', risk_med:'Medium Risk', risk_high:'High Risk', factors_title:'Risk Factors', factor_phishing:'Failed phishing simulation', factor_overdue:'Overdue trainings', factor_password:'Weak passwords detected', factor_inactive:'Prolonged inactivity', factor_expired:'Expired certificates', factor_unauth:'Unauthorized access attempts' },
   es:{ title:'Human Risk Management', sub:'Monitorización del riesgo humano en la organización', btn_report:'Informe de Riesgo', org_score:'Score de Riesgo Humano Organizacional', vs_month:'vs mes anterior', dept_risk:'Riesgo por Departamento', high_risk_users:'Usuarios de Alto Riesgo', btn_notify_mgrs:'Notificar Gestores', btn_plan:'Plan de Acción', risk_low:'Bajo Riesgo', risk_med:'Riesgo Medio', risk_high:'Alto Riesgo', factors_title:'Factores de Riesgo', factor_phishing:'Falló simulación de phishing', factor_overdue:'Formaciones atrasadas', factor_password:'Contraseñas débiles detectadas', factor_inactive:'Inactividad prolongada', factor_expired:'Certificados expirados', factor_unauth:'Intentos de acceso no autorizado' },
   fr:{ title:'Human Risk Management', sub:'Surveillance du risque humain dans l\'organisation', btn_report:'Rapport de Risque', org_score:'Score de Risque Humain Organisationnel', vs_month:'vs mois précédent', dept_risk:'Risque par Département', high_risk_users:'Utilisateurs à Haut Risque', btn_notify_mgrs:'Notifier les Gestionnaires', btn_plan:"Plan d'Action", risk_low:'Faible Risque', risk_med:'Risque Moyen', risk_high:'Risque Élevé', factors_title:'Facteurs de Risque', factor_phishing:'Échec simulation phishing', factor_overdue:'Formations en retard', factor_password:'Mots de passe faibles détectés', factor_inactive:'Inactivité prolongée', factor_expired:'Certificats expirés', factor_unauth:"Tentatives d'accès non autorisé" },
-  ar:{ title:'إدارة مخاطر الإنسان', sub:'رصد المخاطر البشرية في المنظمة', btn_report:'تقرير المخاطر', org_score:'درجة المخاطر البشرية التنظيمية', vs_month:'مقارنة بالشهر الماضي', dept_risk:'المخاطر حسب القسم', high_risk_users:'مستخدمو المخاطر العالية', btn_notify_mgrs:'إشعار المديرين', btn_plan:'خطة العمل', risk_low:'مخاطر منخفضة', risk_med:'مخاطر متوسطة', risk_high:'مخاطر عالية', factors_title:'عوامل الخطر', factor_phishing:'فشل في محاكاة التصيد', factor_overdue:'تدريبات متأخرة', factor_password:'كلمات مرور ضعيفة', factor_inactive:'خمول مطول', factor_expired:'شهادات منتهية', factor_unauth:'محاولات وصول غير مصرح بها' },
 };
