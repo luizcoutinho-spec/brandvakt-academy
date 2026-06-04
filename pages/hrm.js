@@ -131,6 +131,22 @@ function injectHRMCSS() {
     /* ── Progress ring (for dept summary) ── */
     .hrm-dept-row { display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.03); }
     .hrm-dept-row:last-child { border-bottom:none; }
+
+    /* Fixed canvas wrapper — prevents chart shifting on hover */
+    .hrm-canvas-wrap {
+      position: relative;
+      height: 200px;
+      overflow: hidden;
+      contain: layout style;
+      transform: translateZ(0);
+    }
+    .hrm-canvas-wrap canvas {
+      position: absolute !important;
+      top: 0 !important; left: 0 !important;
+      width: 100% !important; height: 100% !important;
+    }
+    /* Disable ALL transitions on chart cards to stop ResizeObserver firing */
+    .hrm-card { transition: none !important; }
   `;
   document.head.appendChild(s);
 }
@@ -395,7 +411,7 @@ function renderHRMDashboard() {
   <div class="hrm-charts-2">
     <div class="hrm-card">
       <div class="hrm-card-title">📈 Evolução do Risco Organizacional — 12 Meses</div>
-      <canvas id="hrm-dash-line" height="200"></canvas>
+      <div class="hrm-canvas-wrap"><canvas id="hrm-dash-line"></canvas></div>
     </div>
     <div class="hrm-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px">
       <div class="hrm-card-title" style="text-align:center">🛡 Score Organizacional Atual</div>
@@ -492,7 +508,7 @@ function initHRMDashCharts() {
   const ctx = document.getElementById('hrm-dash-line');
   if (!ctx) return;
   /* Force explicit canvas dimensions */
-  ctx.style.display = 'block'; ctx.style.width = '100%'; ctx.style.height = '200px';
+  /* canvas sized by .hrm-canvas-wrap CSS */
   const parent = ctx.closest('.hrm-card');
   if (parent) parent.style.minHeight = '260px';
   Chart.defaults.color = '#94a3b8';
@@ -799,7 +815,7 @@ function renderHRMMatriz() {
   <!-- Factor breakdown chart area -->
   <div class="hrm-card" style="margin-top:16px">
     <div class="hrm-card-title">📊 Score Médio por Factor de Risco</div>
-    <canvas id="hrm-matrix-chart" height="160"></canvas>
+    <div class="hrm-canvas-wrap" style="height:160px"><canvas id="hrm-matrix-chart"></canvas></div>
   </div>`;
 }
 
@@ -808,7 +824,7 @@ function initHRMMatrixChart() {
   hrmDestroyChart('matrix');
   const ctx = document.getElementById('hrm-matrix-chart');
   if (!ctx) return;
-  ctx.style.display = 'block'; ctx.style.width = '100%'; ctx.style.height = '180px';
+  /* canvas sized by .hrm-canvas-wrap CSS */
   const factors = HRM_DATA.factors;
   const avgs = factors.map(f => Math.round(HRM_DATA.depts.reduce((s,d)=>s+(d[f.id]||0),0)/HRM_DATA.depts.length));
   HRM.charts.matrix = new Chart(ctx, {
@@ -1082,11 +1098,11 @@ function renderHRMRelatorio() {
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
     <div class="hrm-card">
       <div class="hrm-card-title">📈 Evolução do Score (12 meses)</div>
-      <canvas id="hrm-rep-line" height="180"></canvas>
+      <div class="hrm-canvas-wrap" style="height:180px"><canvas id="hrm-rep-line"></canvas></div>
     </div>
     <div class="hrm-card">
       <div class="hrm-card-title">🏢 Score por Departamento</div>
-      <canvas id="hrm-rep-bar" height="180"></canvas>
+      <div class="hrm-canvas-wrap" style="height:180px"><canvas id="hrm-rep-bar"></canvas></div>
     </div>
   </div>
 
@@ -1139,7 +1155,7 @@ function initHRMReportChart() {
 
   const lineCtx = document.getElementById('hrm-rep-line');
   if (lineCtx) {
-    lineCtx.style.display = 'block'; lineCtx.style.width = '100%'; lineCtx.style.height = '180px';
+    /* canvas sized by .hrm-canvas-wrap CSS */
     HRM.charts.repLine = new Chart(lineCtx, {
       type: 'line',
       data: {
@@ -1153,7 +1169,7 @@ function initHRMReportChart() {
 
   const barCtx = document.getElementById('hrm-rep-bar');
   if (barCtx) {
-    barCtx.style.display = 'block'; barCtx.style.width = '100%'; barCtx.style.height = '180px';
+    /* canvas sized by .hrm-canvas-wrap CSS */
     const depts = [...HRM_DATA.depts].sort((a,b) => b.score - a.score);
     HRM.charts.repBar = new Chart(barCtx, {
       type: 'bar',

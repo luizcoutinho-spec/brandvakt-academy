@@ -75,8 +75,27 @@
     .ph-chart-card {
       background: var(--ph-card); border: 1px solid var(--ph-border);
       border-radius: 16px; padding: 22px;
+      /* No transition — prevents ResizeObserver from firing on hover */
+      transition: none !important;
     }
     .ph-chart-title { font-size: 0.88rem; font-weight: 700; margin-bottom: 16px; color: var(--ph-text2); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* Canvas wrapper: fixed height + contain:strict locks chart position */
+    .ph-canvas-wrap {
+      position: relative;
+      height: 200px;
+      overflow: hidden;
+      /* CSS containment: nothing inside affects outside layout */
+      contain: layout style;
+      /* Hardware-accelerate: avoids layout reflow triggering ResizeObserver */
+      transform: translateZ(0);
+      will-change: auto;
+    }
+    .ph-canvas-wrap canvas {
+      position: absolute !important;
+      top: 0 !important; left: 0 !important;
+      width: 100% !important; height: 100% !important;
+    }
 
     /* ── Table ── */
     .ph-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
@@ -548,11 +567,16 @@ function renderPhDashboard(avgClick, avgReport, cRisk) {
   <div class="ph-charts-grid">
     <div class="ph-chart-card">
       <div class="ph-chart-title">📈 Tendência de Cliques vs. Reportes — 6 Meses</div>
-      <canvas id="ph-chart-line" height="200"></canvas>
+      <!-- Fixed wrapper prevents ResizeObserver from shifting canvas on hover -->
+      <div class="ph-canvas-wrap">
+        <canvas id="ph-chart-line"></canvas>
+      </div>
     </div>
     <div class="ph-chart-card">
       <div class="ph-chart-title">🍩 Distribuição de Engajamento</div>
-      <canvas id="ph-chart-donut" height="200"></canvas>
+      <div class="ph-canvas-wrap">
+        <canvas id="ph-chart-donut"></canvas>
+      </div>
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;font-size:0.76rem;">
         ${[['#3f3f46','Não Abriu'],['#00d4ff','Abriu'],['#ef4444','Clicou'],['#22c55e','Reportou']].map(([c,l])=>`<span style="display:flex;align-items:center;gap:6px;color:#94a3b8"><span style="width:10px;height:10px;border-radius:50%;background:${c};display:inline-block"></span>${l}</span>`).join('')}
       </div>
@@ -605,20 +629,7 @@ function initPhDashboardCharts() {
   const donutCtx = document.getElementById('ph-chart-donut');
   if (!lineCtx || !donutCtx) return;
 
-  // Force parent containers to have explicit height so canvas gets dimensions
-  const lineParent  = lineCtx.closest('.ph-chart-card');
-  const donutParent = donutCtx.closest('.ph-chart-card');
-  if (lineParent)  { lineParent.style.minHeight  = '280px'; }
-  if (donutParent) { donutParent.style.minHeight = '280px'; }
-
-  // Set explicit canvas size
-  lineCtx.style.display  = 'block';
-  donutCtx.style.display = 'block';
-  lineCtx.style.width    = '100%';
-  donutCtx.style.width   = '100%';
-  lineCtx.style.height   = '200px';
-  donutCtx.style.height  = '200px';
-
+  /* Canvas dimensions handled by .ph-canvas-wrap CSS (position:absolute) */
   Chart.defaults.color = '#94a3b8';
 
   PH.charts.line = new Chart(lineCtx, {
@@ -1472,7 +1483,9 @@ function renderPhRelatorios() {
     <!-- Timeline chart -->
     <div class="ph-chart-card">
       <div class="ph-chart-title">⏱ Linha do Tempo de Cliques</div>
-      <canvas id="ph-chart-timeline" height="240"></canvas>
+      <div class="ph-canvas-wrap" style="height:220px">
+        <canvas id="ph-chart-timeline"></canvas>
+      </div>
     </div>
   </div>
 
@@ -1517,7 +1530,7 @@ function initPhReportCharts() {
   if (PH.charts.timeline) { try { PH.charts.timeline.destroy(); } catch(e){} PH.charts.timeline = null; }
   const ctx = document.getElementById('ph-chart-timeline');
   if (!ctx) return;
-  ctx.style.display = 'block'; ctx.style.width = '100%'; ctx.style.height = '220px';
+  /* Canvas dimensions handled by .ph-canvas-wrap CSS */
   PH.charts.timeline = new Chart(ctx, {
     type: 'bar',
     data: {
