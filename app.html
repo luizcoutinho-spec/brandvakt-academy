@@ -219,6 +219,7 @@
       <a class="nav-item" data-page="assignments" onclick="navTo('assignments',this)"><span class="nav-item-icon">📋</span><span id="nav-assignments">Atribuições</span></a>
       <a class="nav-item" data-page="certificates" onclick="navTo('certificates',this)"><span class="nav-item-icon">🏆</span><span id="nav-certificates">Certificados</span></a>
       <a class="nav-item" data-page="risk" onclick="navTo('risk',this)"><span class="nav-item-icon">🛡</span><span id="nav-risk">Human Risk</span></a>
+      <a class="nav-item" data-page="phishing" onclick="navTo('phishing',this)"><span class="nav-item-icon">🎣</span><span id="nav-phishing">Phishing</span></a>
 
       <div class="nav-section-title" id="nav-s-people">Pessoas</div>
       <a class="nav-item" data-page="users" onclick="navTo('users',this)"><span class="nav-item-icon">👥</span><span id="nav-users">Usuários</span></a>
@@ -333,7 +334,7 @@ function applyNavLabels() {
   const map = {
     'nav-s-overview':L.overview,'nav-dashboard':L.dashboard,
     'nav-s-training':L.training,'nav-library':L.library,'nav-trails':L.trails,
-    'nav-s-compliance':L.compliance,'nav-assignments':L.assignments,'nav-certificates':L.certificates,'nav-risk':L.risk,
+    'nav-s-compliance':L.compliance,'nav-assignments':L.assignments,'nav-certificates':L.certificates,'nav-risk':L.risk,'nav-phishing':'Phishing',
     'nav-s-people':L.people,'nav-users':L.users,'nav-departments':L.departments,
     'nav-s-intel':L.intel,'nav-reports':L.reports,'nav-ai':L.ai,
     'nav-s-admin':L.admin,'nav-settings':L.settings,'nav-integrations':L.integrations,
@@ -485,12 +486,14 @@ window.scoreRingSVG=scoreRingSVG;window.sparklineSVG=sparklineSVG;
 </script>
 
 <!-- ══════ Page scripts ══════ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="pages/dashboard.js"></script>
 <script src="pages/library.js"></script>
 <script src="pages/users.js"></script>
 <script src="pages/certificates.js"></script>
 <script src="pages/ai.js"></script>
 <script src="pages/misc.js"></script>
+<script src="pages/phishing.js"></script>
 
 </body>
 </html>
