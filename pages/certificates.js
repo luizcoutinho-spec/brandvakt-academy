@@ -3,7 +3,7 @@
 //  Brandvakt Academy Enterprise Platform
 // ══════════════════════════════════════════════════════════════
 
-(function injectCertCSS() {
+function injectCertCSS() {
   if (document.getElementById('cert-css')) return;
   const s = document.createElement('style');
   s.id = 'cert-css';
@@ -125,7 +125,8 @@
     .cert-stat-fill{ height:100%; border-radius:3px; transition:width 0.8s ease; }
   `;
   document.head.appendChild(s);
-})();
+}
+injectCertCSS();
 
 // ── Data ─────────────────────────────────────────────────────
 const CERT_DATA = {
