@@ -1,5 +1,5 @@
 // ══════════════════════════════════════════════════════════════
-//  MISC PAGES: Reports · SCORM · Assignments · Settings · Integrations
+//  MISC PAGES: Reports · Assignments · Settings · Integrations
 // ══════════════════════════════════════════════════════════════
 
 // ─────────────────────────────
@@ -74,78 +74,6 @@ window.renderPage_reports = function() {
                 <button class="btn btn-ghost btn-sm" onclick="showToast('Visualizando...','info')">👁 ${L.btn_view}</button>
                 <button class="btn btn-secondary btn-sm" onclick="showToast('Exportando PDF...','info')">⬇ PDF</button>
                 <button class="btn btn-ghost btn-sm" onclick="showToast('Link copiado!','success')">🔗</button>
-              </div></td>
-            </tr>`).join('')}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>`;
-};
-
-// ─────────────────────────────
-//  SCORM UPLOAD PAGE
-// ─────────────────────────────
-window.renderPage_scorm = function() {
-  const lang = APP.lang;
-  const queue = [
-    { name:'phishing_awareness_v2.zip',    size:'14.2 MB', status:'published', scorm:'1.2',  langs:'🇧🇷🇺🇸🇪🇸', date:'01/12/2024', icon:'🎣' },
-    { name:'lgpd_pratica_v3.zip',          size:'22.8 MB', status:'published', scorm:'1.2',  langs:'🇧🇷',       date:'28/11/2024', icon:'🔒' },
-    { name:'home_office_seguro_v1.zip',    size:'18.4 MB', status:'validating',scorm:'2004', langs:'🇧🇷🇺🇸',     date:'30/11/2024', icon:'🏠' },
-    { name:'esg_sustentabilidade_v1.zip',  size:'9.1 MB',  status:'draft',     scorm:'1.2',  langs:'🇧🇷🇺🇸🇪🇸', date:'27/11/2024', icon:'🌱' },
-    { name:'aml_integridade_v1.zip',       size:'16.5 MB', status:'error',     scorm:'2004', langs:'🇧🇷🇺🇸',     date:'25/11/2024', icon:'💸' },
-  ];
-  const statusColor = { published:'var(--brand-success)', validating:'var(--brand-warning)', draft:'var(--text-muted)', error:'var(--brand-danger)' };
-  const statusLabel = { pt:{published:'Publicado',validating:'Validando',draft:'Rascunho',error:'Erro'}, en:{published:'Published',validating:'Validating',draft:'Draft',error:'Error'} };
-  const SL = statusLabel[lang] || statusLabel.pt;
-  const title = {pt:'Gestão SCORM',en:'SCORM Management',es:'Gestión SCORM',fr:'Gestion SCORM',ar:'إدارة SCORM'}[lang]||'SCORM Management';
-  const sub = {pt:'Upload, validação e controle de versões de pacotes SCORM',en:'Upload, validation and version control of SCORM packages',es:'Subida, validación y control de versiones SCORM',fr:'Upload, validation et contrôle de versions SCORM',ar:'رفع وتحقق والتحكم في إصدارات حزم SCORM'}[lang]||'';
-
-  return `
-  <div style="display:flex;flex-direction:column;gap:22px;">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
-      <div><h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;">${title}</h2>
-      <p style="color:var(--text-secondary);font-size:0.84rem;margin-top:3px;">${sub}</p></div>
-      <button class="btn btn-primary btn-sm" onclick="showModal('modal-new-course')">📦 Upload SCORM</button>
-    </div>
-
-    <!-- Compat banner -->
-    <div style="display:flex;gap:12px;padding:14px 18px;background:rgba(0,87,255,0.06);border:1px solid rgba(0,87,255,0.15);border-radius:var(--radius-md);flex-wrap:wrap;align-items:center;">
-      <span style="font-size:1.2rem;">📦</span>
-      <div style="flex:1;min-width:200px;">
-        <div style="font-size:0.85rem;font-weight:700;">Compatibilidade SCORM Total</div>
-        <div style="font-size:0.75rem;color:var(--text-muted);">SCORM 1.2 · SCORM 2004 3ª Ed. · SCORM 2004 4ª Ed. · Preparado para xAPI / Tin Can / LRS</div>
-      </div>
-      <div style="display:flex;gap:10px;">
-        ${['SCORM 1.2','SCORM 2004','xAPI Ready','LRS Ready'].map(t=>`<span class="badge badge-blue">${t}</span>`).join('')}
-      </div>
-    </div>
-
-    <!-- KPIs -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;" class="stagger">
-      ${[['📦','48','Pacotes','var(--brand-accent)'],['✅','42','Publicados','var(--brand-success)'],['⚠️','3','Validando','var(--brand-warning)'],['❌','1','Com erro','var(--brand-danger)'],['🌍','127','Versões linguísticas','var(--brand-teal)']].map(([i,v,l,c])=>`
-        <div class="card" style="padding:14px;display:flex;align-items:center;gap:8px;">
-          <span>${i}</span><div><div style="font-size:1.1rem;font-weight:800;color:${c};">${v}</div><div style="font-size:0.66rem;color:var(--text-muted);">${l}</div></div>
-        </div>`).join('')}
-    </div>
-
-    <!-- Queue -->
-    <div class="card" style="padding:0;overflow:hidden;">
-      <div style="padding:16px 20px;border-bottom:1px solid var(--bg-border);"><h4>Pacotes SCORM</h4></div>
-      <div class="table-wrap" style="border:none;border-radius:0;">
-        <table>
-          <thead><tr><th>Arquivo</th><th>SCORM</th><th>Idiomas</th><th>Tamanho</th><th>Upload</th><th>Status</th><th>Ações</th></tr></thead>
-          <tbody>
-            ${queue.map(q=>`<tr>
-              <td><div style="display:flex;align-items:center;gap:8px;"><span>${q.icon}</span><span style="font-weight:600;font-size:0.82rem;">${q.name}</span></div></td>
-              <td><span class="badge badge-blue">${q.scorm}</span></td>
-              <td>${q.langs}</td>
-              <td style="font-size:0.78rem;color:var(--text-muted);">${q.size}</td>
-              <td style="font-size:0.78rem;color:var(--text-muted);">${q.date}</td>
-              <td><span style="font-size:0.72rem;font-weight:700;color:${statusColor[q.status]};background:${statusColor[q.status]}22;padding:3px 9px;border-radius:99px;border:1px solid ${statusColor[q.status]}44;">${SL[q.status]}</span></td>
-              <td><div style="display:flex;gap:4px;">
-                ${q.status==='error'?`<button class="btn btn-sm btn-danger" onclick="showToast('Revalidando...','info')">↺ Revalidar</button>`:`<button class="btn btn-ghost btn-sm" onclick="showToast('Editando...','info')">✏️</button>`}
-                <button class="btn btn-ghost btn-sm" onclick="showToast('Baixando...','info')">⬇</button>
               </div></td>
             </tr>`).join('')}
           </tbody>
@@ -328,7 +256,7 @@ window.renderPage_integrations = function() {
     { name:'Microsoft 365', desc:'Azure AD SSO, Teams notifications', icon:'🪟', status:'connected', cat:'Identity' },
     { name:'Google Workspace', desc:'Google SSO and user sync', icon:'🔷', status:'connected', cat:'Identity' },
     { name:'Okta', desc:'SAML 2.0 Identity Provider', icon:'🔵', status:'available', cat:'Identity' },
-    { name:'Synthesia Enterprise', desc:'SCORM export and avatar management', icon:'🎬', status:'connected', cat:'Content' },
+    { name:'Synthesia Enterprise', desc:'Video production and avatar management', icon:'🎬', status:'connected', cat:'Content' },
     { name:'Slack', desc:'Training notifications via Slack', icon:'💬', status:'available', cat:'Notifications' },
     { name:'Microsoft Teams', desc:'Training reminders in Teams', icon:'💼', status:'connected', cat:'Notifications' },
     { name:'Salesforce', desc:'User sync and compliance data', icon:'☁️', status:'available', cat:'HR Systems' },

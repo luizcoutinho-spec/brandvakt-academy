@@ -116,7 +116,7 @@
     <p class="login-hero-sub" id="hero-sub">Plataforma SaaS enterprise para distribuição, monitoramento e certificação de treinamentos em Cybersecurity, Compliance e Governança.</p>
     <div class="login-stats">
       <div><div class="login-stat-val">80+</div><div class="login-stat-label">Idiomas</div></div>
-      <div><div class="login-stat-val">SCORM</div><div class="login-stat-label">1.2 & 2004</div></div>
+      <div><div class="login-stat-val">xAPI</div><div class="login-stat-label">Ready</div></div>
       <div><div class="login-stat-val">ISO</div><div class="login-stat-label">27001 Ready</div></div>
       <div><div class="login-stat-val">Zero</div><div class="login-stat-label">Trust Arch</div></div>
     </div>
@@ -214,7 +214,6 @@
       <div class="nav-section-title" id="nav-s-training">Treinamento</div>
       <a class="nav-item" data-page="library" onclick="navTo('library',this)"><span class="nav-item-icon">📚</span><span id="nav-library">Biblioteca</span></a>
       <a class="nav-item" data-page="trails" onclick="navTo('trails',this)"><span class="nav-item-icon">🛤</span><span id="nav-trails">Trilhas</span></a>
-      <a class="nav-item" data-page="scorm" onclick="navTo('scorm',this)"><span class="nav-item-icon">📦</span><span id="nav-scorm">SCORM Upload</span><span class="nav-badge">3</span></a>
 
       <div class="nav-section-title" id="nav-s-compliance">Compliance</div>
       <a class="nav-item" data-page="assignments" onclick="navTo('assignments',this)"><span class="nav-item-icon">📋</span><span id="nav-assignments">Atribuições</span></a>
@@ -283,54 +282,24 @@
   </div>
 </div>
 
-<!-- SCORM modal (shared) -->
+<!-- Modal: Novo Treinamento -->
 <div class="modal-overlay hidden" id="modal-new-course" onclick="closeModalOutside(event,'modal-new-course')">
   <div class="modal modal-lg">
-    <div class="modal-header"><h3 class="modal-title">📦 Publicar Treinamento SCORM</h3><span class="modal-close" onclick="hideModal('modal-new-course')">✕</span></div>
-    <div class="steps" style="margin-bottom:24px;">
-      <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">Upload</div></div>
-      <div class="step-line"></div>
-      <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">Configurar</div></div>
-      <div class="step-line"></div>
-      <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">Publicar</div></div>
-    </div>
-    <div id="modal-step-1">
-      <div id="scorm-dropzone" ondragover="event.preventDefault();this.style.borderColor='var(--brand-accent)'" ondragleave="this.style.borderColor=''" ondrop="handleScormDrop(event)" onclick="document.getElementById('scorm-file-input').click()" style="border:2px dashed var(--bg-border-light);border-radius:var(--radius-lg);padding:40px;text-align:center;cursor:pointer;transition:var(--transition);margin-bottom:20px;">
-        <div style="font-size:2.5rem;margin-bottom:12px;">📦</div>
-        <div style="font-size:.95rem;font-weight:600;margin-bottom:6px;">Arraste o pacote SCORM aqui</div>
-        <div style="font-size:.8rem;color:var(--text-muted);">Suporte SCORM 1.2 e SCORM 2004 · .zip</div>
-        <input type="file" id="scorm-file-input" accept=".zip" class="hidden" onchange="handleScormFile(this)"/>
-      </div>
+    <div class="modal-header"><h3 class="modal-title">📚 Novo Treinamento</h3><span class="modal-close" onclick="hideModal('modal-new-course')">✕</span></div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="input-group"><label>Nome do Treinamento</label><input class="input" type="text" placeholder="Ex: Phishing Awareness"/></div>
-        <div class="input-group"><label>Categoria</label><select class="input"><option>🛡 Cybersecurity</option><option>📋 Compliance</option><option>🔒 Privacidade</option><option>⚖️ Ética</option></select></div>
+        <div class="input-group"><label>Categoria</label><select class="input"><option>🛡 Cybersecurity</option><option>📋 Compliance</option><option>🔒 Privacidade</option><option>⚖️ Ética</option><option>🏢 Governança</option></select></div>
         <div class="input-group"><label>Idioma</label><select class="input"><option>🇧🇷 Português</option><option>🇺🇸 English</option><option>🇪🇸 Español</option><option>🇫🇷 Français</option><option>🇸🇦 العربية</option></select></div>
-        <div class="input-group"><label>SCORM Version</label><select class="input"><option>SCORM 1.2</option><option>SCORM 2004</option></select></div>
-      </div>
-      <div class="modal-footer"><button class="btn btn-ghost" onclick="hideModal('modal-new-course')">Cancelar</button><button class="btn btn-primary" onclick="scormStep2()">Próximo →</button></div>
-    </div>
-    <div id="modal-step-2" class="hidden">
-      <div style="background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-        <span style="font-size:1.4rem;">✅</span><div><div style="font-weight:700;color:var(--brand-success);">Pacote SCORM validado com sucesso</div><div style="font-size:.78rem;color:var(--text-muted);">SCORM 1.2 · manifest.xml detectado · 14 SCOs</div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="input-group"><label>País / Região</label><select class="input"><option>🌍 Global</option><option>🇧🇷 Brasil</option><option>🇺🇸 EUA</option><option>🇪🇺 Europa</option><option>🇸🇦 Oriente Médio</option></select></div>
-        <div class="input-group"><label>Nota de Aprovação (%)</label><input class="input" type="number" value="70" min="0" max="100"/></div>
         <div class="input-group"><label>Duração Estimada</label><input class="input" type="text" placeholder="30 min"/></div>
         <div class="input-group"><label>Emitir Certificado</label><select class="input"><option>✅ Sim, emitir certificado</option><option>❌ Não emitir</option></select></div>
       </div>
-      <div class="modal-footer"><button class="btn btn-ghost" onclick="scormStep1()">← Voltar</button><button class="btn btn-primary" onclick="scormStep3()">Publicar 🚀</button></div>
+      <div class="input-group"><label>Nota de Aprovação (%)</label><input class="input" type="number" value="70" min="0" max="100" style="max-width:160px;"/></div>
     </div>
-    <div id="modal-step-3" class="hidden">
-      <div style="text-align:center;padding:30px 0;">
-        <div style="font-size:3rem;margin-bottom:16px;">🎉</div>
-        <h3 style="font-size:1.2rem;margin-bottom:8px;">Treinamento Publicado!</h3>
-        <p style="color:var(--text-secondary);font-size:.84rem;">O treinamento já está disponível na biblioteca e pode ser atribuído.</p>
-        <div style="display:flex;gap:10px;justify-content:center;margin-top:24px;">
-          <button class="btn btn-secondary" onclick="hideModal('modal-new-course')">Fechar</button>
-          <button class="btn btn-primary" onclick="hideModal('modal-new-course');navTo('assignments',null)">Atribuir Agora</button>
-        </div>
-      </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-new-course')">Cancelar</button>
+      <button class="btn btn-primary" onclick="hideModal('modal-new-course');showToast('Treinamento criado com sucesso! 🎉','success')">Publicar 🚀</button>
     </div>
   </div>
 </div>
@@ -354,18 +323,18 @@ window.APP = APP;
 
 // ── Nav labels per lang ──
 const NAV_LABELS = {
-  pt:{overview:'Visão Geral',dashboard:'Dashboard',training:'Treinamento',library:'Biblioteca',trails:'Trilhas',scorm:'SCORM Upload',compliance:'Compliance',assignments:'Atribuições',certificates:'Certificados',risk:'Human Risk',people:'Pessoas',users:'Usuários',departments:'Departamentos',intel:'Inteligência',reports:'Relatórios',ai:'IA Assistente',admin:'Administração',settings:'Configurações',integrations:'Integrações',tenant:'Trocar Empresa'},
-  en:{overview:'Overview',dashboard:'Dashboard',training:'Training',library:'Library',trails:'Paths',scorm:'SCORM Upload',compliance:'Compliance',assignments:'Assignments',certificates:'Certificates',risk:'Human Risk',people:'People',users:'Users',departments:'Departments',intel:'Intelligence',reports:'Reports',ai:'AI Assistant',admin:'Administration',settings:'Settings',integrations:'Integrations',tenant:'Switch Company'},
-  es:{overview:'Resumen',dashboard:'Panel',training:'Formación',library:'Biblioteca',trails:'Rutas',scorm:'Subida SCORM',compliance:'Cumplimiento',assignments:'Asignaciones',certificates:'Certificados',risk:'Riesgo Humano',people:'Personas',users:'Usuarios',departments:'Departamentos',intel:'Inteligencia',reports:'Informes',ai:'Asistente IA',admin:'Administración',settings:'Configuración',integrations:'Integraciones',tenant:'Cambiar Empresa'},
-  fr:{overview:"Vue d'ensemble",dashboard:'Tableau de bord',training:'Formation',library:'Bibliothèque',trails:'Parcours',scorm:'Upload SCORM',compliance:'Conformité',assignments:'Attributions',certificates:'Certificats',risk:'Risque Humain',people:'Personnes',users:'Utilisateurs',departments:'Départements',intel:'Intelligence',reports:'Rapports',ai:'Assistant IA',admin:'Administration',settings:'Paramètres',integrations:'Intégrations',tenant:"Changer d'Entreprise"},
-  ar:{overview:'نظرة عامة',dashboard:'لوحة التحكم',training:'التدريب',library:'المكتبة',trails:'المسارات',scorm:'رفع SCORM',compliance:'الامتثال',assignments:'التكليفات',certificates:'الشهادات',risk:'مخاطر الإنسان',people:'الأشخاص',users:'المستخدمون',departments:'الأقسام',intel:'الذكاء',reports:'التقارير',ai:'مساعد الذكاء',admin:'الإدارة',settings:'الإعدادات',integrations:'التكاملات',tenant:'تغيير الشركة'},
+  pt:{overview:'Visão Geral',dashboard:'Dashboard',training:'Treinamento',library:'Biblioteca',trails:'Trilhas',compliance:'Compliance',assignments:'Atribuições',certificates:'Certificados',risk:'Human Risk',people:'Pessoas',users:'Usuários',departments:'Departamentos',intel:'Inteligência',reports:'Relatórios',ai:'IA Assistente',admin:'Administração',settings:'Configurações',integrations:'Integrações',tenant:'Trocar Empresa'},
+  en:{overview:'Overview',dashboard:'Dashboard',training:'Training',library:'Library',trails:'Paths',compliance:'Compliance',assignments:'Assignments',certificates:'Certificates',risk:'Human Risk',people:'People',users:'Users',departments:'Departments',intel:'Intelligence',reports:'Reports',ai:'AI Assistant',admin:'Administration',settings:'Settings',integrations:'Integrations',tenant:'Switch Company'},
+  es:{overview:'Resumen',dashboard:'Panel',training:'Formación',library:'Biblioteca',trails:'Rutas',compliance:'Cumplimiento',assignments:'Asignaciones',certificates:'Certificados',risk:'Riesgo Humano',people:'Personas',users:'Usuarios',departments:'Departamentos',intel:'Inteligencia',reports:'Informes',ai:'Asistente IA',admin:'Administración',settings:'Configuración',integrations:'Integraciones',tenant:'Cambiar Empresa'},
+  fr:{overview:"Vue d'ensemble",dashboard:'Tableau de bord',training:'Formation',library:'Bibliothèque',trails:'Parcours',compliance:'Conformité',assignments:'Attributions',certificates:'Certificats',risk:'Risque Humain',people:'Personnes',users:'Utilisateurs',departments:'Départements',intel:'Intelligence',reports:'Rapports',ai:'Assistant IA',admin:'Administration',settings:'Paramètres',integrations:'Intégrations',tenant:"Changer d'Entreprise"},
+  ar:{overview:'نظرة عامة',dashboard:'لوحة التحكم',training:'التدريب',library:'المكتبة',trails:'المسارات',compliance:'الامتثال',assignments:'التكليفات',certificates:'الشهادات',risk:'مخاطر الإنسان',people:'الأشخاص',users:'المستخدمون',departments:'الأقسام',intel:'الذكاء',reports:'التقارير',ai:'مساعد الذكاء',admin:'الإدارة',settings:'الإعدادات',integrations:'التكاملات',tenant:'تغيير الشركة'},
 };
 
 function applyNavLabels() {
   const L = NAV_LABELS[APP.lang] || NAV_LABELS.pt;
   const map = {
     'nav-s-overview':L.overview,'nav-dashboard':L.dashboard,
-    'nav-s-training':L.training,'nav-library':L.library,'nav-trails':L.trails,'nav-scorm':L.scorm,
+    'nav-s-training':L.training,'nav-library':L.library,'nav-trails':L.trails,
     'nav-s-compliance':L.compliance,'nav-assignments':L.assignments,'nav-certificates':L.certificates,'nav-risk':L.risk,
     'nav-s-people':L.people,'nav-users':L.users,'nav-departments':L.departments,
     'nav-s-intel':L.intel,'nav-reports':L.reports,'nav-ai':L.ai,
@@ -519,12 +488,6 @@ function sparklineSVG(data,color='#0057FF',w=120,h=40){
   return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#${gid})"/><path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/></svg>`;
 }
 
-// ── SCORM modal steps (global) ──
-window.handleScormDrop=function(e){e.preventDefault();document.getElementById('scorm-dropzone').innerHTML=`<div style="font-size:1.5rem;margin-bottom:8px;">✅</div><div style="font-weight:600;color:var(--brand-success);">Arquivo detectado</div><div style="font-size:.78rem;color:var(--text-muted);">course_scorm_v2.zip · 14.2 MB</div>`;};
-window.handleScormFile=function(input){if(input.files[0])document.getElementById('scorm-dropzone').innerHTML=`<div style="font-size:1.5rem;margin-bottom:8px;">✅</div><div style="font-weight:600;color:var(--brand-success);">Carregado</div><div style="font-size:.78rem;color:var(--text-muted);">${input.files[0].name}</div>`;};
-window.scormStep2=function(){document.getElementById('modal-step-1').classList.add('hidden');document.getElementById('modal-step-2').classList.remove('hidden');document.getElementById('step-ind-1').classList.remove('active');document.getElementById('step-ind-1').classList.add('done');document.getElementById('step-ind-2').classList.add('active');};
-window.scormStep1=function(){document.getElementById('modal-step-2').classList.add('hidden');document.getElementById('modal-step-1').classList.remove('hidden');document.getElementById('step-ind-2').classList.remove('active');document.getElementById('step-ind-1').classList.remove('done');document.getElementById('step-ind-1').classList.add('active');};
-window.scormStep3=function(){document.getElementById('modal-step-2').classList.add('hidden');document.getElementById('modal-step-3').classList.remove('hidden');document.getElementById('step-ind-2').classList.remove('active');document.getElementById('step-ind-2').classList.add('done');document.getElementById('step-ind-3').classList.add('active');document.getElementById('step-ind-3').classList.add('done');showToast('Treinamento publicado! 🎉','success');};
 
 // Expose
 window.showToast=showToast;window.showModal=showModal;window.hideModal=hideModal;window.navTo=navTo;
