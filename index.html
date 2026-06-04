@@ -1,0 +1,1491 @@
+<!DOCTYPE html>
+<html lang="pt-BR" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brandvakt Academy — Enterprise Training Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ═══════════════════════════════════════════════════════
+       DESIGN SYSTEM – BRANDVAKT ACADEMY
+    ═══════════════════════════════════════════════════════ */
+    :root {
+      --brand-primary:   #0A1628;
+      --brand-secondary: #1A2F5A;
+      --brand-accent:    #0057FF;
+      --brand-accent2:   #00C6FF;
+      --brand-glow:      rgba(0, 87, 255, 0.15);
+      --brand-danger:    #FF3B5C;
+      --brand-warning:   #FF9500;
+      --brand-success:   #00D68F;
+      --brand-purple:    #7B5EA7;
+      --brand-teal:      #00B8A9;
+
+      --bg-base:         #060E1E;
+      --bg-surface:      #0D1B35;
+      --bg-card:         #111F3C;
+      --bg-card-hover:   #162848;
+      --bg-border:       rgba(255,255,255,0.07);
+      --bg-border-light: rgba(255,255,255,0.12);
+
+      --text-primary:    #F0F4FF;
+      --text-secondary:  #8A9BBD;
+      --text-muted:      #4D617F;
+      --text-accent:     #4D9FFF;
+
+      --sidebar-width:   260px;
+      --topbar-height:   64px;
+      --radius-sm:       6px;
+      --radius-md:       10px;
+      --radius-lg:       16px;
+      --radius-xl:       24px;
+
+      --shadow-card:     0 4px 24px rgba(0,0,0,0.4);
+      --shadow-glow:     0 0 40px rgba(0, 87, 255, 0.2);
+      --transition:      all 0.2s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    [dir="rtl"] {
+      --sidebar-dir: right;
+    }
+    [dir="ltr"] {
+      --sidebar-dir: left;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 14px; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 99px; }
+
+    /* ── Typography ── */
+    h1 { font-size: 2rem; font-weight: 800; letter-spacing: -0.03em; }
+    h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    h3 { font-size: 1.15rem; font-weight: 600; }
+    h4 { font-size: 0.95rem; font-weight: 600; }
+    p  { line-height: 1.6; color: var(--text-secondary); }
+
+    /* ── Utilities ── */
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .justify-center { justify-content: center; }
+    .gap-1 { gap: 4px; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .gap-4 { gap: 16px; }
+    .gap-6 { gap: 24px; }
+    .gap-8 { gap: 32px; }
+    .w-full { width: 100%; }
+    .hidden { display: none !important; }
+    .relative { position: relative; }
+    .absolute { position: absolute; }
+    .overflow-hidden { overflow: hidden; }
+    .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .grid { display: grid; }
+    .text-sm { font-size: 0.82rem; }
+    .text-xs { font-size: 0.72rem; }
+    .text-lg { font-size: 1.1rem; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .uppercase { text-transform: uppercase; }
+    .tracking-wide { letter-spacing: 0.08em; }
+    .rounded { border-radius: var(--radius-md); }
+    .rounded-full { border-radius: 9999px; }
+    .pointer { cursor: pointer; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 10px 20px; border-radius: var(--radius-md); font-size: 0.85rem;
+      font-weight: 600; cursor: pointer; border: none; outline: none;
+      transition: var(--transition); white-space: nowrap; text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--brand-accent);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(0, 87, 255, 0.4);
+    }
+    .btn-primary:hover { background: #1a6aff; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(0,87,255,0.5); }
+    .btn-secondary {
+      background: rgba(255,255,255,0.06);
+      color: var(--text-primary);
+      border: 1px solid var(--bg-border-light);
+    }
+    .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+    .btn-ghost { background: transparent; color: var(--text-secondary); }
+    .btn-ghost:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+    .btn-danger { background: var(--brand-danger); color: #fff; }
+    .btn-sm { padding: 6px 14px; font-size: 0.78rem; }
+    .btn-lg { padding: 14px 28px; font-size: 0.95rem; }
+    .btn-icon { padding: 9px; border-radius: var(--radius-sm); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      transition: var(--transition);
+    }
+    .card:hover { border-color: var(--bg-border-light); }
+    .card-glow { box-shadow: var(--shadow-glow); border-color: rgba(0,87,255,0.25); }
+
+    /* ── Badges ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px; border-radius: 99px;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .badge-blue   { background: rgba(0,87,255,0.15);   color: #4D9FFF; }
+    .badge-green  { background: rgba(0,214,143,0.15);  color: #00D68F; }
+    .badge-red    { background: rgba(255,59,92,0.15);  color: #FF3B5C; }
+    .badge-yellow { background: rgba(255,149,0,0.15);  color: #FF9500; }
+    .badge-purple { background: rgba(123,94,167,0.15); color: #A67FD6; }
+    .badge-teal   { background: rgba(0,184,169,0.15);  color: #00D4C8; }
+
+    /* ── Input ── */
+    .input {
+      width: 100%; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--bg-border-light);
+      border-radius: var(--radius-md); padding: 11px 14px;
+      color: var(--text-primary); font-size: 0.88rem; font-family: inherit;
+      outline: none; transition: var(--transition);
+    }
+    .input::placeholder { color: var(--text-muted); }
+    .input:focus { border-color: var(--brand-accent); background: rgba(0,87,255,0.05); box-shadow: 0 0 0 3px rgba(0,87,255,0.1); }
+    .input-group { display: flex; flex-direction: column; gap: 6px; }
+    .input-group label { font-size: 0.78rem; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.06em; }
+
+    /* ── Divider ── */
+    .divider { height: 1px; background: var(--bg-border); margin: 16px 0; }
+
+    /* ══════════════════════════════════════════════════════
+       LOGIN SCREEN
+    ══════════════════════════════════════════════════════ */
+    #screen-login {
+      min-height: 100vh;
+      display: flex;
+      background: var(--bg-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Animated background */
+    .login-bg {
+      position: absolute; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 50% at 70% 50%, rgba(0,87,255,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 20% 80%, rgba(0,198,255,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 30% 40% at 80% 10%, rgba(123,94,167,0.08) 0%, transparent 60%);
+    }
+    .login-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .login-left {
+      flex: 1;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      padding: 60px;
+      position: relative; z-index: 1;
+    }
+    .login-right {
+      width: 480px; min-height: 100vh;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--bg-border);
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 60px 48px;
+      position: relative; z-index: 1;
+    }
+
+    .login-brand {
+      display: flex; align-items: center; gap: 14px; margin-bottom: 48px;
+    }
+    .login-brand-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--brand-accent), var(--brand-accent2));
+      border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 30px rgba(0,87,255,0.5);
+    }
+    .login-brand-name { font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
+    .login-brand-sub  { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+
+    .login-hero-title {
+      font-size: 3rem; font-weight: 900; letter-spacing: -0.04em;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff 0%, #8AB4FF 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      margin-bottom: 20px; max-width: 520px;
+    }
+    .login-hero-sub {
+      font-size: 1rem; color: var(--text-secondary); max-width: 440px; line-height: 1.7;
+    }
+
+    .login-stats {
+      display: flex; gap: 40px; margin-top: 56px;
+    }
+    .login-stat-val  { font-size: 2rem; font-weight: 800; color: var(--text-primary); }
+    .login-stat-label{ font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+    .login-langs {
+      display: flex; gap: 8px; margin-top: 40px; flex-wrap: wrap;
+    }
+    .login-lang-pill {
+      padding: 4px 12px; border-radius: 99px;
+      border: 1px solid var(--bg-border-light);
+      font-size: 0.72rem; color: var(--text-muted);
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    .login-form-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
+    .login-form-sub   { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 32px; }
+
+    .login-sso-btn {
+      width: 100%; padding: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--bg-border-light);
+      border-radius: var(--radius-md);
+      color: var(--text-primary); font-size: 0.85rem; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: var(--transition); margin-bottom: 8px;
+    }
+    .login-sso-btn:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+
+    .login-divider {
+      display: flex; align-items: center; gap: 12px; margin: 20px 0;
+    }
+    .login-divider-line { flex: 1; height: 1px; background: var(--bg-border); }
+    .login-divider-text { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .login-submit {
+      width: 100%; padding: 13px;
+      background: linear-gradient(135deg, var(--brand-accent), #0041CC);
+      border: none; border-radius: var(--radius-md);
+      color: #fff; font-size: 0.9rem; font-weight: 700;
+      cursor: pointer; transition: var(--transition);
+      box-shadow: 0 4px 24px rgba(0,87,255,0.4);
+      margin-top: 8px;
+      font-family: inherit;
+    }
+    .login-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(0,87,255,0.5); }
+
+    /* MFA Step */
+    .mfa-digits {
+      display: flex; gap: 10px; justify-content: center; margin: 24px 0;
+    }
+    .mfa-digit {
+      width: 52px; height: 60px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--bg-border-light);
+      border-radius: var(--radius-md);
+      text-align: center; font-size: 1.5rem; font-weight: 700;
+      color: var(--text-primary); font-family: 'JetBrains Mono', monospace;
+      outline: none; transition: var(--transition);
+    }
+    .mfa-digit:focus { border-color: var(--brand-accent); box-shadow: 0 0 0 3px rgba(0,87,255,0.2); }
+
+    /* ══════════════════════════════════════════════════════
+       MAIN APP LAYOUT
+    ══════════════════════════════════════════════════════ */
+    #screen-app { display: none; min-height: 100vh; }
+    #screen-app.active { display: flex; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-width);
+      background: var(--bg-surface);
+      border-right: 1px solid var(--bg-border);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; bottom: 0; z-index: 100;
+      transition: transform 0.3s ease;
+    }
+    [dir="rtl"] .sidebar { left: auto; right: 0; border-right: none; border-left: 1px solid var(--bg-border); }
+
+    .sidebar-header {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--bg-border);
+    }
+    .sidebar-brand {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-brand-icon {
+      width: 36px; height: 36px; flex-shrink: 0;
+      background: linear-gradient(135deg, var(--brand-accent), var(--brand-accent2));
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .sidebar-brand-text { flex: 1; min-width: 0; }
+    .sidebar-brand-name { font-size: 0.9rem; font-weight: 800; letter-spacing: -0.01em; }
+    .sidebar-brand-sub  { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .sidebar-tenant {
+      margin: 12px 0 0;
+      padding: 10px 12px;
+      background: rgba(0,87,255,0.08);
+      border: 1px solid rgba(0,87,255,0.2);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; gap: 8px; cursor: pointer;
+    }
+    .sidebar-tenant-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--brand-success); flex-shrink: 0;
+      box-shadow: 0 0 8px var(--brand-success);
+    }
+    .sidebar-tenant-name { font-size: 0.78rem; font-weight: 600; flex: 1; }
+    .sidebar-tenant-plan { font-size: 0.65rem; color: var(--brand-accent); font-weight: 700; }
+
+    /* Nav */
+    .sidebar-nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+    .nav-section-title {
+      font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--text-muted);
+      padding: 10px 10px 6px; margin-top: 8px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 10px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition); position: relative;
+      color: var(--text-secondary); font-size: 0.84rem; font-weight: 500;
+      text-decoration: none;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+    .nav-item.active {
+      background: rgba(0,87,255,0.12);
+      color: var(--brand-accent);
+    }
+    .nav-item.active::before {
+      content: '';
+      position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+      width: 3px; height: 18px; border-radius: 0 3px 3px 0;
+      background: var(--brand-accent);
+    }
+    [dir="rtl"] .nav-item.active::before { left: auto; right: 0; border-radius: 3px 0 0 3px; }
+    .nav-item-icon { width: 18px; text-align: center; flex-shrink: 0; opacity: 0.8; }
+    .nav-item.active .nav-item-icon { opacity: 1; }
+    .nav-badge {
+      margin-left: auto; min-width: 20px; height: 18px;
+      background: var(--brand-danger); border-radius: 99px;
+      font-size: 0.65rem; font-weight: 700; color: #fff;
+      display: flex; align-items: center; justify-content: center; padding: 0 5px;
+    }
+    [dir="rtl"] .nav-badge { margin-left: 0; margin-right: auto; }
+
+    /* Sidebar footer */
+    .sidebar-footer {
+      padding: 12px 10px 16px;
+      border-top: 1px solid var(--bg-border);
+    }
+    .sidebar-user {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: var(--radius-sm);
+      cursor: pointer; transition: var(--transition);
+    }
+    .sidebar-user:hover { background: rgba(255,255,255,0.05); }
+    .sidebar-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--brand-accent), var(--brand-purple));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .sidebar-user-info { flex: 1; min-width: 0; }
+    .sidebar-user-name { font-size: 0.82rem; font-weight: 600; }
+    .sidebar-user-role { font-size: 0.68rem; color: var(--text-muted); }
+
+    /* ── Topbar ── */
+    .topbar {
+      position: fixed; top: 0; right: 0; z-index: 90;
+      left: var(--sidebar-width);
+      height: var(--topbar-height);
+      background: rgba(6, 14, 30, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--bg-border);
+      display: flex; align-items: center;
+      padding: 0 24px; gap: 16px;
+    }
+    [dir="rtl"] .topbar { left: 0; right: var(--sidebar-width); }
+
+    .topbar-search {
+      flex: 1; max-width: 420px;
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--bg-border-light);
+      border-radius: var(--radius-md); padding: 8px 14px;
+      cursor: text;
+    }
+    .topbar-search input {
+      background: transparent; border: none; outline: none;
+      color: var(--text-primary); font-size: 0.84rem; font-family: inherit;
+      flex: 1;
+    }
+    .topbar-search input::placeholder { color: var(--text-muted); }
+    .topbar-search-icon { color: var(--text-muted); font-size: 0.9rem; }
+
+    .topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+    [dir="rtl"] .topbar-actions { margin-left: 0; margin-right: auto; }
+
+    .topbar-icon-btn {
+      width: 36px; height: 36px; border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--bg-border-light);
+      cursor: pointer; transition: var(--transition); color: var(--text-secondary);
+      font-size: 1rem; position: relative;
+    }
+    .topbar-icon-btn:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+    .topbar-notif-dot {
+      position: absolute; top: 7px; right: 7px;
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--brand-danger); border: 1.5px solid var(--bg-base);
+    }
+
+    .lang-selector {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.04); border: 1px solid var(--bg-border-light);
+      cursor: pointer; transition: var(--transition); color: var(--text-secondary);
+      font-size: 0.8rem; font-weight: 600; position: relative;
+    }
+    .lang-selector:hover { background: rgba(255,255,255,0.08); color: var(--text-primary); }
+
+    .lang-dropdown {
+      position: absolute; top: calc(100% + 8px); right: 0;
+      width: 200px; background: var(--bg-card);
+      border: 1px solid var(--bg-border-light);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-card);
+      overflow: hidden; z-index: 200;
+    }
+    [dir="rtl"] .lang-dropdown { right: auto; left: 0; }
+    .lang-dropdown-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px; cursor: pointer;
+      transition: var(--transition); font-size: 0.84rem; color: var(--text-secondary);
+    }
+    .lang-dropdown-item:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); }
+    .lang-dropdown-item.active { color: var(--brand-accent); }
+    .lang-flag { font-size: 1.1rem; }
+
+    /* ── Main Content ── */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      margin-top: var(--topbar-height);
+      flex: 1; min-height: calc(100vh - var(--topbar-height));
+      padding: 28px; overflow-y: auto;
+    }
+    [dir="rtl"] .main-content { margin-left: 0; margin-right: var(--sidebar-width); }
+
+    /* ── Page ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .page-header { margin-bottom: 24px; }
+    .page-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em; }
+    .page-sub   { color: var(--text-secondary); font-size: 0.88rem; margin-top: 4px; }
+    .page-actions { display: flex; gap: 8px; }
+
+    /* ══════════════════════════════════════════════════════
+       LOADING / TOASTS
+    ══════════════════════════════════════════════════════ */
+    .toast-container {
+      position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+      display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+    }
+    [dir="rtl"] .toast-container { right: auto; left: 24px; align-items: flex-start; }
+    .toast {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 18px; border-radius: var(--radius-md);
+      background: var(--bg-card); border: 1px solid var(--bg-border-light);
+      box-shadow: var(--shadow-card); min-width: 300px;
+      animation: slideInRight 0.3s ease;
+    }
+    [dir="rtl"] .toast { animation: slideInLeft 0.3s ease; }
+    .toast-success { border-left: 3px solid var(--brand-success); }
+    .toast-error   { border-left: 3px solid var(--brand-danger); }
+    .toast-info    { border-left: 3px solid var(--brand-accent); }
+    .toast-msg { font-size: 0.84rem; color: var(--text-primary); flex: 1; }
+    .toast-close { color: var(--text-muted); cursor: pointer; }
+    @keyframes slideInRight { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+    @keyframes slideInLeft  { from { transform: translateX(-100%); opacity:0; } to { transform: translateX(0); opacity:1; } }
+
+    /* Spinner */
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--brand-accent);
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ══════════════════════════════════════════════════════
+       MODAL
+    ══════════════════════════════════════════════════════ */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-border-light);
+      border-radius: var(--radius-xl);
+      padding: 32px; width: 100%; max-width: 560px;
+      box-shadow: var(--shadow-card);
+      animation: modalIn 0.25s ease;
+    }
+    .modal-lg { max-width: 780px; }
+    @keyframes modalIn { from { transform: scale(0.95); opacity:0; } to { transform: scale(1); opacity:1; } }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .modal-title  { font-size: 1.1rem; font-weight: 700; }
+    .modal-close  { cursor: pointer; color: var(--text-muted); font-size: 1.2rem; transition: var(--transition); }
+    .modal-close:hover { color: var(--text-primary); }
+    .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+
+    /* ══════════════════════════════════════════════════════
+       PROGRESS BAR
+    ══════════════════════════════════════════════════════ */
+    .progress-bar {
+      height: 6px; background: rgba(255,255,255,0.06);
+      border-radius: 99px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--brand-accent), var(--brand-accent2));
+      transition: width 0.6s ease;
+    }
+    .progress-fill.green  { background: linear-gradient(90deg, #00D68F, #00B8A9); }
+    .progress-fill.red    { background: linear-gradient(90deg, #FF3B5C, #FF6B35); }
+    .progress-fill.yellow { background: linear-gradient(90deg, #FF9500, #FFD400); }
+    .progress-fill.purple { background: linear-gradient(90deg, #7B5EA7, #A67FD6); }
+
+    /* ══════════════════════════════════════════════════════
+       GAUGE / SCORE
+    ══════════════════════════════════════════════════════ */
+    .score-ring {
+      position: relative; width: 80px; height: 80px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .score-ring svg { position: absolute; top: 0; left: 0; transform: rotate(-90deg); }
+    .score-ring-val { font-size: 1.1rem; font-weight: 800; position: relative; z-index: 1; }
+
+    /* ══════════════════════════════════════════════════════
+       TABLE
+    ══════════════════════════════════════════════════════ */
+    .table-wrap { overflow-x: auto; border-radius: var(--radius-lg); border: 1px solid var(--bg-border); }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: var(--text-muted);
+      background: rgba(255,255,255,0.02);
+      border-bottom: 1px solid var(--bg-border);
+      white-space: nowrap;
+    }
+    [dir="rtl"] thead th { text-align: right; }
+    tbody td {
+      padding: 13px 16px; font-size: 0.84rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* ══════════════════════════════════════════════════════
+       TAB BAR
+    ══════════════════════════════════════════════════════ */
+    .tab-bar {
+      display: flex; gap: 4px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--bg-border);
+      border-radius: var(--radius-md); padding: 4px;
+      width: fit-content;
+    }
+    .tab {
+      padding: 7px 16px; border-radius: 7px; font-size: 0.82rem;
+      font-weight: 600; cursor: pointer; transition: var(--transition);
+      color: var(--text-muted); white-space: nowrap;
+    }
+    .tab.active { background: var(--bg-card); color: var(--text-primary); }
+    .tab:hover:not(.active) { color: var(--text-secondary); }
+
+    /* ══════════════════════════════════════════════════════
+       CHIPS (filter)
+    ══════════════════════════════════════════════════════ */
+    .chip {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 5px 12px; border-radius: 99px;
+      font-size: 0.75rem; font-weight: 600;
+      border: 1px solid var(--bg-border-light);
+      cursor: pointer; transition: var(--transition);
+      color: var(--text-secondary);
+    }
+    .chip:hover { border-color: var(--brand-accent); color: var(--brand-accent); }
+    .chip.active { background: rgba(0,87,255,0.15); border-color: var(--brand-accent); color: var(--brand-accent); }
+
+    /* ══════════════════════════════════════════════════════
+       TOOLTIP
+    ══════════════════════════════════════════════════════ */
+    [data-tip] { position: relative; cursor: pointer; }
+    [data-tip]::after {
+      content: attr(data-tip);
+      position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg-card); border: 1px solid var(--bg-border-light);
+      color: var(--text-primary); font-size: 0.72rem;
+      padding: 4px 10px; border-radius: var(--radius-sm);
+      white-space: nowrap; opacity: 0; pointer-events: none;
+      transition: opacity 0.2s; z-index: 100;
+    }
+    [data-tip]:hover::after { opacity: 1; }
+
+    /* ══════════════════════════════════════════════════════
+       RESPONSIVE
+    ══════════════════════════════════════════════════════ */
+    @media (max-width: 900px) {
+      .login-left { display: none; }
+      .login-right { width: 100%; border-left: none; }
+      .sidebar { transform: translateX(-100%); }
+      [dir="rtl"] .sidebar { transform: translateX(100%); }
+      .sidebar.open { transform: translateX(0); }
+      .topbar { left: 0; }
+      [dir="rtl"] .topbar { right: 0; }
+      .main-content { margin-left: 0; }
+      [dir="rtl"] .main-content { margin-right: 0; }
+    }
+
+    /* ══════════════════════════════════════════════════════
+       SECTION ANIMATIONS
+    ══════════════════════════════════════════════════════ */
+    .fade-in { animation: fadeIn 0.4s ease both; }
+    @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform:none; } }
+    .stagger > * { animation: fadeIn 0.4s ease both; }
+    .stagger > *:nth-child(1) { animation-delay: 0.05s; }
+    .stagger > *:nth-child(2) { animation-delay: 0.10s; }
+    .stagger > *:nth-child(3) { animation-delay: 0.15s; }
+    .stagger > *:nth-child(4) { animation-delay: 0.20s; }
+    .stagger > *:nth-child(5) { animation-delay: 0.25s; }
+    .stagger > *:nth-child(6) { animation-delay: 0.30s; }
+
+    /* ══════════════════════════════════════════════════════
+       FLOATING ORBS (login decoration)
+    ══════════════════════════════════════════════════════ */
+    .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(60px); pointer-events: none; opacity: 0.4;
+      animation: orbFloat 8s ease-in-out infinite alternate;
+    }
+    .orb-1 { width: 300px; height: 300px; background: var(--brand-accent); top: 10%; left: 15%; animation-delay: 0s; }
+    .orb-2 { width: 200px; height: 200px; background: var(--brand-accent2); bottom: 20%; right: 20%; animation-delay: -3s; }
+    .orb-3 { width: 150px; height: 150px; background: var(--brand-purple); top: 50%; right: 30%; animation-delay: -6s; }
+    @keyframes orbFloat { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(20px,-20px) scale(1.05); } }
+
+    /* Pulse dot */
+    .pulse { display: inline-flex; position: relative; }
+    .pulse::after {
+      content: ''; position: absolute; inset: -3px; border-radius: 50%;
+      background: var(--brand-success); opacity: 0.4;
+      animation: pulseAnim 1.5s ease-out infinite;
+    }
+    @keyframes pulseAnim { 0% { transform: scale(1); opacity: 0.4; } 100% { transform: scale(2.5); opacity: 0; } }
+
+    /* Select */
+    select {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--bg-border-light);
+      border-radius: var(--radius-md); padding: 10px 14px;
+      color: var(--text-primary); font-size: 0.85rem; font-family: inherit;
+      outline: none; cursor: pointer; transition: var(--transition);
+    }
+    select:focus { border-color: var(--brand-accent); }
+    select option { background: var(--bg-card); }
+
+    /* Checkbox */
+    .checkbox-group { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .checkbox-group input[type="checkbox"] { accent-color: var(--brand-accent); width: 16px; height: 16px; }
+
+    /* Steps */
+    .steps { display: flex; align-items: center; gap: 0; margin-bottom: 32px; }
+    .step { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .step-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.78rem; font-weight: 700; flex-shrink: 0;
+      background: rgba(255,255,255,0.06); border: 1px solid var(--bg-border-light);
+      color: var(--text-muted);
+    }
+    .step.active .step-num { background: var(--brand-accent); border-color: var(--brand-accent); color: #fff; }
+    .step.done  .step-num { background: var(--brand-success); border-color: var(--brand-success); color: #fff; }
+    .step-label { font-size: 0.78rem; color: var(--text-muted); }
+    .step.active .step-label { color: var(--text-primary); font-weight: 600; }
+    .step-line { flex: 1; height: 1px; background: var(--bg-border); margin: 0 8px; }
+    .step.done + .step .step-line { background: var(--brand-success); }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center; padding: 60px 20px;
+      display: flex; flex-direction: column; align-items: center; gap: 12px;
+    }
+    .empty-icon { font-size: 3rem; opacity: 0.3; }
+    .empty-title { font-size: 1rem; font-weight: 600; }
+    .empty-sub { font-size: 0.84rem; color: var(--text-muted); max-width: 300px; }
+
+    /* Gradient text */
+    .gradient-text {
+      background: linear-gradient(135deg, var(--brand-accent), var(--brand-accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     LOGIN SCREEN
+══════════════════════════════════════════════════════════════ -->
+<div id="screen-login">
+  <div class="login-bg"></div>
+  <div class="login-grid"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+
+  <!-- Left panel -->
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="login-brand-icon">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <path d="M13 2L22 7V19L13 24L4 19V7L13 2Z" stroke="white" stroke-width="2" fill="none"/>
+          <path d="M13 8L17 10.5V15.5L13 18L9 15.5V10.5L13 8Z" fill="white" opacity="0.9"/>
+        </svg>
+      </div>
+      <div>
+        <div class="login-brand-name">Brandvakt Academy</div>
+        <div class="login-brand-sub">Enterprise Training Platform</div>
+      </div>
+    </div>
+
+    <h1 class="login-hero-title" data-i18n="hero_title">Conscientização Corporativa em Escala Global</h1>
+    <p class="login-hero-sub" data-i18n="hero_sub">
+      Plataforma SaaS enterprise para distribuição, monitoramento e certificação de treinamentos corporativos em Cybersecurity, Compliance e Governança.
+    </p>
+
+    <div class="login-stats">
+      <div>
+        <div class="login-stat-val">80+</div>
+        <div class="login-stat-label" data-i18n="stat_langs">Idiomas</div>
+      </div>
+      <div>
+        <div class="login-stat-val">SCORM</div>
+        <div class="login-stat-label" data-i18n="stat_compat">1.2 &amp; 2004</div>
+      </div>
+      <div>
+        <div class="login-stat-val">ISO</div>
+        <div class="login-stat-label" data-i18n="stat_cert">27001 Ready</div>
+      </div>
+      <div>
+        <div class="login-stat-val">Zero</div>
+        <div class="login-stat-label" data-i18n="stat_trust">Trust Arch</div>
+      </div>
+    </div>
+
+    <div class="login-langs">
+      <div class="login-lang-pill">🇧🇷 Português</div>
+      <div class="login-lang-pill">🇺🇸 English</div>
+      <div class="login-lang-pill">🇪🇸 Español</div>
+      <div class="login-lang-pill">🇫🇷 Français</div>
+      <div class="login-lang-pill">🇸🇦 العربية</div>
+      <div class="login-lang-pill" style="opacity:.5">+75 more</div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="login-right">
+    <!-- Step 1: Credentials -->
+    <div id="login-step-1">
+      <div class="login-brand" style="margin-bottom:32px;">
+        <div class="login-brand-icon" style="width:40px;height:40px;">
+          <svg width="22" height="22" viewBox="0 0 26 26" fill="none">
+            <path d="M13 2L22 7V19L13 24L4 19V7L13 2Z" stroke="white" stroke-width="2" fill="none"/>
+            <path d="M13 8L17 10.5V15.5L13 18L9 15.5V10.5L13 8Z" fill="white" opacity="0.9"/>
+          </svg>
+        </div>
+        <div>
+          <div class="login-brand-name" style="font-size:1rem;">Brandvakt Academy</div>
+        </div>
+      </div>
+
+      <div class="login-form-title" data-i18n="signin_title">Acesse sua plataforma</div>
+      <div class="login-form-sub" data-i18n="signin_sub">Ambiente corporativo protegido — credenciais da sua organização</div>
+
+      <!-- SSO buttons -->
+      <button class="login-sso-btn" onclick="loginSSO('microsoft')">
+        <svg width="18" height="18" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/><rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/></svg>
+        <span data-i18n="sso_microsoft">Entrar com Microsoft 365</span>
+      </button>
+      <button class="login-sso-btn" onclick="loginSSO('google')">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        <span data-i18n="sso_google">Entrar com Google Workspace</span>
+      </button>
+      <button class="login-sso-btn" onclick="loginSSO('okta')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#007DC1"><circle cx="12" cy="12" r="10" fill="none" stroke="#007DC1" stroke-width="2"/><circle cx="12" cy="12" r="4.5" fill="#007DC1"/></svg>
+        <span data-i18n="sso_okta">Entrar com Okta / SAML</span>
+      </button>
+
+      <div class="login-divider">
+        <div class="login-divider-line"></div>
+        <div class="login-divider-text" data-i18n="or_email">ou com e-mail</div>
+        <div class="login-divider-line"></div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="input-group">
+          <label data-i18n="label_email">E-mail corporativo</label>
+          <input class="input" type="email" id="login-email" placeholder="voce@empresa.com" />
+        </div>
+        <div class="input-group">
+          <label data-i18n="label_password">Senha</label>
+          <div class="relative">
+            <input class="input" type="password" id="login-password" placeholder="••••••••••" />
+            <span onclick="togglePwd()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-muted);font-size:1rem;">👁</span>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <label class="checkbox-group">
+            <input type="checkbox" /> <span style="font-size:0.8rem;color:var(--text-secondary)" data-i18n="remember_me">Lembrar dispositivo</span>
+          </label>
+          <a href="#" style="font-size:0.8rem;color:var(--text-accent);" data-i18n="forgot_pass">Esqueci a senha</a>
+        </div>
+      </div>
+
+      <button class="login-submit" onclick="goToMFA()" style="margin-top:20px;" data-i18n="btn_continue">
+        Continuar →
+      </button>
+
+      <p style="text-align:center;margin-top:20px;font-size:0.75rem;color:var(--text-muted);">
+        <span data-i18n="no_account">Sem acesso?</span>
+        <a href="#" style="color:var(--text-accent);" data-i18n="contact_admin">Fale com seu administrador</a>
+      </p>
+    </div>
+
+    <!-- Step 2: MFA -->
+    <div id="login-step-2" class="hidden">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="width:56px;height:56px;background:rgba(0,87,255,0.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.6rem;">🔐</div>
+        <div class="login-form-title" data-i18n="mfa_title">Verificação em Dois Fatores</div>
+        <p style="font-size:0.84rem;color:var(--text-secondary);margin-top:8px;" data-i18n="mfa_sub">Insira o código do seu aplicativo autenticador</p>
+      </div>
+
+      <div class="mfa-digits">
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,0)" />
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,1)" />
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,2)" />
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,3)" />
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,4)" />
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,5)" />
+      </div>
+
+      <button class="login-submit" onclick="doLogin()" data-i18n="btn_verify">Verificar e Entrar</button>
+      <p style="text-align:center;margin-top:16px;font-size:0.78rem;color:var(--text-muted);">
+        <span data-i18n="mfa_resend">Não recebeu?</span>
+        <a href="#" style="color:var(--text-accent);" data-i18n="mfa_resend_link">Reenviar código</a>
+      </p>
+      <p style="text-align:center;margin-top:8px;font-size:0.78rem;">
+        <a href="#" onclick="document.getElementById('login-step-1').classList.remove('hidden');document.getElementById('login-step-2').classList.add('hidden');return false;" style="color:var(--text-muted);" data-i18n="back">← Voltar</a>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════════════════════════════ -->
+<div id="screen-app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon">
+          <svg width="20" height="20" viewBox="0 0 26 26" fill="none">
+            <path d="M13 2L22 7V19L13 24L4 19V7L13 2Z" stroke="white" stroke-width="1.5" fill="none"/>
+            <path d="M13 8L17 10.5V15.5L13 18L9 15.5V10.5L13 8Z" fill="white" opacity="0.9"/>
+          </svg>
+        </div>
+        <div class="sidebar-brand-text">
+          <div class="sidebar-brand-name">Brandvakt</div>
+          <div class="sidebar-brand-sub">Academy</div>
+        </div>
+      </div>
+      <div class="sidebar-tenant" onclick="showModal('modal-tenant')">
+        <div class="sidebar-tenant-dot pulse"></div>
+        <div style="flex:1;min-width:0;">
+          <div class="sidebar-tenant-name truncate" id="tenant-name">Empresa Demo S.A.</div>
+          <div class="sidebar-tenant-plan">Enterprise</div>
+        </div>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <!-- Overview -->
+      <div class="nav-section-title" data-i18n="nav_overview">Visão Geral</div>
+      <a class="nav-item active" data-page="dashboard" onclick="navTo('dashboard',this)">
+        <span class="nav-item-icon">⊞</span>
+        <span data-i18n="nav_dashboard">Dashboard</span>
+      </a>
+
+      <!-- Training -->
+      <div class="nav-section-title" data-i18n="nav_training">Treinamento</div>
+      <a class="nav-item" data-page="library" onclick="navTo('library',this)">
+        <span class="nav-item-icon">📚</span>
+        <span data-i18n="nav_library">Biblioteca</span>
+      </a>
+      <a class="nav-item" data-page="trails" onclick="navTo('trails',this)">
+        <span class="nav-item-icon">🛤</span>
+        <span data-i18n="nav_trails">Trilhas</span>
+      </a>
+      <a class="nav-item" data-page="scorm" onclick="navTo('scorm',this)">
+        <span class="nav-item-icon">📦</span>
+        <span data-i18n="nav_scorm">SCORM Upload</span>
+        <span class="nav-badge">3</span>
+      </a>
+
+      <!-- Compliance -->
+      <div class="nav-section-title" data-i18n="nav_compliance">Compliance</div>
+      <a class="nav-item" data-page="assignments" onclick="navTo('assignments',this)">
+        <span class="nav-item-icon">📋</span>
+        <span data-i18n="nav_assignments">Atribuições</span>
+      </a>
+      <a class="nav-item" data-page="certificates" onclick="navTo('certificates',this)">
+        <span class="nav-item-icon">🏆</span>
+        <span data-i18n="nav_certificates">Certificados</span>
+      </a>
+      <a class="nav-item" data-page="risk" onclick="navTo('risk',this)">
+        <span class="nav-item-icon">🛡</span>
+        <span data-i18n="nav_risk">Human Risk</span>
+      </a>
+
+      <!-- People -->
+      <div class="nav-section-title" data-i18n="nav_people">Pessoas</div>
+      <a class="nav-item" data-page="users" onclick="navTo('users',this)">
+        <span class="nav-item-icon">👥</span>
+        <span data-i18n="nav_users">Usuários</span>
+      </a>
+      <a class="nav-item" data-page="departments" onclick="navTo('departments',this)">
+        <span class="nav-item-icon">🏢</span>
+        <span data-i18n="nav_departments">Departamentos</span>
+      </a>
+
+      <!-- Intelligence -->
+      <div class="nav-section-title" data-i18n="nav_intelligence">Inteligência</div>
+      <a class="nav-item" data-page="reports" onclick="navTo('reports',this)">
+        <span class="nav-item-icon">📊</span>
+        <span data-i18n="nav_reports">Relatórios</span>
+      </a>
+      <a class="nav-item" data-page="ai" onclick="navTo('ai',this)">
+        <span class="nav-item-icon">🤖</span>
+        <span data-i18n="nav_ai">IA Assistente</span>
+      </a>
+
+      <!-- Admin -->
+      <div class="nav-section-title" data-i18n="nav_admin">Administração</div>
+      <a class="nav-item" data-page="settings" onclick="navTo('settings',this)">
+        <span class="nav-item-icon">⚙️</span>
+        <span data-i18n="nav_settings">Configurações</span>
+      </a>
+      <a class="nav-item" data-page="integrations" onclick="navTo('integrations',this)">
+        <span class="nav-item-icon">🔌</span>
+        <span data-i18n="nav_integrations">Integrações</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="user-avatar">AL</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name" id="user-name">Admin Local</div>
+          <div class="sidebar-user-role" id="user-role" data-i18n="role_admin">Super Admin</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </aside>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <button class="topbar-icon-btn" id="sidebar-toggle" onclick="toggleSidebar()" style="display:none;">
+      ☰
+    </button>
+    <div class="topbar-search">
+      <span class="topbar-search-icon">🔍</span>
+      <input type="text" placeholder="Buscar treinamentos, usuários, relatórios..." data-i18n-placeholder="search_placeholder" />
+    </div>
+    <div class="topbar-actions">
+      <div class="topbar-icon-btn" data-tip="Notificações">
+        🔔
+        <span class="topbar-notif-dot"></span>
+      </div>
+      <div class="topbar-icon-btn" data-tip="Ajuda">❓</div>
+
+      <!-- Language selector -->
+      <div class="lang-selector relative" onclick="toggleLangDropdown()">
+        <span id="current-flag">🇧🇷</span>
+        <span id="current-lang-code" style="font-size:0.78rem;">PT</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <div class="lang-dropdown hidden" id="lang-dropdown">
+          <div class="lang-dropdown-item active" onclick="setLang('pt','🇧🇷','PT')">
+            <span class="lang-flag">🇧🇷</span> Português
+          </div>
+          <div class="lang-dropdown-item" onclick="setLang('en','🇺🇸','EN')">
+            <span class="lang-flag">🇺🇸</span> English
+          </div>
+          <div class="lang-dropdown-item" onclick="setLang('es','🇪🇸','ES')">
+            <span class="lang-flag">🇪🇸</span> Español
+          </div>
+          <div class="lang-dropdown-item" onclick="setLang('fr','🇫🇷','FR')">
+            <span class="lang-flag">🇫🇷</span> Français
+          </div>
+          <div class="lang-dropdown-item" onclick="setLang('ar','🇸🇦','AR')">
+            <span class="lang-flag">🇸🇦</span> العربية
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content" id="main-content">
+
+    <!-- PAGES WILL BE INJECTED BY JS -->
+    <div id="pages-container"></div>
+
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL: Tenant Switcher
+══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay hidden" id="modal-tenant" onclick="closeModalOutside(event,'modal-tenant')">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 class="modal-title" data-i18n="modal_tenant_title">Trocar Empresa</h3>
+      <span class="modal-close" onclick="hideModal('modal-tenant')">✕</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;" id="tenant-list">
+      <!-- populated by JS -->
+    </div>
+    <div class="divider"></div>
+    <button class="btn btn-secondary w-full" data-i18n="btn_add_tenant">
+      + Adicionar Empresa
+    </button>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideModal('modal-tenant')" data-i18n="btn_cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TOAST CONTAINER
+══════════════════════════════════════════════════════════════ -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     JAVASCRIPT — CORE
+══════════════════════════════════════════════════════════════ -->
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+const APP = {
+  lang: 'pt',
+  dir: 'ltr',
+  currentPage: 'dashboard',
+  user: { name: 'Admin Local', role: 'Super Admin', initials: 'AL' },
+  tenant: { name: 'Empresa Demo S.A.', plan: 'Enterprise' },
+  tenants: [
+    { id: 1, name: 'Empresa Demo S.A.',   plan: 'Enterprise', active: true,  users: 340 },
+    { id: 2, name: 'Grupo Veritaz',        plan: 'Enterprise', active: false, users: 1240 },
+    { id: 3, name: 'TechCorp Brasil',      plan: 'Business',   active: false, users: 87 },
+  ]
+};
+
+// ─────────────────────────────────────────────
+// I18N
+// ─────────────────────────────────────────────
+const i18n = {
+  pt: {
+    hero_title: 'Conscientização Corporativa em Escala Global',
+    hero_sub: 'Plataforma SaaS enterprise para distribuição, monitoramento e certificação de treinamentos corporativos.',
+    stat_langs: 'Idiomas', stat_compat: '1.2 & 2004', stat_cert: '27001 Ready', stat_trust: 'Trust Arch',
+    signin_title: 'Acesse sua plataforma', signin_sub: 'Ambiente corporativo protegido',
+    sso_microsoft: 'Entrar com Microsoft 365', sso_google: 'Entrar com Google Workspace', sso_okta: 'Entrar com Okta / SAML',
+    or_email: 'ou com e-mail', label_email: 'E-mail corporativo', label_password: 'Senha',
+    remember_me: 'Lembrar dispositivo', forgot_pass: 'Esqueci a senha', btn_continue: 'Continuar →',
+    no_account: 'Sem acesso?', contact_admin: 'Fale com seu administrador',
+    mfa_title: 'Verificação em Dois Fatores', mfa_sub: 'Insira o código do seu aplicativo autenticador',
+    btn_verify: 'Verificar e Entrar', mfa_resend: 'Não recebeu?', mfa_resend_link: 'Reenviar código', back: '← Voltar',
+    nav_overview: 'Visão Geral', nav_dashboard: 'Dashboard', nav_training: 'Treinamento',
+    nav_library: 'Biblioteca', nav_trails: 'Trilhas', nav_scorm: 'SCORM Upload',
+    nav_compliance: 'Compliance', nav_assignments: 'Atribuições', nav_certificates: 'Certificados', nav_risk: 'Human Risk',
+    nav_people: 'Pessoas', nav_users: 'Usuários', nav_departments: 'Departamentos',
+    nav_intelligence: 'Inteligência', nav_reports: 'Relatórios', nav_ai: 'IA Assistente',
+    nav_admin: 'Administração', nav_settings: 'Configurações', nav_integrations: 'Integrações',
+    role_admin: 'Super Admin',
+    modal_tenant_title: 'Trocar Empresa', btn_add_tenant: '+ Adicionar Empresa', btn_cancel: 'Cancelar',
+    search_placeholder: 'Buscar treinamentos, usuários, relatórios...',
+  },
+  en: {
+    hero_title: 'Corporate Awareness at Global Scale',
+    hero_sub: 'Enterprise SaaS platform for distributing, monitoring and certifying corporate training.',
+    stat_langs: 'Languages', stat_compat: '1.2 & 2004', stat_cert: '27001 Ready', stat_trust: 'Trust Arch',
+    signin_title: 'Access your platform', signin_sub: 'Protected corporate environment',
+    sso_microsoft: 'Sign in with Microsoft 365', sso_google: 'Sign in with Google Workspace', sso_okta: 'Sign in with Okta / SAML',
+    or_email: 'or with email', label_email: 'Corporate email', label_password: 'Password',
+    remember_me: 'Remember device', forgot_pass: 'Forgot password', btn_continue: 'Continue →',
+    no_account: 'No access?', contact_admin: 'Contact your administrator',
+    mfa_title: 'Two-Factor Verification', mfa_sub: 'Enter the code from your authenticator app',
+    btn_verify: 'Verify & Sign In', mfa_resend: "Didn't receive?", mfa_resend_link: 'Resend code', back: '← Back',
+    nav_overview: 'Overview', nav_dashboard: 'Dashboard', nav_training: 'Training',
+    nav_library: 'Library', nav_trails: 'Paths', nav_scorm: 'SCORM Upload',
+    nav_compliance: 'Compliance', nav_assignments: 'Assignments', nav_certificates: 'Certificates', nav_risk: 'Human Risk',
+    nav_people: 'People', nav_users: 'Users', nav_departments: 'Departments',
+    nav_intelligence: 'Intelligence', nav_reports: 'Reports', nav_ai: 'AI Assistant',
+    nav_admin: 'Administration', nav_settings: 'Settings', nav_integrations: 'Integrations',
+    role_admin: 'Super Admin',
+    modal_tenant_title: 'Switch Company', btn_add_tenant: '+ Add Company', btn_cancel: 'Cancel',
+    search_placeholder: 'Search trainings, users, reports...',
+  },
+  es: {
+    hero_title: 'Concienciación Corporativa a Escala Global',
+    hero_sub: 'Plataforma SaaS enterprise para distribuir, monitorizar y certificar formaciones corporativas.',
+    stat_langs: 'Idiomas', stat_compat: '1.2 y 2004', stat_cert: '27001 Ready', stat_trust: 'Arch. Zero Trust',
+    signin_title: 'Accede a tu plataforma', signin_sub: 'Entorno corporativo protegido',
+    sso_microsoft: 'Entrar con Microsoft 365', sso_google: 'Entrar con Google Workspace', sso_okta: 'Entrar con Okta / SAML',
+    or_email: 'o con correo', label_email: 'Correo corporativo', label_password: 'Contraseña',
+    remember_me: 'Recordar dispositivo', forgot_pass: 'Olvidé mi contraseña', btn_continue: 'Continuar →',
+    no_account: '¿Sin acceso?', contact_admin: 'Contacta a tu administrador',
+    mfa_title: 'Verificación en Dos Factores', mfa_sub: 'Ingresa el código de tu app autenticadora',
+    btn_verify: 'Verificar y Entrar', mfa_resend: '¿No recibiste?', mfa_resend_link: 'Reenviar código', back: '← Volver',
+    nav_overview: 'Resumen', nav_dashboard: 'Panel', nav_training: 'Formación',
+    nav_library: 'Biblioteca', nav_trails: 'Rutas', nav_scorm: 'Subida SCORM',
+    nav_compliance: 'Cumplimiento', nav_assignments: 'Asignaciones', nav_certificates: 'Certificados', nav_risk: 'Riesgo Humano',
+    nav_people: 'Personas', nav_users: 'Usuarios', nav_departments: 'Departamentos',
+    nav_intelligence: 'Inteligencia', nav_reports: 'Informes', nav_ai: 'Asistente IA',
+    nav_admin: 'Administración', nav_settings: 'Configuración', nav_integrations: 'Integraciones',
+    role_admin: 'Super Admin',
+    modal_tenant_title: 'Cambiar Empresa', btn_add_tenant: '+ Añadir Empresa', btn_cancel: 'Cancelar',
+    search_placeholder: 'Buscar formaciones, usuarios, informes...',
+  },
+  fr: {
+    hero_title: 'Sensibilisation Corporative à l\'Échelle Mondiale',
+    hero_sub: 'Plateforme SaaS enterprise pour distribuer, suivre et certifier les formations corporatives.',
+    stat_langs: 'Langues', stat_compat: '1.2 & 2004', stat_cert: '27001 Prêt', stat_trust: 'Arch. Zero Trust',
+    signin_title: 'Accédez à votre plateforme', signin_sub: 'Environnement corporatif protégé',
+    sso_microsoft: 'Se connecter avec Microsoft 365', sso_google: 'Se connecter avec Google Workspace', sso_okta: 'Se connecter avec Okta / SAML',
+    or_email: 'ou par email', label_email: 'Email professionnel', label_password: 'Mot de passe',
+    remember_me: 'Se souvenir de moi', forgot_pass: 'Mot de passe oublié', btn_continue: 'Continuer →',
+    no_account: 'Pas d\'accès?', contact_admin: 'Contactez votre administrateur',
+    mfa_title: 'Vérification en Deux Étapes', mfa_sub: 'Entrez le code de votre application d\'authentification',
+    btn_verify: 'Vérifier et Entrer', mfa_resend: 'Pas reçu?', mfa_resend_link: 'Renvoyer le code', back: '← Retour',
+    nav_overview: 'Vue d\'ensemble', nav_dashboard: 'Tableau de bord', nav_training: 'Formation',
+    nav_library: 'Bibliothèque', nav_trails: 'Parcours', nav_scorm: 'Upload SCORM',
+    nav_compliance: 'Conformité', nav_assignments: 'Attributions', nav_certificates: 'Certificats', nav_risk: 'Risque Humain',
+    nav_people: 'Personnes', nav_users: 'Utilisateurs', nav_departments: 'Départements',
+    nav_intelligence: 'Intelligence', nav_reports: 'Rapports', nav_ai: 'Assistant IA',
+    nav_admin: 'Administration', nav_settings: 'Paramètres', nav_integrations: 'Intégrations',
+    role_admin: 'Super Admin',
+    modal_tenant_title: 'Changer d\'Entreprise', btn_add_tenant: '+ Ajouter une Entreprise', btn_cancel: 'Annuler',
+    search_placeholder: 'Rechercher formations, utilisateurs, rapports...',
+  },
+  ar: {
+    hero_title: 'التوعية المؤسسية على نطاق عالمي',
+    hero_sub: 'منصة SaaS للمؤسسات لتوزيع ومراقبة وإصدار شهادات التدريب المؤسسي.',
+    stat_langs: 'لغة', stat_compat: '1.2 و 2004', stat_cert: 'جاهز لـ 27001', stat_trust: 'بنية Zero Trust',
+    signin_title: 'الوصول إلى منصتك', signin_sub: 'بيئة مؤسسية محمية',
+    sso_microsoft: 'الدخول عبر Microsoft 365', sso_google: 'الدخول عبر Google Workspace', sso_okta: 'الدخول عبر Okta / SAML',
+    or_email: 'أو بالبريد الإلكتروني', label_email: 'البريد المؤسسي', label_password: 'كلمة المرور',
+    remember_me: 'تذكر الجهاز', forgot_pass: 'نسيت كلمة المرور', btn_continue: 'متابعة ←',
+    no_account: 'لا يوجد وصول؟', contact_admin: 'تواصل مع مسؤولك',
+    mfa_title: 'التحقق بخطوتين', mfa_sub: 'أدخل الرمز من تطبيق المصادقة',
+    btn_verify: 'تحقق وادخل', mfa_resend: 'لم تستلم؟', mfa_resend_link: 'إعادة إرسال الرمز', back: 'رجوع ←',
+    nav_overview: 'نظرة عامة', nav_dashboard: 'لوحة التحكم', nav_training: 'التدريب',
+    nav_library: 'المكتبة', nav_trails: 'المسارات', nav_scorm: 'رفع SCORM',
+    nav_compliance: 'الامتثال', nav_assignments: 'التكليفات', nav_certificates: 'الشهادات', nav_risk: 'مخاطر الإنسان',
+    nav_people: 'الأشخاص', nav_users: 'المستخدمون', nav_departments: 'الأقسام',
+    nav_intelligence: 'الذكاء', nav_reports: 'التقارير', nav_ai: 'مساعد الذكاء الاصطناعي',
+    nav_admin: 'الإدارة', nav_settings: 'الإعدادات', nav_integrations: 'التكاملات',
+    role_admin: 'مشرف عام',
+    modal_tenant_title: 'تغيير الشركة', btn_add_tenant: '+ إضافة شركة', btn_cancel: 'إلغاء',
+    search_placeholder: 'ابحث عن تدريبات، مستخدمين، تقارير...',
+  }
+};
+
+function t(key) {
+  return (i18n[APP.lang] || i18n.pt)[key] || key;
+}
+
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const val = t(key);
+    if (val) el.textContent = val;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.dataset.i18nPlaceholder;
+    const val = t(key);
+    if (val) el.placeholder = val;
+  });
+}
+
+// ─────────────────────────────────────────────
+// LANGUAGE
+// ─────────────────────────────────────────────
+function setLang(lang, flag, code) {
+  APP.lang = lang;
+  const isRTL = lang === 'ar';
+  APP.dir = isRTL ? 'rtl' : 'ltr';
+  document.documentElement.lang = lang;
+  document.documentElement.dir = APP.dir;
+  document.getElementById('current-flag').textContent = flag;
+  document.getElementById('current-lang-code').textContent = code;
+  document.querySelectorAll('.lang-dropdown-item').forEach(el => el.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  closeLangDropdown();
+  applyI18n();
+  // Re-render current page for language changes
+  renderPage(APP.currentPage);
+  showToast(lang === 'ar' ? 'تم تغيير اللغة إلى العربية' : `Language changed to ${code}`, 'info');
+}
+
+function toggleLangDropdown() {
+  const dd = document.getElementById('lang-dropdown');
+  dd.classList.toggle('hidden');
+  event.stopPropagation();
+}
+function closeLangDropdown() {
+  document.getElementById('lang-dropdown').classList.add('hidden');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.lang-selector')) closeLangDropdown();
+});
+
+// ─────────────────────────────────────────────
+// LOGIN FLOW
+// ─────────────────────────────────────────────
+function togglePwd() {
+  const p = document.getElementById('login-password');
+  p.type = p.type === 'password' ? 'text' : 'password';
+}
+
+function goToMFA() {
+  const email = document.getElementById('login-email').value;
+  if (!email) {
+    showToast(t('label_email') + ' é obrigatório', 'error');
+    return;
+  }
+  document.getElementById('login-step-1').classList.add('hidden');
+  document.getElementById('login-step-2').classList.remove('hidden');
+  // Demo: auto-fill MFA
+  setTimeout(() => {
+    document.querySelectorAll('.mfa-digit').forEach((el, i) => {
+      el.value = String(Math.floor(Math.random()*10));
+    });
+  }, 400);
+}
+
+function nextDigit(el, idx) {
+  if (el.value && idx < 5) {
+    document.querySelectorAll('.mfa-digit')[idx+1].focus();
+  }
+}
+
+function loginSSO(provider) {
+  showToast(`Redirecionando para ${provider}...`, 'info');
+  setTimeout(() => doLogin(), 1000);
+}
+
+function doLogin() {
+  showToast('Autenticando...', 'info');
+  setTimeout(() => {
+    document.getElementById('screen-login').style.display = 'none';
+    const app = document.getElementById('screen-app');
+    app.style.display = 'flex';
+    app.classList.add('active');
+    initApp();
+    showToast('Bem-vindo à Brandvakt Academy! 🛡', 'success');
+  }, 800);
+}
+
+// ─────────────────────────────────────────────
+// SIDEBAR / NAVIGATION
+// ─────────────────────────────────────────────
+function navTo(page, el) {
+  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+  APP.currentPage = page;
+  renderPage(page);
+}
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ─────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────
+function showModal(id) {
+  document.getElementById(id).classList.remove('hidden');
+}
+function hideModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+function closeModalOutside(e, id) {
+  if (e.target.id === id) hideModal(id);
+}
+
+// ─────────────────────────────────────────────
+// TOAST
+// ─────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const id = 'toast-' + Date.now();
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.id = id;
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span><span class="toast-close" onclick="document.getElementById('${id}').remove()">✕</span>`;
+  c.appendChild(el);
+  setTimeout(() => el.remove && el.remove(), 4000);
+}
+
+// ─────────────────────────────────────────────
+// TENANT LIST
+// ─────────────────────────────────────────────
+function renderTenantList() {
+  const el = document.getElementById('tenant-list');
+  el.innerHTML = APP.tenants.map(t => `
+    <div onclick="switchTenant(${t.id})" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--radius-md);border:1px solid ${t.active?'rgba(0,87,255,0.3)':'var(--bg-border)'};background:${t.active?'rgba(0,87,255,0.08)':'rgba(255,255,255,0.02)'};cursor:pointer;transition:var(--transition);">
+      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--brand-accent),var(--brand-purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;color:#fff;flex-shrink:0;">
+        ${t.name.slice(0,2).toUpperCase()}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.88rem;font-weight:600;">${t.name}</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);">${t.users.toLocaleString()} usuários · ${t.plan}</div>
+      </div>
+      ${t.active ? '<span style="color:var(--brand-success);font-size:0.9rem;">✓</span>' : ''}
+    </div>
+  `).join('');
+}
+
+function switchTenant(id) {
+  APP.tenants.forEach(t => t.active = t.id === id);
+  const tenant = APP.tenants.find(t => t.id === id);
+  APP.tenant = tenant;
+  document.getElementById('tenant-name').textContent = tenant.name;
+  hideModal('modal-tenant');
+  showToast(`Empresa alterada: ${tenant.name}`, 'success');
+  renderPage(APP.currentPage);
+}
+
+// ─────────────────────────────────────────────
+// INIT APP
+// ─────────────────────────────────────────────
+function initApp() {
+  applyI18n();
+  renderTenantList();
+  renderPage('dashboard');
+
+  // Responsive
+  const mq = window.matchMedia('(max-width: 900px)');
+  if (mq.matches) {
+    document.getElementById('sidebar-toggle').style.display = 'flex';
+  }
+  mq.addEventListener('change', e => {
+    document.getElementById('sidebar-toggle').style.display = e.matches ? 'flex' : 'none';
+  });
+}
+
+// ─────────────────────────────────────────────
+// PAGE RENDERER (delegated to pages.js sections)
+// ─────────────────────────────────────────────
+function renderPage(page) {
+  const container = document.getElementById('pages-container');
+  if (window['renderPage_' + page]) {
+    container.innerHTML = window['renderPage_' + page]();
+    container.className = 'page active fade-in';
+    applyI18n();
+    if (window['initPage_' + page]) window['initPage_' + page]();
+  } else {
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🚧</div><div class="empty-title">Em construção</div><div class="empty-sub">Página "${page}" será carregada em breve.</div></div>`;
+  }
+}
+
+// ─────────────────────────────────────────────
+// SVG HELPERS
+// ─────────────────────────────────────────────
+function scoreRingSVG(value, color, size=80, stroke=6) {
+  const r = (size - stroke*2) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (value / 100) * circ;
+  return `
+    <div class="score-ring" style="width:${size}px;height:${size}px;">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="${stroke}"/>
+        <circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"
+          stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/>
+      </svg>
+      <span class="score-ring-val" style="color:${color};font-size:${size>60?'1rem':'0.78rem'};">${value}</span>
+    </div>`;
+}
+
+// ─────────────────────────────────────────────
+// MINI LINE CHART (canvas-free SVG)
+// ─────────────────────────────────────────────
+function sparklineSVG(data, color='#0057FF', w=120, h=40) {
+  const max = Math.max(...data), min = Math.min(...data);
+  const range = max - min || 1;
+  const xs = data.map((_, i) => (i / (data.length - 1)) * w);
+  const ys = data.map(v => h - ((v - min) / range) * (h - 4) - 2);
+  const path = xs.map((x, i) => `${i===0?'M':'L'}${x},${ys[i]}`).join(' ');
+  const area = `${path} L${w},${h} L0,${h} Z`;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <defs><linearGradient id="sg${color.replace('#','')}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${color}" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>
+    <path d="${area}" fill="url(#sg${color.replace('#','')})" />
+    <path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+}
+
+// Expose for demo
+window.APP = APP;
+window.t = t;
+window.scoreRingSVG = scoreRingSVG;
+window.sparklineSVG = sparklineSVG;
+window.showToast = showToast;
+window.showModal = showModal;
+window.hideModal = hideModal;
+window.navTo = navTo;
+</script>
+
+</body>
+</html>

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="pt-BR" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Brandvakt Academy — Enterprise Training Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+
+  <!-- ══════════════════════════════════════════════
+       DESIGN SYSTEM (inlined from index.html)
+  ══════════════════════════════════════════════ -->
+  <style>
+    :root{--brand-primary:#0A1628;--brand-secondary:#1A2F5A;--brand-accent:#0057FF;--brand-accent2:#00C6FF;--brand-glow:rgba(0,87,255,.15);--brand-danger:#FF3B5C;--brand-warning:#FF9500;--brand-success:#00D68F;--brand-purple:#7B5EA7;--brand-teal:#00B8A9;--bg-base:#060E1E;--bg-surface:#0D1B35;--bg-card:#111F3C;--bg-card-hover:#162848;--bg-border:rgba(255,255,255,.07);--bg-border-light:rgba(255,255,255,.12);--text-primary:#F0F4FF;--text-secondary:#8A9BBD;--text-muted:#4D617F;--text-accent:#4D9FFF;--sidebar-width:260px;--topbar-height:64px;--radius-sm:6px;--radius-md:10px;--radius-lg:16px;--radius-xl:24px;--shadow-card:0 4px 24px rgba(0,0,0,.4);--shadow-glow:0 0 40px rgba(0,87,255,.2);--transition:all .2s cubic-bezier(.4,0,.2,1)}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}html{font-size:14px}
+    body{font-family:'Inter',sans-serif;background:var(--bg-base);color:var(--text-primary);min-height:100vh;overflow-x:hidden}
+    ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:99px}
+    h1{font-size:2rem;font-weight:800;letter-spacing:-.03em}h2{font-size:1.5rem;font-weight:700;letter-spacing:-.02em}h3{font-size:1.15rem;font-weight:600}h4{font-size:.95rem;font-weight:600}p{line-height:1.6;color:var(--text-secondary)}
+    .flex{display:flex}.flex-col{flex-direction:column}.items-center{align-items:center}.justify-between{justify-content:space-between}.justify-center{justify-content:center}.gap-1{gap:4px}.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}.gap-6{gap:24px}.gap-8{gap:32px}.w-full{width:100%}.hidden{display:none!important}.relative{position:relative}.absolute{position:absolute}.overflow-hidden{overflow:hidden}.truncate{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.grid{display:grid}.text-sm{font-size:.82rem}.text-xs{font-size:.72rem}.text-lg{font-size:1.1rem}.font-mono{font-family:'JetBrains Mono',monospace}.uppercase{text-transform:uppercase}.tracking-wide{letter-spacing:.08em}.rounded{border-radius:var(--radius-md)}.rounded-full{border-radius:9999px}.pointer{cursor:pointer}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 20px;border-radius:var(--radius-md);font-size:.85rem;font-weight:600;cursor:pointer;border:none;outline:none;transition:var(--transition);white-space:nowrap;text-decoration:none}
+    .btn-primary{background:var(--brand-accent);color:#fff;box-shadow:0 4px 20px rgba(0,87,255,.4)}.btn-primary:hover{background:#1a6aff;transform:translateY(-1px);box-shadow:0 6px 28px rgba(0,87,255,.5)}
+    .btn-secondary{background:rgba(255,255,255,.06);color:var(--text-primary);border:1px solid var(--bg-border-light)}.btn-secondary:hover{background:rgba(255,255,255,.1)}
+    .btn-ghost{background:transparent;color:var(--text-secondary)}.btn-ghost:hover{background:rgba(255,255,255,.06);color:var(--text-primary)}
+    .btn-danger{background:var(--brand-danger);color:#fff}.btn-sm{padding:6px 14px;font-size:.78rem}.btn-lg{padding:14px 28px;font-size:.95rem}.btn-icon{padding:9px;border-radius:var(--radius-sm)}
+    .card{background:var(--bg-card);border:1px solid var(--bg-border);border-radius:var(--radius-lg);padding:20px;transition:var(--transition)}.card:hover{border-color:var(--bg-border-light)}.card-glow{box-shadow:var(--shadow-glow);border-color:rgba(0,87,255,.25)}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+    .badge-blue{background:rgba(0,87,255,.15);color:#4D9FFF}.badge-green{background:rgba(0,214,143,.15);color:#00D68F}.badge-red{background:rgba(255,59,92,.15);color:#FF3B5C}.badge-yellow{background:rgba(255,149,0,.15);color:#FF9500}.badge-purple{background:rgba(123,94,167,.15);color:#A67FD6}.badge-teal{background:rgba(0,184,169,.15);color:#00D4C8}
+    .input{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--bg-border-light);border-radius:var(--radius-md);padding:11px 14px;color:var(--text-primary);font-size:.88rem;font-family:inherit;outline:none;transition:var(--transition)}.input::placeholder{color:var(--text-muted)}.input:focus{border-color:var(--brand-accent);background:rgba(0,87,255,.05);box-shadow:0 0 0 3px rgba(0,87,255,.1)}
+    .input-group{display:flex;flex-direction:column;gap:6px}.input-group label{font-size:.78rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.06em}
+    .divider{height:1px;background:var(--bg-border);margin:16px 0}
+    .progress-bar{height:6px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}
+    .progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand-accent),var(--brand-accent2));transition:width .6s ease}
+    .progress-fill.green{background:linear-gradient(90deg,#00D68F,#00B8A9)}.progress-fill.red{background:linear-gradient(90deg,#FF3B5C,#FF6B35)}.progress-fill.yellow{background:linear-gradient(90deg,#FF9500,#FFD400)}.progress-fill.purple{background:linear-gradient(90deg,#7B5EA7,#A67FD6)}
+    .score-ring{position:relative;width:80px;height:80px;display:flex;align-items:center;justify-content:center}.score-ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg)}.score-ring-val{font-size:1.1rem;font-weight:800;position:relative;z-index:1}
+    .toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+    [dir=rtl] .toast-container{right:auto;left:24px;align-items:flex-start}
+    .toast{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:var(--radius-md);background:var(--bg-card);border:1px solid var(--bg-border-light);box-shadow:var(--shadow-card);min-width:300px;animation:slideInRight .3s ease}
+    .toast-success{border-left:3px solid var(--brand-success)}.toast-error{border-left:3px solid var(--brand-danger)}.toast-info{border-left:3px solid var(--brand-accent)}
+    .toast-msg{font-size:.84rem;color:var(--text-primary);flex:1}.toast-close{color:var(--text-muted);cursor:pointer}
+    @keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+    .modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:24px}
+    .modal-overlay.hidden{display:none}
+    .modal{background:var(--bg-card);border:1px solid var(--bg-border-light);border-radius:var(--radius-xl);padding:32px;width:100%;max-width:560px;box-shadow:var(--shadow-card);animation:modalIn .25s ease}
+    .modal-lg{max-width:780px}@keyframes modalIn{from{transform:scale(.95);opacity:0}to{transform:scale(1);opacity:1}}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}.modal-title{font-size:1.1rem;font-weight:700}.modal-close{cursor:pointer;color:var(--text-muted);font-size:1.2rem;transition:var(--transition)}.modal-close:hover{color:var(--text-primary)}.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:24px}
+    .table-wrap{overflow-x:auto;border-radius:var(--radius-lg);border:1px solid var(--bg-border)}
+    table{width:100%;border-collapse:collapse}
+    thead th{padding:12px 16px;text-align:left;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text-muted);background:rgba(255,255,255,.02);border-bottom:1px solid var(--bg-border);white-space:nowrap}
+    [dir=rtl] thead th{text-align:right}
+    tbody td{padding:13px 16px;font-size:.84rem;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+    tbody tr:last-child td{border-bottom:none}tbody tr:hover td{background:rgba(255,255,255,.02)}
+    .tab-bar{display:flex;gap:4px;background:rgba(255,255,255,.03);border:1px solid var(--bg-border);border-radius:var(--radius-md);padding:4px;width:fit-content}
+    .tab{padding:7px 16px;border-radius:7px;font-size:.82rem;font-weight:600;cursor:pointer;transition:var(--transition);color:var(--text-muted);white-space:nowrap}.tab.active{background:var(--bg-card);color:var(--text-primary)}.tab:hover:not(.active){color:var(--text-secondary)}
+    .chip{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:99px;font-size:.75rem;font-weight:600;border:1px solid var(--bg-border-light);cursor:pointer;transition:var(--transition);color:var(--text-secondary)}.chip:hover{border-color:var(--brand-accent);color:var(--brand-accent)}.chip.active{background:rgba(0,87,255,.15);border-color:var(--brand-accent);color:var(--brand-accent)}
+    .steps{display:flex;align-items:center;gap:0;margin-bottom:32px}.step{display:flex;align-items:center;gap:8px;flex:1}.step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;flex-shrink:0;background:rgba(255,255,255,.06);border:1px solid var(--bg-border-light);color:var(--text-muted)}.step.active .step-num{background:var(--brand-accent);border-color:var(--brand-accent);color:#fff}.step.done .step-num{background:var(--brand-success);border-color:var(--brand-success);color:#fff}.step-label{font-size:.78rem;color:var(--text-muted)}.step.active .step-label{color:var(--text-primary);font-weight:600}.step-line{flex:1;height:1px;background:var(--bg-border);margin:0 8px}
+    .empty-state{text-align:center;padding:60px 20px;display:flex;flex-direction:column;align-items:center;gap:12px}.empty-icon{font-size:3rem;opacity:.3}.empty-title{font-size:1rem;font-weight:600}.empty-sub{font-size:.84rem;color:var(--text-muted);max-width:300px}
+    .gradient-text{background:linear-gradient(135deg,var(--brand-accent),var(--brand-accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .fade-in{animation:fadeIn .4s ease both}@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .stagger>*{animation:fadeIn .4s ease both}.stagger>*:nth-child(1){animation-delay:.05s}.stagger>*:nth-child(2){animation-delay:.10s}.stagger>*:nth-child(3){animation-delay:.15s}.stagger>*:nth-child(4){animation-delay:.20s}.stagger>*:nth-child(5){animation-delay:.25s}.stagger>*:nth-child(6){animation-delay:.30s}
+    .pulse{display:inline-flex;position:relative}.pulse::after{content:'';position:absolute;inset:-3px;border-radius:50%;background:var(--brand-success);opacity:.4;animation:pulseAnim 1.5s ease-out infinite}@keyframes pulseAnim{0%{transform:scale(1);opacity:.4}100%{transform:scale(2.5);opacity:0}}
+    select{background:rgba(255,255,255,.04);border:1px solid var(--bg-border-light);border-radius:var(--radius-md);padding:10px 14px;color:var(--text-primary);font-size:.85rem;font-family:inherit;outline:none;cursor:pointer;transition:var(--transition)}select:focus{border-color:var(--brand-accent)}select option{background:var(--bg-card)}
+    .checkbox-group{display:flex;align-items:center;gap:8px;cursor:pointer}.checkbox-group input[type=checkbox]{accent-color:var(--brand-accent);width:16px;height:16px}
+    /* Login */
+    #screen-login{min-height:100vh;display:flex;background:var(--bg-base);position:relative;overflow:hidden}
+    .login-bg{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 60% 50% at 70% 50%,rgba(0,87,255,.12) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 20% 80%,rgba(0,198,255,.07) 0%,transparent 60%),radial-gradient(ellipse 30% 40% at 80% 10%,rgba(123,94,167,.08) 0%,transparent 60%)}
+    .login-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.02) 1px,transparent 1px);background-size:40px 40px}
+    .login-left{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:60px;position:relative;z-index:1}
+    .login-right{width:480px;min-height:100vh;background:var(--bg-surface);border-left:1px solid var(--bg-border);display:flex;flex-direction:column;justify-content:center;padding:60px 48px;position:relative;z-index:1}
+    .login-brand{display:flex;align-items:center;gap:14px;margin-bottom:48px}.login-brand-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--brand-accent),var(--brand-accent2));border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;box-shadow:0 0 30px rgba(0,87,255,.5)}.login-brand-name{font-size:1.3rem;font-weight:800;letter-spacing:-.02em}.login-brand-sub{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em}
+    .login-hero-title{font-size:3rem;font-weight:900;letter-spacing:-.04em;line-height:1.1;background:linear-gradient(135deg,#fff 0%,#8AB4FF 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:20px;max-width:520px}
+    .login-hero-sub{font-size:1rem;color:var(--text-secondary);max-width:440px;line-height:1.7}
+    .login-stats{display:flex;gap:40px;margin-top:56px}.login-stat-val{font-size:2rem;font-weight:800;color:var(--text-primary)}.login-stat-label{font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px}
+    .login-langs{display:flex;gap:8px;margin-top:40px;flex-wrap:wrap}.login-lang-pill{padding:4px 12px;border-radius:99px;border:1px solid var(--bg-border-light);font-size:.72rem;color:var(--text-muted);display:flex;align-items:center;gap:5px}
+    .login-form-title{font-size:1.5rem;font-weight:800;margin-bottom:6px}.login-form-sub{font-size:.85rem;color:var(--text-secondary);margin-bottom:32px}
+    .login-sso-btn{width:100%;padding:12px;background:rgba(255,255,255,.04);border:1px solid var(--bg-border-light);border-radius:var(--radius-md);color:var(--text-primary);font-size:.85rem;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:var(--transition);margin-bottom:8px}.login-sso-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.2)}
+    .login-divider{display:flex;align-items:center;gap:12px;margin:20px 0}.login-divider-line{flex:1;height:1px;background:var(--bg-border)}.login-divider-text{font-size:.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
+    .login-submit{width:100%;padding:13px;background:linear-gradient(135deg,var(--brand-accent),#0041CC);border:none;border-radius:var(--radius-md);color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;transition:var(--transition);box-shadow:0 4px 24px rgba(0,87,255,.4);margin-top:8px;font-family:inherit}.login-submit:hover{transform:translateY(-1px);box-shadow:0 8px 32px rgba(0,87,255,.5)}
+    .mfa-digits{display:flex;gap:10px;justify-content:center;margin:24px 0}.mfa-digit{width:52px;height:60px;background:rgba(255,255,255,.04);border:1px solid var(--bg-border-light);border-radius:var(--radius-md);text-align:center;font-size:1.5rem;font-weight:700;color:var(--text-primary);font-family:'JetBrains Mono',monospace;outline:none;transition:var(--transition)}.mfa-digit:focus{border-color:var(--brand-accent);box-shadow:0 0 0 3px rgba(0,87,255,.2)}
+    /* App */
+    #screen-app{display:none;min-height:100vh}#screen-app.active{display:flex}
+    .sidebar{width:var(--sidebar-width);background:var(--bg-surface);border-right:1px solid var(--bg-border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform .3s ease}
+    [dir=rtl] .sidebar{left:auto;right:0;border-right:none;border-left:1px solid var(--bg-border)}
+    .sidebar-header{padding:20px 20px 16px;border-bottom:1px solid var(--bg-border)}.sidebar-brand{display:flex;align-items:center;gap:10px}.sidebar-brand-icon{width:36px;height:36px;flex-shrink:0;background:linear-gradient(135deg,var(--brand-accent),var(--brand-accent2));border-radius:9px;display:flex;align-items:center;justify-content:center}.sidebar-brand-text{flex:1;min-width:0}.sidebar-brand-name{font-size:.9rem;font-weight:800;letter-spacing:-.01em}.sidebar-brand-sub{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em}
+    .sidebar-tenant{margin:12px 0 0;padding:10px 12px;background:rgba(0,87,255,.08);border:1px solid rgba(0,87,255,.2);border-radius:var(--radius-sm);display:flex;align-items:center;gap:8px;cursor:pointer}.sidebar-tenant-dot{width:8px;height:8px;border-radius:50%;background:var(--brand-success);flex-shrink:0;box-shadow:0 0 8px var(--brand-success)}.sidebar-tenant-name{font-size:.78rem;font-weight:600;flex:1}.sidebar-tenant-plan{font-size:.65rem;color:var(--brand-accent);font-weight:700}
+    .sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto}.nav-section-title{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-muted);padding:10px 10px 6px;margin-top:8px}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition);position:relative;color:var(--text-secondary);font-size:.84rem;font-weight:500;text-decoration:none}.nav-item:hover{background:rgba(255,255,255,.05);color:var(--text-primary)}.nav-item.active{background:rgba(0,87,255,.12);color:var(--brand-accent)}.nav-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:18px;border-radius:0 3px 3px 0;background:var(--brand-accent)}[dir=rtl] .nav-item.active::before{left:auto;right:0;border-radius:3px 0 0 3px}.nav-item-icon{width:18px;text-align:center;flex-shrink:0;opacity:.8}.nav-item.active .nav-item-icon{opacity:1}.nav-badge{margin-left:auto;min-width:20px;height:18px;background:var(--brand-danger);border-radius:99px;font-size:.65rem;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;padding:0 5px}[dir=rtl] .nav-badge{margin-left:0;margin-right:auto}
+    .sidebar-footer{padding:12px 10px 16px;border-top:1px solid var(--bg-border)}.sidebar-user{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--radius-sm);cursor:pointer;transition:var(--transition)}.sidebar-user:hover{background:rgba(255,255,255,.05)}.sidebar-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--brand-accent),var(--brand-purple));display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:700;color:#fff;flex-shrink:0}.sidebar-user-info{flex:1;min-width:0}.sidebar-user-name{font-size:.82rem;font-weight:600}.sidebar-user-role{font-size:.68rem;color:var(--text-muted)}
+    .topbar{position:fixed;top:0;right:0;z-index:90;left:var(--sidebar-width);height:var(--topbar-height);background:rgba(6,14,30,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--bg-border);display:flex;align-items:center;padding:0 24px;gap:16px}
+    [dir=rtl] .topbar{left:0;right:var(--sidebar-width)}
+    .topbar-search{flex:1;max-width:420px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid var(--bg-border-light);border-radius:var(--radius-md);padding:8px 14px;cursor:text}.topbar-search input{background:transparent;border:none;outline:none;color:var(--text-primary);font-size:.84rem;font-family:inherit;flex:1}.topbar-search input::placeholder{color:var(--text-muted)}
+    .topbar-actions{display:flex;align-items:center;gap:8px;margin-left:auto}[dir=rtl] .topbar-actions{margin-left:0;margin-right:auto}
+    .topbar-icon-btn{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);border:1px solid var(--bg-border-light);cursor:pointer;transition:var(--transition);color:var(--text-secondary);font-size:1rem;position:relative}.topbar-icon-btn:hover{background:rgba(255,255,255,.08);color:var(--text-primary)}.topbar-notif-dot{position:absolute;top:7px;right:7px;width:7px;height:7px;border-radius:50%;background:var(--brand-danger);border:1.5px solid var(--bg-base)}
+    .lang-selector{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);background:rgba(255,255,255,.04);border:1px solid var(--bg-border-light);cursor:pointer;transition:var(--transition);color:var(--text-secondary);font-size:.8rem;font-weight:600;position:relative}.lang-selector:hover{background:rgba(255,255,255,.08);color:var(--text-primary)}
+    .lang-dropdown{position:absolute;top:calc(100% + 8px);right:0;width:200px;background:var(--bg-card);border:1px solid var(--bg-border-light);border-radius:var(--radius-md);box-shadow:var(--shadow-card);overflow:hidden;z-index:200}[dir=rtl] .lang-dropdown{right:auto;left:0}.lang-dropdown-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:var(--transition);font-size:.84rem;color:var(--text-secondary)}.lang-dropdown-item:hover{background:rgba(255,255,255,.05);color:var(--text-primary)}.lang-dropdown-item.active{color:var(--brand-accent)}.lang-flag{font-size:1.1rem}
+    .main-content{margin-left:var(--sidebar-width);margin-top:var(--topbar-height);flex:1;min-height:calc(100vh - var(--topbar-height));padding:28px;overflow-y:auto}
+    [dir=rtl] .main-content{margin-left:0;margin-right:var(--sidebar-width)}
+    .orb{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;opacity:.4;animation:orbFloat 8s ease-in-out infinite alternate}.orb-1{width:300px;height:300px;background:var(--brand-accent);top:10%;left:15%;animation-delay:0s}.orb-2{width:200px;height:200px;background:var(--brand-accent2);bottom:20%;right:20%;animation-delay:-3s}.orb-3{width:150px;height:150px;background:var(--brand-purple);top:50%;right:30%;animation-delay:-6s}
+    @keyframes orbFloat{0%{transform:translate(0,0) scale(1)}100%{transform:translate(20px,-20px) scale(1.05)}}
+    @media(max-width:900px){.login-left{display:none}.login-right{width:100%;border-left:none}.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.topbar{left:0}[dir=rtl] .topbar{right:0}.main-content{margin-left:0}[dir=rtl] .main-content{margin-right:0}}
+  </style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="screen-login">
+  <div class="login-bg"></div>
+  <div class="login-grid"></div>
+  <div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+
+  <div class="login-left">
+    <div class="login-brand">
+      <div class="login-brand-icon"><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M13 2L22 7V19L13 24L4 19V7L13 2Z" stroke="white" stroke-width="2" fill="none"/><path d="M13 8L17 10.5V15.5L13 18L9 15.5V10.5L13 8Z" fill="white" opacity="0.9"/></svg></div>
+      <div><div class="login-brand-name">Brandvakt Academy</div><div class="login-brand-sub">Enterprise Training Platform</div></div>
+    </div>
+    <h1 class="login-hero-title" id="hero-title">Conscientização Corporativa em Escala Global</h1>
+    <p class="login-hero-sub" id="hero-sub">Plataforma SaaS enterprise para distribuição, monitoramento e certificação de treinamentos em Cybersecurity, Compliance e Governança.</p>
+    <div class="login-stats">
+      <div><div class="login-stat-val">80+</div><div class="login-stat-label">Idiomas</div></div>
+      <div><div class="login-stat-val">SCORM</div><div class="login-stat-label">1.2 & 2004</div></div>
+      <div><div class="login-stat-val">ISO</div><div class="login-stat-label">27001 Ready</div></div>
+      <div><div class="login-stat-val">Zero</div><div class="login-stat-label">Trust Arch</div></div>
+    </div>
+    <div class="login-langs">
+      <div class="login-lang-pill">🇧🇷 Português</div><div class="login-lang-pill">🇺🇸 English</div>
+      <div class="login-lang-pill">🇪🇸 Español</div><div class="login-lang-pill">🇫🇷 Français</div>
+      <div class="login-lang-pill">🇸🇦 العربية</div><div class="login-lang-pill" style="opacity:.5">+75 more</div>
+    </div>
+  </div>
+
+  <div class="login-right">
+    <div id="login-step-1">
+      <div class="login-brand" style="margin-bottom:32px;">
+        <div class="login-brand-icon" style="width:40px;height:40px;"><svg width="22" height="22" viewBox="0 0 26 26" fill="none"><path d="M13 2L22 7V19L13 24L4 19V7L13 2Z" stroke="white" stroke-width="1.5" fill="none"/><path d="M13 8L17 10.5V15.5L13 18L9 15.5V10.5L13 8Z" fill="white" opacity="0.9"/></svg></div>
+        <div class="login-brand-name" style="font-size:1rem;">Brandvakt Academy</div>
+      </div>
+      <div class="login-form-title" id="signin-title">Acesse sua plataforma</div>
+      <div class="login-form-sub" id="signin-sub">Ambiente corporativo protegido — credenciais da sua organização</div>
+
+      <button class="login-sso-btn" onclick="loginSSO('microsoft')">
+        <svg width="18" height="18" viewBox="0 0 21 21" fill="none"><rect x="1" y="1" width="9" height="9" fill="#F25022"/><rect x="11" y="1" width="9" height="9" fill="#7FBA00"/><rect x="1" y="11" width="9" height="9" fill="#00A4EF"/><rect x="11" y="11" width="9" height="9" fill="#FFB900"/></svg>
+        <span id="sso-ms">Entrar com Microsoft 365</span>
+      </button>
+      <button class="login-sso-btn" onclick="loginSSO('google')">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+        <span id="sso-g">Entrar com Google Workspace</span>
+      </button>
+      <button class="login-sso-btn" onclick="loginSSO('okta')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#007DC1"><circle cx="12" cy="12" r="10" fill="none" stroke="#007DC1" stroke-width="2"/><circle cx="12" cy="12" r="4.5" fill="#007DC1"/></svg>
+        <span id="sso-okta">Entrar com Okta / SAML</span>
+      </button>
+
+      <div class="login-divider"><div class="login-divider-line"></div><div class="login-divider-text" id="or-email">ou com e-mail</div><div class="login-divider-line"></div></div>
+
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="input-group"><label id="lbl-email">E-mail corporativo</label><input class="input" type="email" id="login-email" placeholder="voce@empresa.com"/></div>
+        <div class="input-group"><label id="lbl-pass">Senha</label>
+          <div class="relative"><input class="input" type="password" id="login-password" placeholder="••••••••••"/><span onclick="togglePwd()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;color:var(--text-muted);">👁</span></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <label class="checkbox-group"><input type="checkbox"/> <span style="font-size:.8rem;color:var(--text-secondary)" id="lbl-remember">Lembrar dispositivo</span></label>
+          <a href="#" style="font-size:.8rem;color:var(--text-accent);" id="lbl-forgot">Esqueci a senha</a>
+        </div>
+      </div>
+      <!-- Lang selector on login -->
+      <div style="display:flex;gap:6px;margin-top:14px;justify-content:center;flex-wrap:wrap;">
+        ${['pt|🇧🇷|PT','en|🇺🇸|EN','es|🇪🇸|ES','fr|🇫🇷|FR','ar|🇸🇦|AR'].map(s=>{const[l,f,c]=s.split('|');return`<button onclick="setLangLogin('${l}','${f}','${c}')" style="background:none;border:1px solid var(--bg-border-light);border-radius:99px;padding:3px 10px;cursor:pointer;font-size:.72rem;color:var(--text-muted);transition:var(--transition);">${f} ${c}</button>`;}).join('')}
+      </div>
+      <button class="login-submit" onclick="goToMFA()" style="margin-top:16px;" id="btn-continue">Continuar →</button>
+    </div>
+
+    <div id="login-step-2" class="hidden">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="width:56px;height:56px;background:rgba(0,87,255,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:1.6rem;">🔐</div>
+        <div class="login-form-title" id="mfa-title">Verificação em Dois Fatores</div>
+        <p style="font-size:.84rem;color:var(--text-secondary);margin-top:8px;" id="mfa-sub">Insira o código do seu aplicativo autenticador</p>
+      </div>
+      <div class="mfa-digits">
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,0)"/>
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,1)"/>
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,2)"/>
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,3)"/>
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,4)"/>
+        <input class="mfa-digit" maxlength="1" type="text" inputmode="numeric" oninput="nextDigit(this,5)"/>
+      </div>
+      <button class="login-submit" onclick="doLogin()" id="btn-verify">Verificar e Entrar</button>
+      <p style="text-align:center;margin-top:16px;font-size:.78rem;color:var(--text-muted);">
+        <span id="mfa-resend-lbl">Não recebeu?</span>
+        <a href="#" style="color:var(--text-accent);" id="mfa-resend-link">Reenviar código</a>
+      </p>
+      <p style="text-align:center;margin-top:8px;"><a href="#" onclick="document.getElementById('login-step-1').classList.remove('hidden');document.getElementById('login-step-2').classList.add('hidden');return false;" style="font-size:.78rem;color:var(--text-muted);" id="btn-back">← Voltar</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="screen-app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-icon"><svg width="20" height="20" viewBox="0 0 26 26" fill="none"><path d="M13 2L22 7V19L13 24L4 19V7L13 2Z" stroke="white" stroke-width="1.5" fill="none"/><path d="M13 8L17 10.5V15.5L13 18L9 15.5V10.5L13 8Z" fill="white" opacity="0.9"/></svg></div>
+        <div class="sidebar-brand-text"><div class="sidebar-brand-name">Brandvakt</div><div class="sidebar-brand-sub">Academy</div></div>
+      </div>
+      <div class="sidebar-tenant" onclick="showModal('modal-tenant')">
+        <div class="sidebar-tenant-dot pulse"></div>
+        <div style="flex:1;min-width:0;"><div class="sidebar-tenant-name truncate" id="tenant-name">Empresa Demo S.A.</div><div class="sidebar-tenant-plan">Enterprise</div></div>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M3 5l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebar-nav">
+      <div class="nav-section-title" id="nav-s-overview">Visão Geral</div>
+      <a class="nav-item active" data-page="dashboard" onclick="navTo('dashboard',this)"><span class="nav-item-icon">⊞</span><span id="nav-dashboard">Dashboard</span></a>
+
+      <div class="nav-section-title" id="nav-s-training">Treinamento</div>
+      <a class="nav-item" data-page="library" onclick="navTo('library',this)"><span class="nav-item-icon">📚</span><span id="nav-library">Biblioteca</span></a>
+      <a class="nav-item" data-page="trails" onclick="navTo('trails',this)"><span class="nav-item-icon">🛤</span><span id="nav-trails">Trilhas</span></a>
+      <a class="nav-item" data-page="scorm" onclick="navTo('scorm',this)"><span class="nav-item-icon">📦</span><span id="nav-scorm">SCORM Upload</span><span class="nav-badge">3</span></a>
+
+      <div class="nav-section-title" id="nav-s-compliance">Compliance</div>
+      <a class="nav-item" data-page="assignments" onclick="navTo('assignments',this)"><span class="nav-item-icon">📋</span><span id="nav-assignments">Atribuições</span></a>
+      <a class="nav-item" data-page="certificates" onclick="navTo('certificates',this)"><span class="nav-item-icon">🏆</span><span id="nav-certificates">Certificados</span></a>
+      <a class="nav-item" data-page="risk" onclick="navTo('risk',this)"><span class="nav-item-icon">🛡</span><span id="nav-risk">Human Risk</span></a>
+
+      <div class="nav-section-title" id="nav-s-people">Pessoas</div>
+      <a class="nav-item" data-page="users" onclick="navTo('users',this)"><span class="nav-item-icon">👥</span><span id="nav-users">Usuários</span></a>
+      <a class="nav-item" data-page="departments" onclick="navTo('departments',this)"><span class="nav-item-icon">🏢</span><span id="nav-departments">Departamentos</span></a>
+
+      <div class="nav-section-title" id="nav-s-intel">Inteligência</div>
+      <a class="nav-item" data-page="reports" onclick="navTo('reports',this)"><span class="nav-item-icon">📊</span><span id="nav-reports">Relatórios</span></a>
+      <a class="nav-item" data-page="ai" onclick="navTo('ai',this)"><span class="nav-item-icon">🤖</span><span id="nav-ai">IA Assistente</span></a>
+
+      <div class="nav-section-title" id="nav-s-admin">Administração</div>
+      <a class="nav-item" data-page="settings" onclick="navTo('settings',this)"><span class="nav-item-icon">⚙️</span><span id="nav-settings">Configurações</span></a>
+      <a class="nav-item" data-page="integrations" onclick="navTo('integrations',this)"><span class="nav-item-icon">🔌</span><span id="nav-integrations">Integrações</span></a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="user-avatar">AL</div>
+        <div class="sidebar-user-info"><div class="sidebar-user-name" id="user-name">Admin Local</div><div class="sidebar-user-role" id="user-role">Super Admin</div></div>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+  </aside>
+
+  <header class="topbar">
+    <button class="topbar-icon-btn" id="sidebar-toggle" onclick="toggleSidebar()" style="display:none;">☰</button>
+    <div class="topbar-search">
+      <span style="color:var(--text-muted);">🔍</span>
+      <input type="text" id="topbar-search-input" placeholder="Buscar treinamentos, usuários, relatórios..." />
+    </div>
+    <div class="topbar-actions">
+      <div class="topbar-icon-btn" onclick="showToast('Nenhuma notificação nova','info')">🔔<span class="topbar-notif-dot"></span></div>
+      <div class="topbar-icon-btn" onclick="navTo('ai',null)">🤖</div>
+      <div class="lang-selector relative" onclick="toggleLangDropdown()">
+        <span id="current-flag">🇧🇷</span>
+        <span id="current-lang-code" style="font-size:.78rem;">PT</span>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 4l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <div class="lang-dropdown hidden" id="lang-dropdown">
+          <div class="lang-dropdown-item active" onclick="setLang('pt','🇧🇷','PT',event)"><span class="lang-flag">🇧🇷</span> Português</div>
+          <div class="lang-dropdown-item" onclick="setLang('en','🇺🇸','EN',event)"><span class="lang-flag">🇺🇸</span> English</div>
+          <div class="lang-dropdown-item" onclick="setLang('es','🇪🇸','ES',event)"><span class="lang-flag">🇪🇸</span> Español</div>
+          <div class="lang-dropdown-item" onclick="setLang('fr','🇫🇷','FR',event)"><span class="lang-flag">🇫🇷</span> Français</div>
+          <div class="lang-dropdown-item" onclick="setLang('ar','🇸🇦','AR',event)"><span class="lang-flag">🇸🇦</span> العربية</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-content" id="main-content">
+    <div id="pages-container"></div>
+  </main>
+</div>
+
+<!-- Modal: Tenant -->
+<div class="modal-overlay hidden" id="modal-tenant" onclick="closeModalOutside(event,'modal-tenant')">
+  <div class="modal">
+    <div class="modal-header"><h3 class="modal-title" id="modal-tenant-title">Trocar Empresa</h3><span class="modal-close" onclick="hideModal('modal-tenant')">✕</span></div>
+    <div style="display:flex;flex-direction:column;gap:8px;" id="tenant-list"></div>
+    <div class="divider"></div>
+    <button class="btn btn-secondary w-full" onclick="showToast('Em breve: adicionar nova empresa','info')">+ Adicionar Empresa</button>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="hideModal('modal-tenant')">Cancelar</button></div>
+  </div>
+</div>
+
+<!-- SCORM modal (shared) -->
+<div class="modal-overlay hidden" id="modal-new-course" onclick="closeModalOutside(event,'modal-new-course')">
+  <div class="modal modal-lg">
+    <div class="modal-header"><h3 class="modal-title">📦 Publicar Treinamento SCORM</h3><span class="modal-close" onclick="hideModal('modal-new-course')">✕</span></div>
+    <div class="steps" style="margin-bottom:24px;">
+      <div class="step active" id="step-ind-1"><div class="step-num">1</div><div class="step-label">Upload</div></div>
+      <div class="step-line"></div>
+      <div class="step" id="step-ind-2"><div class="step-num">2</div><div class="step-label">Configurar</div></div>
+      <div class="step-line"></div>
+      <div class="step" id="step-ind-3"><div class="step-num">3</div><div class="step-label">Publicar</div></div>
+    </div>
+    <div id="modal-step-1">
+      <div id="scorm-dropzone" ondragover="event.preventDefault();this.style.borderColor='var(--brand-accent)'" ondragleave="this.style.borderColor=''" ondrop="handleScormDrop(event)" onclick="document.getElementById('scorm-file-input').click()" style="border:2px dashed var(--bg-border-light);border-radius:var(--radius-lg);padding:40px;text-align:center;cursor:pointer;transition:var(--transition);margin-bottom:20px;">
+        <div style="font-size:2.5rem;margin-bottom:12px;">📦</div>
+        <div style="font-size:.95rem;font-weight:600;margin-bottom:6px;">Arraste o pacote SCORM aqui</div>
+        <div style="font-size:.8rem;color:var(--text-muted);">Suporte SCORM 1.2 e SCORM 2004 · .zip</div>
+        <input type="file" id="scorm-file-input" accept=".zip" class="hidden" onchange="handleScormFile(this)"/>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="input-group"><label>Nome do Treinamento</label><input class="input" type="text" placeholder="Ex: Phishing Awareness"/></div>
+        <div class="input-group"><label>Categoria</label><select class="input"><option>🛡 Cybersecurity</option><option>📋 Compliance</option><option>🔒 Privacidade</option><option>⚖️ Ética</option></select></div>
+        <div class="input-group"><label>Idioma</label><select class="input"><option>🇧🇷 Português</option><option>🇺🇸 English</option><option>🇪🇸 Español</option><option>🇫🇷 Français</option><option>🇸🇦 العربية</option></select></div>
+        <div class="input-group"><label>SCORM Version</label><select class="input"><option>SCORM 1.2</option><option>SCORM 2004</option></select></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="hideModal('modal-new-course')">Cancelar</button><button class="btn btn-primary" onclick="scormStep2()">Próximo →</button></div>
+    </div>
+    <div id="modal-step-2" class="hidden">
+      <div style="background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);border-radius:var(--radius-md);padding:16px;display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <span style="font-size:1.4rem;">✅</span><div><div style="font-weight:700;color:var(--brand-success);">Pacote SCORM validado com sucesso</div><div style="font-size:.78rem;color:var(--text-muted);">SCORM 1.2 · manifest.xml detectado · 14 SCOs</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="input-group"><label>País / Região</label><select class="input"><option>🌍 Global</option><option>🇧🇷 Brasil</option><option>🇺🇸 EUA</option><option>🇪🇺 Europa</option><option>🇸🇦 Oriente Médio</option></select></div>
+        <div class="input-group"><label>Nota de Aprovação (%)</label><input class="input" type="number" value="70" min="0" max="100"/></div>
+        <div class="input-group"><label>Duração Estimada</label><input class="input" type="text" placeholder="30 min"/></div>
+        <div class="input-group"><label>Emitir Certificado</label><select class="input"><option>✅ Sim, emitir certificado</option><option>❌ Não emitir</option></select></div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-ghost" onclick="scormStep1()">← Voltar</button><button class="btn btn-primary" onclick="scormStep3()">Publicar 🚀</button></div>
+    </div>
+    <div id="modal-step-3" class="hidden">
+      <div style="text-align:center;padding:30px 0;">
+        <div style="font-size:3rem;margin-bottom:16px;">🎉</div>
+        <h3 style="font-size:1.2rem;margin-bottom:8px;">Treinamento Publicado!</h3>
+        <p style="color:var(--text-secondary);font-size:.84rem;">O treinamento já está disponível na biblioteca e pode ser atribuído.</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:24px;">
+          <button class="btn btn-secondary" onclick="hideModal('modal-new-course')">Fechar</button>
+          <button class="btn btn-primary" onclick="hideModal('modal-new-course');navTo('assignments',null)">Atribuir Agora</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ══════════ SCRIPTS ══════════ -->
+<script>
+// ── State ──
+const APP = {
+  lang:'pt', dir:'ltr', currentPage:'dashboard',
+  user:{name:'Admin Local',role:'Super Admin',initials:'AL'},
+  tenant:{name:'Empresa Demo S.A.',plan:'Enterprise'},
+  tenants:[
+    {id:1,name:'Empresa Demo S.A.',plan:'Enterprise',active:true,users:340},
+    {id:2,name:'Grupo Veritaz',plan:'Enterprise',active:false,users:1240},
+    {id:3,name:'TechCorp Brasil',plan:'Business',active:false,users:87},
+  ]
+};
+window.APP = APP;
+
+// ── Nav labels per lang ──
+const NAV_LABELS = {
+  pt:{overview:'Visão Geral',dashboard:'Dashboard',training:'Treinamento',library:'Biblioteca',trails:'Trilhas',scorm:'SCORM Upload',compliance:'Compliance',assignments:'Atribuições',certificates:'Certificados',risk:'Human Risk',people:'Pessoas',users:'Usuários',departments:'Departamentos',intel:'Inteligência',reports:'Relatórios',ai:'IA Assistente',admin:'Administração',settings:'Configurações',integrations:'Integrações',tenant:'Trocar Empresa'},
+  en:{overview:'Overview',dashboard:'Dashboard',training:'Training',library:'Library',trails:'Paths',scorm:'SCORM Upload',compliance:'Compliance',assignments:'Assignments',certificates:'Certificates',risk:'Human Risk',people:'People',users:'Users',departments:'Departments',intel:'Intelligence',reports:'Reports',ai:'AI Assistant',admin:'Administration',settings:'Settings',integrations:'Integrations',tenant:'Switch Company'},
+  es:{overview:'Resumen',dashboard:'Panel',training:'Formación',library:'Biblioteca',trails:'Rutas',scorm:'Subida SCORM',compliance:'Cumplimiento',assignments:'Asignaciones',certificates:'Certificados',risk:'Riesgo Humano',people:'Personas',users:'Usuarios',departments:'Departamentos',intel:'Inteligencia',reports:'Informes',ai:'Asistente IA',admin:'Administración',settings:'Configuración',integrations:'Integraciones',tenant:'Cambiar Empresa'},
+  fr:{overview:"Vue d'ensemble",dashboard:'Tableau de bord',training:'Formation',library:'Bibliothèque',trails:'Parcours',scorm:'Upload SCORM',compliance:'Conformité',assignments:'Attributions',certificates:'Certificats',risk:'Risque Humain',people:'Personnes',users:'Utilisateurs',departments:'Départements',intel:'Intelligence',reports:'Rapports',ai:'Assistant IA',admin:'Administration',settings:'Paramètres',integrations:'Intégrations',tenant:"Changer d'Entreprise"},
+  ar:{overview:'نظرة عامة',dashboard:'لوحة التحكم',training:'التدريب',library:'المكتبة',trails:'المسارات',scorm:'رفع SCORM',compliance:'الامتثال',assignments:'التكليفات',certificates:'الشهادات',risk:'مخاطر الإنسان',people:'الأشخاص',users:'المستخدمون',departments:'الأقسام',intel:'الذكاء',reports:'التقارير',ai:'مساعد الذكاء',admin:'الإدارة',settings:'الإعدادات',integrations:'التكاملات',tenant:'تغيير الشركة'},
+};
+
+function applyNavLabels() {
+  const L = NAV_LABELS[APP.lang] || NAV_LABELS.pt;
+  const map = {
+    'nav-s-overview':L.overview,'nav-dashboard':L.dashboard,
+    'nav-s-training':L.training,'nav-library':L.library,'nav-trails':L.trails,'nav-scorm':L.scorm,
+    'nav-s-compliance':L.compliance,'nav-assignments':L.assignments,'nav-certificates':L.certificates,'nav-risk':L.risk,
+    'nav-s-people':L.people,'nav-users':L.users,'nav-departments':L.departments,
+    'nav-s-intel':L.intel,'nav-reports':L.reports,'nav-ai':L.ai,
+    'nav-s-admin':L.admin,'nav-settings':L.settings,'nav-integrations':L.integrations,
+    'modal-tenant-title':L.tenant,
+  };
+  Object.entries(map).forEach(([id,val])=>{const el=document.getElementById(id);if(el)el.textContent=val;});
+  const ph={'pt':'Buscar treinamentos, usuários, relatórios...','en':'Search trainings, users, reports...','es':'Buscar formaciones, usuarios, informes...','fr':'Rechercher formations, utilisateurs, rapports...','ar':'ابحث عن تدريبات، مستخدمين...'};
+  const si=document.getElementById('topbar-search-input'); if(si) si.placeholder=ph[APP.lang]||ph.pt;
+}
+
+// ── RTL ──
+function applyDir(lang) {
+  const isRTL = lang==='ar';
+  document.documentElement.dir = isRTL?'rtl':'ltr';
+  document.documentElement.lang = lang;
+  APP.dir = isRTL?'rtl':'ltr';
+}
+
+// ── Language ──
+function setLang(lang,flag,code,evt) {
+  if(evt) evt.stopPropagation();
+  APP.lang = lang;
+  applyDir(lang);
+  document.getElementById('current-flag').textContent = flag;
+  document.getElementById('current-lang-code').textContent = code;
+  document.querySelectorAll('.lang-dropdown-item').forEach(el=>el.classList.remove('active'));
+  if(evt && evt.currentTarget) evt.currentTarget.classList.add('active');
+  closeLangDropdown();
+  applyNavLabels();
+  renderPage(APP.currentPage);
+  showToast(lang==='ar'?'تم تغيير اللغة':'Language: '+code,'info');
+}
+function setLangLogin(lang,flag,code) {
+  APP.lang = lang;
+  applyDir(lang);
+  const titles={pt:'Acesse sua plataforma',en:'Access your platform',es:'Accede a tu plataforma',fr:'Accédez à votre plateforme',ar:'الوصول إلى منصتك'};
+  const subs={pt:'Ambiente corporativo protegido',en:'Protected corporate environment',es:'Entorno corporativo protegido',fr:'Environnement corporatif protégé',ar:'بيئة مؤسسية محمية'};
+  const heroes={pt:'Conscientização Corporativa em Escala Global',en:'Corporate Awareness at Global Scale',es:'Concienciación Corporativa a Escala Global',fr:"Sensibilisation Corporative à l'Échelle Mondiale",ar:'التوعية المؤسسية على نطاق عالمي'};
+  const e=(id,v)=>{const el=document.getElementById(id);if(el&&v)el.textContent=v;};
+  e('signin-title',titles[lang]);e('signin-sub',subs[lang]);e('hero-title',heroes[lang]);
+}
+function toggleLangDropdown(){document.getElementById('lang-dropdown').classList.toggle('hidden');event.stopPropagation();}
+function closeLangDropdown(){const dd=document.getElementById('lang-dropdown');if(dd)dd.classList.add('hidden');}
+document.addEventListener('click',e=>{if(!e.target.closest('.lang-selector'))closeLangDropdown();});
+
+// ── Login ──
+function togglePwd(){const p=document.getElementById('login-password');p.type=p.type==='password'?'text':'password';}
+function goToMFA(){
+  const email=document.getElementById('login-email').value;
+  if(!email){showToast('E-mail é obrigatório','error');return;}
+  document.getElementById('login-step-1').classList.add('hidden');
+  document.getElementById('login-step-2').classList.remove('hidden');
+  setTimeout(()=>{document.querySelectorAll('.mfa-digit').forEach(el=>{el.value=String(Math.floor(Math.random()*10));});},400);
+}
+function nextDigit(el,idx){if(el.value&&idx<5)document.querySelectorAll('.mfa-digit')[idx+1].focus();}
+function loginSSO(provider){showToast('Redirecionando para '+provider+'...','info');setTimeout(()=>doLogin(),900);}
+function doLogin(){
+  showToast('Autenticando...','info');
+  setTimeout(()=>{
+    document.getElementById('screen-login').style.display='none';
+    const app=document.getElementById('screen-app');
+    app.style.display='flex';app.classList.add('active');
+    initApp();
+    showToast('Bem-vindo à Brandvakt Academy! 🛡','success');
+  },700);
+}
+
+// ── App init ──
+function initApp(){
+  applyNavLabels();
+  renderTenantList();
+  renderPage('dashboard');
+  const mq=window.matchMedia('(max-width:900px)');
+  if(mq.matches)document.getElementById('sidebar-toggle').style.display='flex';
+  mq.addEventListener('change',e=>{document.getElementById('sidebar-toggle').style.display=e.matches?'flex':'none';});
+}
+
+// ── Navigation ──
+function navTo(page,el){
+  document.querySelectorAll('.nav-item').forEach(i=>i.classList.remove('active'));
+  if(el)el.classList.add('active');
+  else{const match=document.querySelector(`[data-page="${page}"]`);if(match)match.classList.add('active');}
+  APP.currentPage=page;
+  renderPage(page);
+}
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');}
+
+// ── Page renderer ──
+function renderPage(page){
+  const container=document.getElementById('pages-container');
+  const fn=window['renderPage_'+page];
+  if(fn){
+    container.innerHTML=fn();
+    container.className='fade-in';
+    if(window['initPage_'+page])window['initPage_'+page]();
+  }else{
+    container.innerHTML=`<div class="empty-state"><div class="empty-icon">🚧</div><div class="empty-title">Em construção</div><div class="empty-sub">Página "${page}" em breve.</div></div>`;
+  }
+}
+
+// ── Modals ──
+function showModal(id){document.getElementById(id).classList.remove('hidden');}
+function hideModal(id){document.getElementById(id).classList.add('hidden');}
+function closeModalOutside(e,id){if(e.target.id===id)hideModal(id);}
+
+// ── Toast ──
+function showToast(msg,type='info'){
+  const c=document.getElementById('toast-container');
+  const id='toast-'+Date.now();
+  const icons={success:'✅',error:'❌',info:'ℹ️'};
+  const el=document.createElement('div');
+  el.className=`toast toast-${type}`;el.id=id;
+  el.innerHTML=`<span>${icons[type]||'ℹ️'}</span><span class="toast-msg">${msg}</span><span class="toast-close" onclick="document.getElementById('${id}').remove()">✕</span>`;
+  c.appendChild(el);setTimeout(()=>el.remove&&el.remove(),4000);
+}
+
+// ── Tenant ──
+function renderTenantList(){
+  const el=document.getElementById('tenant-list');
+  if(!el)return;
+  el.innerHTML=APP.tenants.map(t=>`
+    <div onclick="switchTenant(${t.id})" style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--radius-md);border:1px solid ${t.active?'rgba(0,87,255,.3)':'var(--bg-border)'};background:${t.active?'rgba(0,87,255,.08)':'rgba(255,255,255,.02)'};cursor:pointer;transition:var(--transition);" onmouseenter="this.style.borderColor='var(--bg-border-light)'" onmouseleave="this.style.borderColor=''">
+      <div style="width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--brand-accent),var(--brand-purple));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:#fff;flex-shrink:0;">${t.name.slice(0,2).toUpperCase()}</div>
+      <div style="flex:1;min-width:0;"><div style="font-size:.88rem;font-weight:600;">${t.name}</div><div style="font-size:.72rem;color:var(--text-muted);">${t.users.toLocaleString()} usuários · ${t.plan}</div></div>
+      ${t.active?'<span style="color:var(--brand-success);font-size:.9rem;">✓</span>':''}
+    </div>`).join('');
+}
+function switchTenant(id){
+  APP.tenants.forEach(t=>t.active=t.id===id);
+  const tenant=APP.tenants.find(t=>t.id===id);
+  APP.tenant=tenant;
+  document.getElementById('tenant-name').textContent=tenant.name;
+  hideModal('modal-tenant');
+  showToast('Empresa: '+tenant.name,'success');
+  renderPage(APP.currentPage);
+}
+
+// ── SVG Helpers ──
+function scoreRingSVG(value,color,size=80,stroke=6){
+  const r=(size-stroke*2)/2,circ=2*Math.PI*r,dash=(value/100)*circ;
+  return`<div class="score-ring" style="width:${size}px;height:${size}px;"><svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="rgba(255,255,255,.06)" stroke-width="${stroke}"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-dasharray="${dash} ${circ}" stroke-linecap="round"/></svg><span class="score-ring-val" style="color:${color};font-size:${size>60?'1rem':'.78rem'};">${value}</span></div>`;
+}
+function sparklineSVG(data,color='#0057FF',w=120,h=40){
+  const max=Math.max(...data),min=Math.min(...data),range=max-min||1;
+  const xs=data.map((_,i)=>(i/(data.length-1))*w);
+  const ys=data.map(v=>h-((v-min)/range)*(h-4)-2);
+  const path=xs.map((x,i)=>`${i===0?'M':'L'}${x},${ys[i]}`).join(' ');
+  const area=`${path} L${w},${h} L0,${h} Z`;
+  const gid='sg'+color.replace(/[^a-z0-9]/gi,'');
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.3"/><stop offset="100%" stop-color="${color}" stop-opacity="0"/></linearGradient></defs><path d="${area}" fill="url(#${gid})"/><path d="${path}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/></svg>`;
+}
+
+// ── SCORM modal steps (global) ──
+window.handleScormDrop=function(e){e.preventDefault();document.getElementById('scorm-dropzone').innerHTML=`<div style="font-size:1.5rem;margin-bottom:8px;">✅</div><div style="font-weight:600;color:var(--brand-success);">Arquivo detectado</div><div style="font-size:.78rem;color:var(--text-muted);">course_scorm_v2.zip · 14.2 MB</div>`;};
+window.handleScormFile=function(input){if(input.files[0])document.getElementById('scorm-dropzone').innerHTML=`<div style="font-size:1.5rem;margin-bottom:8px;">✅</div><div style="font-weight:600;color:var(--brand-success);">Carregado</div><div style="font-size:.78rem;color:var(--text-muted);">${input.files[0].name}</div>`;};
+window.scormStep2=function(){document.getElementById('modal-step-1').classList.add('hidden');document.getElementById('modal-step-2').classList.remove('hidden');document.getElementById('step-ind-1').classList.remove('active');document.getElementById('step-ind-1').classList.add('done');document.getElementById('step-ind-2').classList.add('active');};
+window.scormStep1=function(){document.getElementById('modal-step-2').classList.add('hidden');document.getElementById('modal-step-1').classList.remove('hidden');document.getElementById('step-ind-2').classList.remove('active');document.getElementById('step-ind-1').classList.remove('done');document.getElementById('step-ind-1').classList.add('active');};
+window.scormStep3=function(){document.getElementById('modal-step-2').classList.add('hidden');document.getElementById('modal-step-3').classList.remove('hidden');document.getElementById('step-ind-2').classList.remove('active');document.getElementById('step-ind-2').classList.add('done');document.getElementById('step-ind-3').classList.add('active');document.getElementById('step-ind-3').classList.add('done');showToast('Treinamento publicado! 🎉','success');};
+
+// Expose
+window.showToast=showToast;window.showModal=showModal;window.hideModal=hideModal;window.navTo=navTo;
+window.scoreRingSVG=scoreRingSVG;window.sparklineSVG=sparklineSVG;
+</script>
+
+<!-- ══════ Page scripts ══════ -->
+<script src="pages/dashboard.js"></script>
+<script src="pages/library.js"></script>
+<script src="pages/users.js"></script>
+<script src="pages/certificates.js"></script>
+<script src="pages/ai.js"></script>
+<script src="pages/misc.js"></script>
+
+</body>
+</html>
