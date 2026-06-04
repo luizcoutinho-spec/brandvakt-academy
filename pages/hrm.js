@@ -3,7 +3,8 @@
 //  Brandvakt Academy Enterprise Platform
 // ══════════════════════════════════════════════════════════════
 
-(function injectHRMCSS() {
+/* Named as regular function so it's accessible globally */
+function injectHRMCSS() {
   if (document.getElementById('hrm-css')) return;
   const s = document.createElement('style');
   s.id = 'hrm-css';
@@ -132,7 +133,8 @@
     .hrm-dept-row:last-child { border-bottom:none; }
   `;
   document.head.appendChild(s);
-})();
+}
+injectHRMCSS(); /* call immediately on script load */
 
 // ── HRM Mock Data ─────────────────────────────────────────────
 const HRM_DATA = {
