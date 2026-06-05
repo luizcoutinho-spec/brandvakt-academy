@@ -894,9 +894,8 @@ function stPanelPlano() {
           : `<span style="font-size:0.65rem;font-weight:700;color:#6b7280;background:rgba(255,255,255,0.05);padding:3px 10px;border-radius:99px;flex-shrink:0;white-space:nowrap;">INATIVO</span>`}
       </div>
 
-      <!-- Price -->
-      <div style="font-size:1.2rem;font-weight:900;color:${p.color};margin-bottom:4px;">${p.price}</div>
-      <div style="font-size:0.70rem;color:#6b7280;margin-bottom:14px;">${p.users}</div>
+      <!-- Users -->
+      <div style="font-size:0.72rem;color:#6b7280;margin-bottom:14px;">${p.users}</div>
 
       <!-- Description -->
       <p style="font-size:0.78rem;color:#94a3b8;line-height:1.55;margin-bottom:14px;">${p.description}</p>
@@ -953,7 +952,6 @@ function stPanelPlano() {
     <div style="flex:1;min-width:190px;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
       <div style="font-size:0.70rem;color:#6b7280;margin-bottom:4px;">Próximo vencimento</div>
       <div style="font-weight:700;font-size:0.92rem;">01 de Julho, 2025</div>
-      <div id="plan-total-price" style="font-size:0.84rem;font-weight:800;color:#00d4ff;margin-top:5px;">${stCalcTotal()}</div>
     </div>
     <div style="flex:1;min-width:190px;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
       <div style="font-size:0.70rem;color:#6b7280;margin-bottom:4px;">Forma de pagamento</div>
@@ -1027,9 +1025,6 @@ window.stToggleProduct = function(id) {
     }
   }
 
-  // Update total price
-  const priceEl = document.getElementById('plan-total-price');
-  if (priceEl) priceEl.textContent = stCalcTotal();
 
   showToast&&showToast(
     (active ? '✅ ' : '⏹ ') + cfg.name + (active ? ' ativado' : ' desativado'),
