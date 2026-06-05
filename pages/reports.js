@@ -1,0 +1,805 @@
+// ══════════════════════════════════════════════════════════════
+//  📊 RELATÓRIOS & INTELIGÊNCIA — Complete Module
+//  Brandvakt Academy Enterprise Platform
+// ══════════════════════════════════════════════════════════════
+
+function injectReportsCSS() {
+  if (document.getElementById('reports-css')) return;
+  const s = document.createElement('style');
+  s.id = 'reports-css';
+  s.textContent = `
+    /* ── Canvas wrap ── */
+    .rp-canvas-wrap {
+      position: relative; overflow: hidden;
+      contain: layout style; transform: translateZ(0);
+    }
+    .rp-canvas-wrap canvas {
+      position: absolute !important;
+      top: 0; left: 0;
+      width: 100% !important; height: 100% !important;
+    }
+
+    /* ── Tabs ── */
+    .rp-tabs { display:flex; gap:4px; background:#12121a; border:1px solid rgba(255,255,255,0.07); border-radius:14px; padding:5px; margin-bottom:20px; overflow-x:auto; }
+    .rp-tab  { display:flex; align-items:center; gap:7px; padding:9px 18px; border-radius:10px; font-size:0.83rem; font-weight:600; cursor:pointer; color:#94a3b8; background:transparent; border:none; white-space:nowrap; transition:all 0.2s; font-family:inherit; }
+    .rp-tab:hover  { color:#f1f5f9; background:rgba(255,255,255,0.04); }
+    .rp-tab.active { color:#000; background:#00d4ff; box-shadow:0 4px 16px rgba(0,212,255,0.28); }
+
+    /* ── KPI ── */
+    .rp-kpi { background:#12121a; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:18px; transition:all 0.2s; cursor:pointer; }
+    .rp-kpi:hover { transform:translateY(-2px); border-color:rgba(255,255,255,0.14); }
+    .rp-kpi-val  { font-size:1.9rem; font-weight:800; letter-spacing:-0.04em; line-height:1; }
+    .rp-kpi-lbl  { font-size:0.70rem; color:#6b7280; margin-top:5px; text-transform:uppercase; letter-spacing:0.08em; }
+    .rp-kpi-delta { font-size:0.72rem; font-weight:700; padding:2px 8px; border-radius:99px; }
+
+    /* ── Report row ── */
+    .rp-row { display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1px solid rgba(255,255,255,0.04); transition:background 0.15s; cursor:pointer; }
+    .rp-row:last-child { border-bottom:none; }
+    .rp-row:hover { background:rgba(255,255,255,0.02); }
+
+    /* ── Buttons ── */
+    .rp-btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:9px; border:none; font-size:0.82rem; font-weight:600; cursor:pointer; transition:all 0.2s; font-family:inherit; }
+    .rp-btn-primary { background:#00d4ff; color:#000; box-shadow:0 4px 14px rgba(0,212,255,0.28); }
+    .rp-btn-primary:hover { opacity:0.9; transform:translateY(-1px); }
+    .rp-btn-ghost { background:rgba(255,255,255,0.06); color:#94a3b8; border:1px solid rgba(255,255,255,0.10); }
+    .rp-btn-ghost:hover { background:rgba(255,255,255,0.10); color:#f1f5f9; }
+    .rp-btn-sm { padding:6px 12px; font-size:0.76rem; border-radius:8px; }
+    .rp-btn-danger { background:rgba(239,68,68,0.12); color:#ef4444; border:1px solid rgba(239,68,68,0.20); }
+
+    /* ── Input / Select ── */
+    .rp-input, .rp-select, .rp-textarea {
+      background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.10);
+      border-radius:9px; padding:10px 13px; color:#f1f5f9;
+      font-size:0.85rem; font-family:inherit; outline:none;
+      transition:border-color 0.2s; width:100%; box-sizing:border-box;
+    }
+    .rp-input:focus, .rp-select:focus { border-color:#00d4ff; box-shadow:0 0 0 3px rgba(0,212,255,0.10); }
+    .rp-input::placeholder { color:#6b7280; }
+    .rp-select option { background:#1a1a26; }
+    .rp-label { display:block; font-size:0.70rem; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+
+    /* ── Card ── */
+    .rp-card { background:#12121a; border:1px solid rgba(255,255,255,0.07); border-radius:16px; padding:22px; }
+
+    /* ── Progress ── */
+    .rp-prog { height:5px; background:rgba(255,255,255,0.06); border-radius:3px; overflow:hidden; }
+    .rp-prog-fill { height:100%; border-radius:3px; transition:width 0.8s ease; }
+
+    /* ── Modal ── */
+    .rp-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.80); backdrop-filter:blur(6px); z-index:9000; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .rp-modal { background:#14141e; border:1px solid rgba(255,255,255,0.10); border-radius:20px; padding:32px; width:100%; max-width:700px; max-height:90vh; overflow-y:auto; box-shadow:0 24px 80px rgba(0,0,0,0.7); animation:rpIn 0.25s ease; }
+    .rp-modal-lg { max-width:900px; }
+    @keyframes rpIn { from{transform:scale(0.95);opacity:0} to{transform:scale(1);opacity:1} }
+    .rp-modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:22px; }
+    .rp-modal-close { background:none; border:none; color:#6b7280; font-size:1.3rem; cursor:pointer; }
+    .rp-modal-close:hover { color:#f1f5f9; }
+
+    /* ── Insight card ── */
+    .rp-insight { padding:14px 16px; border-radius:12px; border-left:3px solid; margin-bottom:10px; }
+
+    /* ── Schedule card ── */
+    .rp-sched-card { background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.07); border-radius:12px; padding:14px 16px; display:flex; align-items:center; gap:12px; margin-bottom:10px; transition:all 0.2s; }
+    .rp-sched-card:hover { background:rgba(255,255,255,0.04); }
+
+    /* ── Export format ── */
+    .rp-fmt { display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 12px; border-radius:12px; background:rgba(255,255,255,0.02); border:2px solid rgba(255,255,255,0.07); cursor:pointer; transition:all 0.2s; text-align:center; }
+    .rp-fmt:hover, .rp-fmt.selected { border-color:#00d4ff; background:rgba(0,212,255,0.06); }
+    .rp-fmt-icon { font-size:1.8rem; }
+    .rp-fmt-name { font-size:0.78rem; font-weight:700; }
+    .rp-fmt-desc { font-size:0.66rem; color:#6b7280; }
+
+    /* ── Toggle ── */
+    .rp-toggle { position:relative; width:40px; height:22px; }
+    .rp-toggle input { opacity:0; width:0; height:0; }
+    .rp-slider { position:absolute; inset:0; background:rgba(255,255,255,0.10); border-radius:22px; cursor:pointer; transition:0.3s; }
+    .rp-slider:before { content:''; position:absolute; width:16px; height:16px; left:3px; top:3px; background:#fff; border-radius:50%; transition:0.3s; }
+    .rp-toggle input:checked + .rp-slider { background:#00d4ff; }
+    .rp-toggle input:checked + .rp-slider:before { transform:translateX(18px); }
+  `;
+  document.head.appendChild(s);
+}
+injectReportsCSS();
+
+// ── State ─────────────────────────────────────────────────────
+let RP = { tab: 'reports', search: '', filterType: 'all', selectedFmt: 'pdf' };
+
+// ── Data ──────────────────────────────────────────────────────
+const REPORTS_DATA = {
+  kpis: [
+    { icon:'📄', val:'284',   lbl:'Relatórios Gerados', delta:'+18%', up:true,  color:'#00d4ff' },
+    { icon:'📤', val:'1.021', lbl:'Exportações PDF',    delta:'+34%', up:true,  color:'#22c55e' },
+    { icon:'🕐', val:'12',    lbl:'Agendamentos Ativos',delta:'+3',   up:true,  color:'#8b5cf6' },
+    { icon:'🔗', val:'34',    lbl:'Relatórios Compartilhados', delta:'+9', up:true, color:'#14b8a6' },
+  ],
+
+  reports: [
+    { id:'r1',  name:'Compliance Score Executivo',       type:'Compliance',   category:'compliance', icon:'📋', date:'01/06/2025', size:'2.4 MB', views:47, status:'ready',    color:'#22c55e' },
+    { id:'r2',  name:'Human Risk Dashboard Q2',          type:'Risco',         category:'risk',       icon:'🛡', date:'30/05/2025', size:'3.1 MB', views:32, status:'ready',    color:'#ef4444' },
+    { id:'r3',  name:'Certificações por Departamento',  type:'Certificados',  category:'certs',      icon:'🏆', date:'28/05/2025', size:'1.8 MB', views:28, status:'ready',    color:'#8b5cf6' },
+    { id:'r4',  name:'LGPD Conformidade Brasil',         type:'Privacidade',   category:'privacy',    icon:'🔒', date:'25/05/2025', size:'4.2 MB', views:51, status:'ready',    color:'#f59e0b' },
+    { id:'r5',  name:'Phishing Simulation Q2',           type:'Cybersecurity', category:'cyber',      icon:'📧', date:'20/05/2025', size:'5.7 MB', views:63, status:'ready',    color:'#ef4444' },
+    { id:'r6',  name:'Engajamento & Conclusões',         type:'Engajamento',   category:'training',   icon:'📊', date:'15/05/2025', size:'2.9 MB', views:39, status:'ready',    color:'#00d4ff' },
+    { id:'r7',  name:'Relatório Executivo Mensal',       type:'Executivo',     category:'executive',  icon:'📑', date:'01/05/2025', size:'8.1 MB', views:84, status:'ready',    color:'#00d4ff' },
+    { id:'r8',  name:'NIS2 Gap Analysis — Europa',      type:'Compliance',    category:'compliance', icon:'🇪🇺', date:'28/04/2025', size:'3.6 MB', views:22, status:'ready',    color:'#22c55e' },
+    { id:'r9',  name:'GDPR Audit Trail Q1',              type:'Privacidade',   category:'privacy',    icon:'📝', date:'15/04/2025', size:'6.2 MB', views:17, status:'ready',    color:'#f59e0b' },
+    { id:'r10', name:'Trilhas de Aprendizagem — Q2',    type:'Treinamento',   category:'training',   icon:'🛤', date:'10/04/2025', size:'2.1 MB', views:29, status:'generating',color:'#14b8a6' },
+  ],
+
+  trends: {
+    compliance: [72, 76, 80, 84, 88, 91],
+    risk:       [69, 67, 65, 64, 65, 65],
+    training:   [55, 62, 70, 76, 82, 84],
+    certs:      [180,220,280,310,370,420],
+    labels:     ['Jan','Fev','Mar','Abr','Mai','Jun'],
+  },
+
+  categories: [
+    { name:'Compliance',    pct:32, color:'#22c55e', count:6  },
+    { name:'Cybersecurity', pct:28, color:'#00d4ff', count:5  },
+    { name:'Privacidade',   pct:21, color:'#8b5cf6', count:4  },
+    { name:'Treinamento',   pct:12, color:'#14b8a6', count:3  },
+    { name:'Executivo',     pct:7,  color:'#f59e0b', count:2  },
+  ],
+
+  schedules: [
+    { id:'s1', name:'Relatório Executivo Semanal',   freq:'Toda segunda-feira',  next:'09 Jun', to:'diretoria@empresa.com',    active:true,  icon:'📑' },
+    { id:'s2', name:'Human Risk — Alerta Diário',    freq:'Todo dia às 08:00',   next:'06 Jun', to:'ciso@empresa.com',         active:true,  icon:'⚠️' },
+    { id:'s3', name:'Compliance Score Mensal',       freq:'Dia 1 de cada mês',   next:'01 Jul', to:'compliance@empresa.com',   active:true,  icon:'📋' },
+    { id:'s4', name:'Phishing Results — Campanha',  freq:'Ao fim de campanha',   next:'15 Jun', to:'security@empresa.com',     active:false, icon:'📧' },
+    { id:'s5', name:'Certificados Vencendo',         freq:'30 dias antes',       next:'20 Jun', to:'rh@empresa.com',           active:true,  icon:'🏆' },
+  ],
+
+  insights: [
+    { type:'success', color:'#22c55e', bg:'rgba(34,197,94,0.08)',   icon:'✅', title:'Compliance em alta', text:'Score subiu 6pts em 6 meses. Europa (94%) lidera o ranking global.' },
+    { type:'warning', color:'#f59e0b', bg:'rgba(245,158,11,0.08)',  icon:'⚠️', title:'Risco Humano estabilizado', text:'65 pontos — acima da meta de 60. Operações e Comercial precisam de atenção.' },
+    { type:'info',    color:'#00d4ff', bg:'rgba(0,212,255,0.08)',   icon:'💡', title:'Engajamento crescendo', text:'Taxa de conclusão subiu de 55% para 84% nos últimos 6 meses.' },
+    { type:'error',   color:'#ef4444', bg:'rgba(239,68,68,0.08)',   icon:'🔴', title:'Phishing: 18% de cliques', text:'Campanha Q2 teve 18% de taxa de cliques. Recomendado reforço imediato.' },
+  ],
+
+  dept_perf: [
+    { name:'RH',         compliance:96, risk:14, certs:48, training:96, color:'#22c55e' },
+    { name:'Jurídico',   compliance:94, risk:18, certs:22, training:94, color:'#22c55e' },
+    { name:'TI',         compliance:88, risk:12, certs:64, training:88, color:'#00d4ff' },
+    { name:'Financeiro', compliance:81, risk:52, certs:38, training:81, color:'#f59e0b' },
+    { name:'Comercial',  compliance:72, risk:67, certs:55, training:72, color:'#f59e0b' },
+    { name:'Operações',  compliance:61, risk:85, certs:31, training:61, color:'#ef4444' },
+  ],
+};
+
+const RP_TYPES = ['all','compliance','risk','certs','privacy','cyber','training','executive'];
+
+// ══════════════════════════════════════════════════════════════
+//  MAIN RENDER
+// ══════════════════════════════════════════════════════════════
+window.renderPage_reports = function() {
+  injectReportsCSS();
+  return `
+<div id="reports-module">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
+    <div>
+      <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;">📊 Relatórios & Inteligência</h2>
+      <p style="color:#6b7280;font-size:0.84rem;margin-top:3px;">Analytics avançado · exportação · agendamentos automáticos</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpOpenSchedule()">🕐 Agendar Envio</button>
+      <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpOpenExport()">📤 Exportar</button>
+      <button class="rp-btn rp-btn-primary" onclick="rpOpenNewReport()">+ Novo Relatório</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:20px;">
+    ${REPORTS_DATA.kpis.map(k=>`
+      <div class="rp-kpi">
+        <div style="font-size:1.5rem;margin-bottom:8px;">${k.icon}</div>
+        <div class="rp-kpi-val" style="color:${k.color};">${k.val}</div>
+        <div class="rp-kpi-lbl">${k.lbl}</div>
+        <div style="margin-top:8px;">
+          <span class="rp-kpi-delta" style="color:${k.up?'#22c55e':'#ef4444'};background:${k.up?'rgba(34,197,94,0.10)':'rgba(239,68,68,0.10)'};">${k.delta}</span>
+        </div>
+      </div>`).join('')}
+  </div>
+
+  <!-- Tabs -->
+  <div class="rp-tabs">
+    <button class="rp-tab${RP.tab==='reports'?  ' active':''}" onclick="rpTab('reports')">📋 Relatórios</button>
+    <button class="rp-tab${RP.tab==='analytics'?' active':''}" onclick="rpTab('analytics')">📈 Analytics</button>
+    <button class="rp-tab${RP.tab==='schedules'?' active':''}" onclick="rpTab('schedules')">🕐 Agendamentos</button>
+    <button class="rp-tab${RP.tab==='export'?   ' active':''}" onclick="rpTab('export')">📤 Exportação</button>
+  </div>
+
+  <div id="rp-body">${rpRenderTab(RP.tab)}</div>
+  <div id="rp-modals"></div>
+</div>`;
+};
+
+window.initPage_reports = function() {
+  setTimeout(() => {
+    document.querySelectorAll('.rp-prog-fill').forEach(el => {
+      const w = el.style.width; el.style.width = '0';
+      requestAnimationFrame(() => { el.style.transition='width 0.8s ease'; el.style.width=w; });
+    });
+    if (RP.tab === 'analytics') rpInitAnalyticsCharts();
+  }, 120);
+};
+
+window.rpTab = function(tab) {
+  RP.tab = tab;
+  document.querySelectorAll('.rp-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.rp-tab').forEach(b => { if (b.textContent.toLowerCase().includes(tab==='reports'?'relatório':tab==='analytics'?'analytics':tab==='schedules'?'agendament':'export')) b.classList.add('active'); });
+  const body = document.getElementById('rp-body');
+  if (!body) return;
+  body.style.opacity = '0';
+  body.innerHTML = rpRenderTab(tab);
+  requestAnimationFrame(() => { body.style.transition='opacity 0.22s'; body.style.opacity='1'; });
+  setTimeout(() => {
+    document.querySelectorAll('.rp-prog-fill').forEach(el => {
+      const w = el.style.width; el.style.width='0';
+      requestAnimationFrame(() => { el.style.transition='width 0.8s ease'; el.style.width=w; });
+    });
+    if (tab === 'analytics') rpInitAnalyticsCharts();
+  }, 80);
+};
+
+function rpRenderTab(tab) {
+  if (tab === 'reports')   return rpRenderReports();
+  if (tab === 'analytics') return rpRenderAnalytics();
+  if (tab === 'schedules') return rpRenderSchedules();
+  if (tab === 'export')    return rpRenderExport();
+  return rpRenderReports();
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TAB: RELATÓRIOS
+// ══════════════════════════════════════════════════════════════
+function rpRenderReports() {
+  const filtered = REPORTS_DATA.reports.filter(r =>
+    (RP.filterType === 'all' || r.category === RP.filterType) &&
+    (!RP.search || r.name.toLowerCase().includes(RP.search.toLowerCase()) || r.type.toLowerCase().includes(RP.search.toLowerCase()))
+  );
+
+  return `
+  <!-- Search + Filter -->
+  <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+    <input class="rp-input" style="max-width:320px;" placeholder="🔍 Buscar relatório..." value="${RP.search}" oninput="RP.search=this.value;rpRefreshList()">
+    <select class="rp-select" style="max-width:200px;" onchange="RP.filterType=this.value;rpRefreshList()">
+      <option value="all"${RP.filterType==='all'?' selected':''}>Todos os tipos</option>
+      <option value="compliance"${RP.filterType==='compliance'?' selected':''}>Compliance</option>
+      <option value="risk"${RP.filterType==='risk'?' selected':''}>Risco</option>
+      <option value="certs"${RP.filterType==='certs'?' selected':''}>Certificados</option>
+      <option value="privacy"${RP.filterType==='privacy'?' selected':''}>Privacidade</option>
+      <option value="cyber"${RP.filterType==='cyber'?' selected':''}>Cybersecurity</option>
+      <option value="training"${RP.filterType==='training'?' selected':''}>Treinamento</option>
+      <option value="executive"${RP.filterType==='executive'?' selected':''}>Executivo</option>
+    </select>
+    <span style="margin-left:auto;font-size:0.78rem;color:#6b7280;align-self:center;">${filtered.length} relatório${filtered.length!==1?'s':''}</span>
+  </div>
+
+  <!-- List -->
+  <div id="rp-list" class="rp-card" style="padding:0;overflow:hidden;">
+    ${rpReportRows(filtered)}
+  </div>`;
+}
+
+function rpReportRows(list) {
+  if (!list.length) return `<div style="padding:40px;text-align:center;color:#6b7280;">Nenhum relatório encontrado.</div>`;
+  return list.map(r => `
+    <div class="rp-row" onclick="rpOpenDetail('${r.id}')">
+      <div style="width:38px;height:38px;border-radius:10px;background:${r.color}18;border:1px solid ${r.color}30;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">${r.icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.name}</div>
+        <div style="font-size:0.70rem;color:#6b7280;margin-top:2px;">${r.date} · ${r.size} · ${r.views} visualizações</div>
+      </div>
+      <span class="badge" style="background:${r.color}18;color:${r.color};flex-shrink:0;font-size:0.65rem;">${r.type}</span>
+      ${r.status==='generating'
+        ? `<span style="font-size:0.68rem;color:#f59e0b;background:rgba(245,158,11,0.10);padding:3px 9px;border-radius:99px;flex-shrink:0;">⏳ Gerando</span>`
+        : `<div style="display:flex;gap:5px;flex-shrink:0;" onclick="event.stopPropagation()">
+             <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpOpenDetail('${r.id}')">👁 Ver</button>
+             <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="showToast&&showToast('Exportando ${r.name}...','info')">📤</button>
+             <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="showToast&&showToast('Link de compartilhamento copiado!','success')">🔗</button>
+           </div>`}
+    </div>`).join('');
+}
+
+window.rpRefreshList = function() {
+  const el = document.getElementById('rp-list');
+  if (!el) return;
+  const filtered = REPORTS_DATA.reports.filter(r =>
+    (RP.filterType === 'all' || r.category === RP.filterType) &&
+    (!RP.search || r.name.toLowerCase().includes(RP.search.toLowerCase()) || r.type.toLowerCase().includes(RP.search.toLowerCase()))
+  );
+  el.innerHTML = rpReportRows(filtered);
+};
+
+// ══════════════════════════════════════════════════════════════
+//  TAB: ANALYTICS
+// ══════════════════════════════════════════════════════════════
+function rpRenderAnalytics() {
+  const t = REPORTS_DATA.trends;
+  const cats = REPORTS_DATA.categories;
+  const depts = REPORTS_DATA.dept_perf;
+
+  return `
+  <!-- Insights row -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:20px;">
+    ${REPORTS_DATA.insights.map(i=>`
+      <div class="rp-insight" style="background:${i.bg};border-color:${i.color};">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <span style="font-size:1.0rem;">${i.icon}</span>
+          <span style="font-size:0.82rem;font-weight:800;color:${i.color};">${i.title}</span>
+        </div>
+        <p style="font-size:0.76rem;color:#94a3b8;line-height:1.5;margin:0;">${i.text}</p>
+      </div>`).join('')}
+  </div>
+
+  <!-- Charts row 1: Line + Donut -->
+  <div style="display:grid;grid-template-columns:1fr 320px;gap:18px;margin-bottom:18px;">
+
+    <div class="rp-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h3 style="font-size:0.95rem;font-weight:800;">📈 Evolução dos Scores</h3>
+        <div style="display:flex;gap:12px;font-size:0.68rem;color:#6b7280;">
+          ${[['#22c55e','Compliance'],['#ef4444','Risk (inv.)'],['#00d4ff','Treinamento']].map(([c,l])=>`
+            <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:2px;background:${c};display:inline-block;border-radius:2px;"></span>${l}</span>`).join('')}
+        </div>
+      </div>
+      <div class="rp-canvas-wrap" style="height:200px;"><canvas id="rp-line-chart"></canvas></div>
+    </div>
+
+    <div class="rp-card">
+      <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:14px;">📊 Distribuição por Tipo</h3>
+      <div class="rp-canvas-wrap" style="height:140px;"><canvas id="rp-donut-chart"></canvas></div>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-top:14px;">
+        ${cats.map(c=>`
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:9px;height:9px;border-radius:50%;background:${c.color};flex-shrink:0;"></div>
+            <div style="flex:1;font-size:0.76rem;">${c.name}</div>
+            <span style="font-size:0.76rem;font-weight:800;color:${c.color};">${c.pct}%</span>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row 2: Bar + Table -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;">
+
+    <div class="rp-card">
+      <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:14px;">🏆 Certificados Emitidos por Mês</h3>
+      <div class="rp-canvas-wrap" style="height:180px;"><canvas id="rp-bar-chart"></canvas></div>
+    </div>
+
+    <div class="rp-card">
+      <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:14px;">🏢 Performance por Departamento</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        ${depts.map(d=>`
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
+              <span style="font-weight:600;">${d.name}</span>
+              <span style="color:${d.color};font-weight:800;">${d.compliance}%</span>
+            </div>
+            <div class="rp-prog"><div class="rp-prog-fill" style="width:${d.compliance}%;background:${d.color};"></div></div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- Dept detailed table -->
+  <div class="rp-card" style="padding:0;overflow:hidden;">
+    <div style="padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.07);">
+      <h3 style="font-size:0.95rem;font-weight:800;">📋 Scorecard por Departamento</h3>
+    </div>
+    <div class="table-wrap" style="border:none;border-radius:0;">
+      <table>
+        <thead><tr>
+          <th>Departamento</th><th>Compliance</th><th>Risk Score</th><th>Certificados</th><th>Treinamento</th><th>Status</th>
+        </tr></thead>
+        <tbody>
+          ${depts.map(d=>`<tr>
+            <td><span style="font-weight:700;">${d.name}</span></td>
+            <td><span style="font-weight:800;color:${d.compliance>=90?'#22c55e':d.compliance>=70?'#00d4ff':'#f59e0b'};">${d.compliance}%</span></td>
+            <td><span style="font-weight:800;color:${d.risk<=30?'#22c55e':d.risk<=60?'#f59e0b':'#ef4444'};">${d.risk}</span></td>
+            <td><span class="badge badge-purple">${d.certs} 🏆</span></td>
+            <td><span style="font-weight:700;color:${d.training>=90?'#22c55e':d.training>=70?'#00d4ff':'#f59e0b'};">${d.training}%</span></td>
+            <td><span class="badge ${d.compliance>=85?'badge-green':d.compliance>=70?'badge-yellow':'badge-red'}">${d.compliance>=85?'OK':d.compliance>=70?'Atenção':'Crítico'}</span></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+function rpInitAnalyticsCharts() {
+  if (!window.Chart) return;
+
+  const t = REPORTS_DATA.trends;
+  const cats = REPORTS_DATA.categories;
+
+  // Line chart
+  const lineCanvas = document.getElementById('rp-line-chart');
+  if (lineCanvas) {
+    const w = lineCanvas.parentElement.offsetWidth || 600;
+    lineCanvas.width  = w;
+    lineCanvas.height = lineCanvas.parentElement.offsetHeight || 200;
+    const lc = new Chart(lineCanvas, {
+      type: 'line',
+      data: {
+        labels: t.labels,
+        datasets: [
+          { label:'Compliance', data:t.compliance, borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,0.08)', borderWidth:2.5, pointRadius:4, pointHoverRadius:4, tension:0.4, fill:true },
+          { label:'Human Risk', data:t.risk,        borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.06)', borderWidth:2.5, pointRadius:4, pointHoverRadius:4, tension:0.4, fill:false },
+          { label:'Treinamento',data:t.training,    borderColor:'#00d4ff', backgroundColor:'rgba(0,212,255,0.06)', borderWidth:2.5, pointRadius:4, pointHoverRadius:4, tension:0.4, fill:false },
+        ],
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        animation:{duration:600}, transitions:{resize:{animation:{duration:0}}},
+        plugins:{ legend:{display:false}, tooltip:{animation:false,mode:'index',intersect:false} },
+        scales:{
+          x:{ grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#6b7280',font:{size:11}} },
+          y:{ grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#6b7280',font:{size:11}}, min:40, max:100 },
+        },
+      },
+    });
+    requestAnimationFrame(() => lc.resize());
+  }
+
+  // Donut chart
+  const donutCanvas = document.getElementById('rp-donut-chart');
+  if (donutCanvas) {
+    donutCanvas.width  = donutCanvas.parentElement.offsetWidth  || 260;
+    donutCanvas.height = donutCanvas.parentElement.offsetHeight || 140;
+    const dc = new Chart(donutCanvas, {
+      type: 'doughnut',
+      data: {
+        labels: cats.map(c=>c.name),
+        datasets:[{ data:cats.map(c=>c.pct), backgroundColor:cats.map(c=>c.color+'cc'), borderColor:cats.map(c=>c.color), borderWidth:2, hoverOffset:0 }],
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        animation:{duration:600}, transitions:{resize:{animation:{duration:0}}},
+        cutout:'72%',
+        plugins:{ legend:{display:false}, tooltip:{animation:false} },
+      },
+    });
+    requestAnimationFrame(() => dc.resize());
+  }
+
+  // Bar chart
+  const barCanvas = document.getElementById('rp-bar-chart');
+  if (barCanvas) {
+    barCanvas.width  = barCanvas.parentElement.offsetWidth  || 400;
+    barCanvas.height = barCanvas.parentElement.offsetHeight || 180;
+    const bc = new Chart(barCanvas, {
+      type: 'bar',
+      data: {
+        labels: t.labels,
+        datasets:[{ label:'Certificados', data:t.certs, backgroundColor:'rgba(139,92,246,0.70)', borderColor:'#8b5cf6', borderWidth:1.5, borderRadius:5 }],
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        animation:{duration:600}, transitions:{resize:{animation:{duration:0}}},
+        plugins:{ legend:{display:false}, tooltip:{animation:false} },
+        scales:{
+          x:{ grid:{display:false}, ticks:{color:'#6b7280',font:{size:11}} },
+          y:{ grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#6b7280',font:{size:11}}, beginAtZero:true },
+        },
+      },
+    });
+    requestAnimationFrame(() => bc.resize());
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  TAB: AGENDAMENTOS
+// ══════════════════════════════════════════════════════════════
+function rpRenderSchedules() {
+  const scheds = REPORTS_DATA.schedules;
+  return `
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <div style="font-size:0.78rem;color:#6b7280;">${scheds.filter(s=>s.active).length} de ${scheds.length} agendamentos ativos</div>
+    <button class="rp-btn rp-btn-primary rp-btn-sm" onclick="rpOpenSchedule()">+ Novo Agendamento</button>
+  </div>
+
+  ${scheds.map(s=>`
+    <div class="rp-sched-card">
+      <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">${s.icon}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-weight:700;font-size:0.88rem;">${s.name}</div>
+        <div style="font-size:0.72rem;color:#6b7280;margin-top:3px;">📅 ${s.freq} · Próximo: <span style="color:#00d4ff;">${s.next}</span></div>
+        <div style="font-size:0.70rem;color:#6b7280;margin-top:2px;">📧 ${s.to}</div>
+      </div>
+      <label class="rp-toggle">
+        <input type="checkbox" ${s.active?'checked':''} onchange="rpToggleSchedule('${s.id}',this.checked)">
+        <span class="rp-slider"></span>
+      </label>
+      <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpEditSchedule('${s.id}')">✏️</button>
+      <button class="rp-btn rp-btn-danger rp-btn-sm" onclick="rpDeleteSchedule('${s.id}')">🗑</button>
+    </div>`).join('')}
+
+  <!-- Summary -->
+  <div class="rp-card" style="margin-top:16px;">
+    <h4 style="font-size:0.80rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">📬 Próximos Envios</h4>
+    ${scheds.filter(s=>s.active).sort((a,b)=>a.next.localeCompare(b.next)).map(s=>`
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <span style="font-size:1.0rem;">${s.icon}</span>
+        <div style="flex:1;font-size:0.80rem;font-weight:600;">${s.name}</div>
+        <span style="font-size:0.72rem;color:#00d4ff;font-weight:800;">${s.next}</span>
+      </div>`).join('')}
+  </div>`;
+}
+
+window.rpToggleSchedule = function(id, active) {
+  const s = REPORTS_DATA.schedules.find(x=>x.id===id);
+  if (s) { s.active = active; showToast&&showToast(s.name + (active?' ativado':' desativado'),'info'); }
+};
+window.rpEditSchedule   = function(id) { showToast&&showToast('Editar agendamento em breve','info'); };
+window.rpDeleteSchedule = function(id) {
+  const idx = REPORTS_DATA.schedules.findIndex(x=>x.id===id);
+  if (idx > -1) { REPORTS_DATA.schedules.splice(idx,1); rpTab('schedules'); showToast&&showToast('Agendamento removido','success'); }
+};
+
+// ══════════════════════════════════════════════════════════════
+//  TAB: EXPORTAÇÃO
+// ══════════════════════════════════════════════════════════════
+function rpRenderExport() {
+  return `
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px;">
+
+    <!-- Format selector -->
+    <div class="rp-card">
+      <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:16px;">📦 Formato de Exportação</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+        ${[
+          { id:'pdf',   icon:'📄', name:'PDF',      desc:'Relatório visual completo' },
+          { id:'xlsx',  icon:'📊', name:'Excel',    desc:'Dados tabulares editáveis' },
+          { id:'csv',   icon:'📋', name:'CSV',      desc:'Exportação de dados brutos' },
+          { id:'json',  icon:'🔧', name:'JSON',     desc:'Integração via API / BI' },
+        ].map(f=>`
+          <div class="rp-fmt${RP.selectedFmt===f.id?' selected':''}" onclick="RP.selectedFmt='${f.id}';document.querySelectorAll('.rp-fmt').forEach(el=>el.classList.remove('selected'));this.classList.add('selected')">
+            <div class="rp-fmt-icon">${f.icon}</div>
+            <div class="rp-fmt-name">${f.name}</div>
+            <div class="rp-fmt-desc">${f.desc}</div>
+          </div>`).join('')}
+      </div>
+
+      <h4 style="font-size:0.78rem;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:10px;">Período</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+        <div><label class="rp-label">De</label><input type="date" class="rp-input" value="2025-01-01"></div>
+        <div><label class="rp-label">Até</label><input type="date" class="rp-input" value="2025-06-05"></div>
+      </div>
+
+      <button class="rp-btn rp-btn-primary" style="width:100%;" onclick="rpDoExport()">
+        📤 Exportar Relatório
+      </button>
+    </div>
+
+    <!-- Report selector + options -->
+    <div class="rp-card">
+      <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:16px;">📋 Conteúdo do Relatório</h3>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        ${[
+          ['compliance', '📋 Compliance Score',     true ],
+          ['risk',       '⚠️ Human Risk Dashboard', true ],
+          ['certs',      '🏆 Certificados',         true ],
+          ['phishing',   '📧 Phishing Results',     true ],
+          ['training',   '📚 Treinamentos',         true ],
+          ['depts',      '🏢 Departamentos',        false],
+          ['regions',    '🌐 Mapa de Conformidade', false],
+        ].map(([id,label,checked])=>`
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:8px 12px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);">
+            <input type="checkbox" ${checked?'checked':''} style="accent-color:#00d4ff;width:15px;height:15px;">
+            <span style="font-size:0.84rem;">${label}</span>
+          </label>`).join('')}
+      </div>
+
+      <h4 style="font-size:0.78rem;font-weight:700;color:#6b7280;text-transform:uppercase;margin-bottom:10px;">Opções</h4>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${[['Incluir gráficos',true],['Incluir tabelas detalhadas',true],['Adicionar rodapé corporativo',true],['Marca d\'água confidencial',false]].map(([lbl,chk])=>`
+          <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="checkbox" ${chk?'checked':''} style="accent-color:#00d4ff;width:14px;height:14px;">
+            <span style="font-size:0.82rem;color:#94a3b8;">${lbl}</span>
+          </label>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick exports -->
+  <div class="rp-card" style="margin-top:18px;">
+    <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:14px;">⚡ Exportações Rápidas</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
+      ${[
+        { icon:'📑', name:'Relatório Executivo',    desc:'Resumo completo · PDF',    color:'#00d4ff' },
+        { icon:'⚠️', name:'Human Risk Report',      desc:'Score + ranking · Excel',  color:'#ef4444' },
+        { icon:'📋', name:'Compliance Audit',        desc:'Evidências + gaps · PDF', color:'#22c55e' },
+        { icon:'📧', name:'Phishing Summary',        desc:'Resultados Q2 · PDF',     color:'#f59e0b' },
+        { icon:'🏆', name:'Certificados Emitidos',  desc:'Lista completa · CSV',     color:'#8b5cf6' },
+        { icon:'🛤', name:'Trilhas & Progresso',    desc:'Por usuário · Excel',      color:'#14b8a6' },
+      ].map(e=>`
+        <div class="rp-sched-card" onclick="showToast&&showToast('Exportando ${e.name}...','info')" style="cursor:pointer;flex-direction:column;align-items:flex-start;gap:6px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:1.1rem;">${e.icon}</span>
+            <span style="font-size:0.82rem;font-weight:700;color:${e.color};">${e.name}</span>
+          </div>
+          <div style="font-size:0.70rem;color:#6b7280;">${e.desc}</div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+window.rpDoExport = function() {
+  const fmtNames = { pdf:'PDF', xlsx:'Excel', csv:'CSV', json:'JSON' };
+  showToast&&showToast('Gerando relatório ' + (fmtNames[RP.selectedFmt]||'PDF') + '... Aguarde.', 'info');
+  setTimeout(() => showToast&&showToast('✅ Relatório exportado com sucesso!', 'success'), 1800);
+};
+
+// ══════════════════════════════════════════════════════════════
+//  MODALS
+// ══════════════════════════════════════════════════════════════
+
+// Report Detail Modal
+window.rpOpenDetail = function(id) {
+  const r = REPORTS_DATA.reports.find(x=>x.id===id);
+  if (!r) return;
+  if (r.status === 'generating') { showToast&&showToast('Relatório ainda sendo gerado...','warning'); return; }
+
+  rpShowModal(`
+    <div class="rp-modal-hdr">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:40px;height:40px;border-radius:11px;background:${r.color}18;border:1px solid ${r.color}30;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">${r.icon}</div>
+        <div>
+          <div style="font-size:1.0rem;font-weight:800;">${r.name}</div>
+          <div style="font-size:0.72rem;color:#6b7280;">${r.type} · ${r.date} · ${r.size}</div>
+        </div>
+      </div>
+      <button class="rp-modal-close" onclick="rpCloseModal()">✕</button>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+      ${[['Visualizações',r.views,'#00d4ff'],['Tamanho',r.size,'#22c55e'],['Atualizado',r.date,'#8b5cf6'],['Status','Pronto','#22c55e']].map(([l,v,c])=>`
+        <div style="text-align:center;padding:12px;background:rgba(255,255,255,0.03);border-radius:10px;">
+          <div style="font-size:1.0rem;font-weight:900;color:${c};">${v}</div>
+          <div style="font-size:0.62rem;color:#6b7280;margin-top:3px;">${l}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Preview placeholder -->
+    <div style="background:rgba(255,255,255,0.02);border:2px dashed rgba(255,255,255,0.10);border-radius:14px;height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;margin-bottom:20px;gap:10px;">
+      <span style="font-size:2rem;">📄</span>
+      <div style="font-size:0.84rem;font-weight:600;color:#6b7280;">Preview do Relatório</div>
+      <div style="font-size:0.72rem;color:#4b5563;">${r.name}</div>
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button class="rp-btn rp-btn-ghost" style="flex:1;" onclick="rpCloseModal()">Fechar</button>
+      <button class="rp-btn rp-btn-ghost" style="flex:1;" onclick="showToast&&showToast('Link copiado!','success');rpCloseModal()">🔗 Compartilhar</button>
+      <button class="rp-btn rp-btn-primary" style="flex:1;" onclick="showToast&&showToast('Exportando ${r.name}...','info');rpCloseModal()">📤 Exportar PDF</button>
+    </div>
+  `);
+};
+
+// New Report Wizard
+window.rpOpenNewReport = function() {
+  rpShowModal(`
+    <div class="rp-modal-hdr">
+      <span style="font-size:1.0rem;font-weight:800;">+ Novo Relatório</span>
+      <button class="rp-modal-close" onclick="rpCloseModal()">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div><label class="rp-label">Nome do Relatório *</label><input class="rp-input" id="rp-nr-name" placeholder="Ex: Compliance Q3 2025"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div><label class="rp-label">Tipo</label>
+          <select class="rp-select" id="rp-nr-type">
+            <option>Compliance</option><option>Risco</option><option>Certificados</option>
+            <option>Privacidade</option><option>Cybersecurity</option><option>Treinamento</option><option>Executivo</option>
+          </select>
+        </div>
+        <div><label class="rp-label">Período</label>
+          <select class="rp-select" id="rp-nr-period">
+            <option>Último mês</option><option>Último trimestre</option><option>Últimos 6 meses</option><option>Ano atual</option><option>Personalizado</option>
+          </select>
+        </div>
+      </div>
+      <div><label class="rp-label">Departamentos</label>
+        <select class="rp-select" id="rp-nr-dept">
+          <option>Todos os Departamentos</option><option>RH</option><option>TI</option><option>Jurídico</option><option>Financeiro</option><option>Comercial</option><option>Operações</option>
+        </select>
+      </div>
+      <div><label class="rp-label">Formato de saída</label>
+        <select class="rp-select" id="rp-nr-fmt">
+          <option value="pdf">PDF — Relatório visual completo</option>
+          <option value="xlsx">Excel — Dados tabulares</option>
+          <option value="csv">CSV — Dados brutos</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="rp-btn rp-btn-ghost" style="flex:1;" onclick="rpCloseModal()">Cancelar</button>
+      <button class="rp-btn rp-btn-primary" style="flex:1;" onclick="rpSaveNewReport()">Gerar Relatório</button>
+    </div>
+  `);
+};
+
+window.rpSaveNewReport = function() {
+  const name = document.getElementById('rp-nr-name')?.value.trim();
+  if (!name) { showToast&&showToast('Informe o nome do relatório','error'); return; }
+  const type = document.getElementById('rp-nr-type')?.value || 'Compliance';
+  const catMap = {'Compliance':'compliance','Risco':'risk','Certificados':'certs','Privacidade':'privacy','Cybersecurity':'cyber','Treinamento':'training','Executivo':'executive'};
+  REPORTS_DATA.reports.unshift({
+    id:'r'+Date.now(), name, type, category:catMap[type]||'compliance',
+    icon:'📄', date:new Date().toLocaleDateString('pt-BR'),
+    size:'—', views:0, status:'generating', color:'#00d4ff',
+  });
+  rpCloseModal(); rpTab('reports');
+  showToast&&showToast('Gerando relatório: ' + name + '...', 'info');
+  setTimeout(() => {
+    const r = REPORTS_DATA.reports.find(x=>x.name===name);
+    if (r) { r.status='ready'; r.size='2.1 MB'; }
+    showToast&&showToast('✅ Relatório gerado com sucesso!', 'success');
+  }, 3000);
+};
+
+// Schedule Modal
+window.rpOpenSchedule = function() {
+  rpShowModal(`
+    <div class="rp-modal-hdr">
+      <span style="font-size:1.0rem;font-weight:800;">🕐 Agendar Envio Automático</span>
+      <button class="rp-modal-close" onclick="rpCloseModal()">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div><label class="rp-label">Nome do Agendamento *</label><input class="rp-input" id="rp-sc-name" placeholder="Ex: Compliance Semanal"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div><label class="rp-label">Relatório</label>
+          <select class="rp-select" id="rp-sc-report">
+            ${REPORTS_DATA.reports.filter(r=>r.status==='ready').map(r=>`<option value="${r.id}">${r.name}</option>`).join('')}
+          </select>
+        </div>
+        <div><label class="rp-label">Frequência</label>
+          <select class="rp-select" id="rp-sc-freq">
+            <option>Diário</option><option>Semanal</option><option>Quinzenal</option><option>Mensal</option><option>Trimestral</option>
+          </select>
+        </div>
+      </div>
+      <div><label class="rp-label">Destinatário(s) *</label><input class="rp-input" id="rp-sc-to" placeholder="email@empresa.com, email2@empresa.com"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div><label class="rp-label">Formato</label>
+          <select class="rp-select" id="rp-sc-fmt"><option>PDF</option><option>Excel</option><option>CSV</option></select>
+        </div>
+        <div><label class="rp-label">Horário</label>
+          <input type="time" class="rp-input" id="rp-sc-time" value="08:00">
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px;">
+      <button class="rp-btn rp-btn-ghost" style="flex:1;" onclick="rpCloseModal()">Cancelar</button>
+      <button class="rp-btn rp-btn-primary" style="flex:1;" onclick="rpSaveSchedule()">Criar Agendamento</button>
+    </div>
+  `);
+};
+
+window.rpSaveSchedule = function() {
+  const name = document.getElementById('rp-sc-name')?.value.trim();
+  if (!name) { showToast&&showToast('Informe o nome do agendamento','error'); return; }
+  const to   = document.getElementById('rp-sc-to')?.value.trim();
+  if (!to) { showToast&&showToast('Informe o(s) destinatário(s)','error'); return; }
+  const freq = document.getElementById('rp-sc-freq')?.value || 'Semanal';
+  REPORTS_DATA.schedules.push({ id:'s'+Date.now(), name, freq, next:'15 Jun', to, active:true, icon:'🕐' });
+  rpCloseModal(); rpTab('schedules');
+  showToast&&showToast('✅ Agendamento criado com sucesso!', 'success');
+};
+
+// Export Modal
+window.rpOpenExport = function() { rpTab('export'); };
+
+// ── Modal helpers ─────────────────────────────────────────────
+function rpShowModal(html, cls='rp-modal') {
+  rpCloseModal();
+  const ov = document.createElement('div'); ov.className='rp-overlay'; ov.id='rp-overlay';
+  ov.addEventListener('click', e => { if (e.target===ov) rpCloseModal(); });
+  const m  = document.createElement('div'); m.className=cls; m.innerHTML=html;
+  ov.appendChild(m); document.body.appendChild(ov);
+}
+window.rpCloseModal = function() { const el=document.getElementById('rp-overlay'); if (el) el.remove(); };
+document.addEventListener('keydown', e => { if (e.key==='Escape') rpCloseModal(); });
