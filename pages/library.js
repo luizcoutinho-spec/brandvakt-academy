@@ -2,6 +2,170 @@
 //  PAGE: BIBLIOTECA DE TREINAMENTOS
 // ══════════════════════════════════════════════════════════════
 
+// ── Course Player (full-screen modal) ─────────────────────────
+(function injectCoursePlayerCSS() {
+  if (document.getElementById('course-player-css')) return;
+  const s = document.createElement('style');
+  s.id = 'course-player-css';
+  s.textContent = `
+    #course-player-overlay {
+      position:fixed; inset:0; background:rgba(4,8,18,0.97); z-index:9999;
+      display:flex; flex-direction:column; animation:cpFadeIn .25s ease;
+      backdrop-filter:blur(8px);
+    }
+    @keyframes cpFadeIn { from{opacity:0} to{opacity:1} }
+    #course-player-topbar {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 20px; background:rgba(255,255,255,0.03);
+      border-bottom:1px solid rgba(255,255,255,0.07); flex-shrink:0;
+    }
+    #course-player-topbar .cp-brand { display:flex; align-items:center; gap:10px; }
+    #course-player-topbar .cp-logo {
+      width:32px; height:32px; border-radius:9px;
+      background:linear-gradient(135deg,#00B4D8,#8b5cf6);
+      display:flex; align-items:center; justify-content:center;
+      font-size:.85rem; font-weight:900; color:#000;
+    }
+    #course-player-topbar .cp-title { font-size:.85rem; font-weight:700; color:#f0f4ff; }
+    #course-player-topbar .cp-meta  { font-size:.70rem; color:#6b7280; margin-top:1px; }
+    #course-player-topbar .cp-actions { display:flex; align-items:center; gap:10px; }
+    #course-player-topbar .cp-progress-lbl { font-size:.72rem; color:#6b7280; }
+    .cp-close-btn {
+      display:flex; align-items:center; gap:6px; padding:7px 14px;
+      border-radius:8px; border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.06); color:#94a3b8;
+      font-size:.78rem; font-weight:600; cursor:pointer; transition:all .2s;
+      font-family:inherit;
+    }
+    .cp-close-btn:hover { background:rgba(239,68,68,0.12); color:#ef4444; border-color:rgba(239,68,68,0.25); }
+    #course-player-frame-wrap {
+      flex:1; display:flex; align-items:center; justify-content:center;
+      overflow:auto; padding:20px;
+    }
+    #course-player-frame {
+      border:none; border-radius:16px; width:100%; max-width:800px;
+      height:calc(100vh - 130px); max-height:700px;
+      box-shadow:0 32px 80px rgba(0,0,0,0.6);
+    }
+    .cp-completed-banner {
+      position:fixed; top:72px; left:50%; transform:translateX(-50%);
+      background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.30);
+      border-radius:10px; padding:10px 20px; font-size:.84rem; font-weight:700;
+      color:#22c55e; z-index:10000; animation:cpSlideDown .4s ease;
+      display:flex; align-items:center; gap:8px;
+    }
+    @keyframes cpSlideDown { from{opacity:0;transform:translateX(-50%) translateY(-10px)} to{opacity:1;transform:translateX(-50%) translateY(0)} }
+  `;
+  document.head.appendChild(s);
+})();
+
+// Course file map: trainingId → course HTML path
+const COURSE_FILES = {
+  2: 'courses/senhas-mfa.html',  // Senhas Seguras e MFA
+};
+
+// Completion tracking
+const COURSE_COMPLETIONS = {}; // trainingId → { score, passed, date }
+
+window.launchCourse = function(trainingId, trainingTitle) {
+  const coursePath = COURSE_FILES[trainingId];
+  if (!coursePath) {
+    showToast && showToast('Curso em produção — disponível em breve', 'info');
+    return;
+  }
+
+  // Remove any existing player
+  closeCoursePlayer();
+
+  // Create overlay
+  const ov = document.createElement('div');
+  ov.id = 'course-player-overlay';
+
+  const comp = COURSE_COMPLETIONS[trainingId];
+  const compBadge = comp
+    ? `<span style="color:${comp.passed?'#22c55e':'#f59e0b'};font-size:.72rem;font-weight:700;">${comp.passed?'✅ Aprovado':'⚠️ Reprovado'} — ${comp.score}%</span>`
+    : `<span style="font-size:.72rem;color:#6b7280;">Não concluído</span>`;
+
+  ov.innerHTML = `
+    <div id="course-player-topbar">
+      <div class="cp-brand">
+        <div class="cp-logo">B</div>
+        <div>
+          <div class="cp-title">${trainingTitle}</div>
+          <div class="cp-meta">Brandvakt Academy · ISO 27001:2022 · ${compBadge}</div>
+        </div>
+      </div>
+      <div class="cp-actions">
+        <span class="cp-progress-lbl" id="cp-progress">Acompanhe seu progresso no player abaixo</span>
+        <button class="cp-close-btn" onclick="closeCoursePlayer()">✕ Fechar</button>
+      </div>
+    </div>
+    <div id="course-player-frame-wrap">
+      <iframe
+        id="course-player-frame"
+        src="${coursePath}"
+        allow="fullscreen"
+        title="${trainingTitle}">
+      </iframe>
+    </div>`;
+
+  document.body.appendChild(ov);
+
+  // Listen for completion message from iframe
+  window._courseListener = function(event) {
+    if (event.data && event.data.type === 'brandvakt_course_complete') {
+      const d = event.data;
+      COURSE_COMPLETIONS[trainingId] = { score: d.score, passed: d.passed, date: new Date().toLocaleDateString('pt-BR') };
+
+      // Show completion banner
+      const banner = document.createElement('div');
+      banner.className = 'cp-completed-banner';
+      banner.innerHTML = d.passed
+        ? `🏅 Curso concluído! Nota: ${d.score}% — Certificado emitido`
+        : `📋 Nota: ${d.score}% — Tente novamente para obter o certificado (mín. 80%)`;
+      document.body.appendChild(banner);
+      setTimeout(() => banner.remove && banner.remove(), 5000);
+
+      // Update meta line
+      const meta = document.querySelector('.cp-meta');
+      if (meta) {
+        meta.innerHTML = `Brandvakt Academy · ISO 27001:2022 · <span style="color:${d.passed?'#22c55e':'#f59e0b'};font-weight:700;">${d.passed?'✅ Aprovado':'⚠️ Reprovado'} — ${d.score}%</span>`;
+      }
+
+      // Update card in library (if visible)
+      if (d.passed) {
+        showToast && showToast(`🏅 Parabéns! Certificado emitido — ${trainingTitle}`, 'success');
+      }
+
+      // Remove listener
+      window.removeEventListener('message', window._courseListener);
+    }
+  };
+  window.addEventListener('message', window._courseListener);
+
+  // Close on Escape
+  document.addEventListener('keydown', window._courseEscListener = function(e) {
+    if (e.key === 'Escape') closeCoursePlayer();
+  });
+};
+
+window.closeCoursePlayer = function() {
+  const ov = document.getElementById('course-player-overlay');
+  if (ov) {
+    ov.style.opacity = '0';
+    ov.style.transition = 'opacity 0.2s';
+    setTimeout(() => ov.remove && ov.remove(), 200);
+  }
+  if (window._courseListener) {
+    window.removeEventListener('message', window._courseListener);
+    window._courseListener = null;
+  }
+  if (window._courseEscListener) {
+    document.removeEventListener('keydown', window._courseEscListener);
+    window._courseEscListener = null;
+  }
+};
+
 window.renderPage_library = function () {
   const lang = APP.lang;
   const L = libLabels[lang] || libLabels.pt;
@@ -172,7 +336,11 @@ function courseCard(c, L) {
     </div>
 
     <!-- Card Footer -->
-    <div style="padding:10px 18px;border-top:1px solid var(--bg-border);display:flex;gap:6px;justify-content:flex-end;">
+    <div style="padding:10px 18px;border-top:1px solid var(--bg-border);display:flex;gap:6px;justify-content:flex-end;align-items:center;">
+      ${COURSE_FILES[c.id] ? `
+        <button class="btn btn-sm" onclick="event.stopPropagation();launchCourse(${c.id},'${c.title.replace(/'/g,"\\'")}') " style="background:${COURSE_COMPLETIONS[c.id]?.passed?'rgba(34,197,94,0.15)':'rgba(0,180,216,0.15)'};color:${COURSE_COMPLETIONS[c.id]?.passed?'#22c55e':'#00B4D8'};border:1px solid ${COURSE_COMPLETIONS[c.id]?.passed?'rgba(34,197,94,0.30)':'rgba(0,180,216,0.25)'};font-weight:700;" title="Iniciar curso interativo">
+          ${COURSE_COMPLETIONS[c.id]?.passed ? '✅ Revisar' : '▶ Iniciar'}
+        </button>` : ''}
       <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('Editando ${c.title}','info')">✏️</button>
       <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('Gerenciando versões','info')">📋</button>
       <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();showToast('Atribuindo treinamento','info')">${L.btn_assign_card}</button>

@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Senhas Seguras & MFA — Brandvakt Academy</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;}
+body{font-family:'Inter',sans-serif;background:#060e1e;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+:root{--navy:#0C1F3F;--cyan:#00B4D8;--red:#E24B4A;--green:#27AE60;--amber:#F0A500;--white:#fff;}
+
+/* ── Top bar (inside iframe) ── */
+.course-topbar{width:100%;max-width:760px;display:flex;align-items:center;justify-content:space-between;padding:8px 4px;margin-bottom:10px;}
+.course-brand{display:flex;align-items:center;gap:8px;}
+.course-brand-icon{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#00B4D8,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900;color:#000;}
+.course-brand-name{font-size:.78rem;font-weight:700;color:rgba(255,255,255,0.7);font-family:'Sora',sans-serif;}
+.course-meta{font-size:.68rem;color:rgba(255,255,255,0.35);font-family:'Sora',sans-serif;text-align:right;}
+
+/* ── Player ── */
+.player{background:var(--navy);border-radius:16px;overflow:hidden;width:100%;max-width:760px;box-shadow:0 24px 64px rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.08);}
+
+/* ── Progress ── */
+.progress-bar{display:flex;align-items:center;gap:6px;padding:12px 20px;background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.06);}
+.prog-step{flex:1;height:3px;border-radius:2px;background:rgba(255,255,255,0.12);transition:background 0.4s;}
+.prog-step.done{background:var(--cyan);}
+.prog-step.active{background:var(--white);}
+.prog-label{font-family:'Sora',sans-serif;font-size:10px;color:rgba(255,255,255,0.4);min-width:70px;text-align:right;}
+
+/* ── Timer ── */
+.timer-bar-wrap{padding:0 20px;background:rgba(0,0,0,0.15);}
+.timer-row{display:flex;align-items:center;gap:10px;padding:8px 0 4px;}
+.timer-track{flex:1;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;}
+.timer-fill{height:100%;background:linear-gradient(90deg,#00B4D8,#8b5cf6);border-radius:2px;transition:width 1s linear;}
+.timer-nums{display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,0.25);font-family:'Sora',sans-serif;padding-bottom:6px;}
+.timer-cur{font-size:12px;font-weight:700;color:var(--cyan);font-family:'Sora',sans-serif;min-width:36px;text-align:right;}
+.timer-total{font-size:10px;color:rgba(255,255,255,0.25);font-family:'Sora',sans-serif;min-width:36px;}
+
+/* ── Slide ── */
+.slide{min-height:310px;display:flex;flex-direction:column;padding:22px 28px 14px;}
+.slide-tag{font-size:9.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--cyan);margin-bottom:7px;font-family:'Sora',sans-serif;display:flex;align-items:center;gap:6px;}
+.slide-tag::before{content:'';display:inline-block;width:16px;height:2px;background:var(--cyan);border-radius:1px;}
+.slide-title{font-family:'Sora',sans-serif;font-size:19px;font-weight:700;color:var(--white);line-height:1.25;margin-bottom:5px;}
+.slide-title span{color:var(--cyan);}
+.dur-badge{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:rgba(255,255,255,0.35);margin-bottom:11px;}
+.dot{width:4px;height:4px;border-radius:50%;background:var(--cyan);}
+.slide-body{font-size:13.5px;color:rgba(255,255,255,0.72);line-height:1.65;flex:1;}
+.slide-body p{margin-bottom:8px;}
+.slide-body strong{color:var(--white);}
+
+/* ── Visual components ── */
+.visual{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:11px;padding:14px;margin:10px 0;}
+.visual-row{display:flex;gap:10px;flex-wrap:wrap;}
+.vcard{flex:1;min-width:100px;background:rgba(0,180,216,0.08);border:1px solid rgba(0,180,216,0.20);border-radius:9px;padding:10px 8px;text-align:center;transition:transform .2s;}
+.vcard:hover{transform:translateY(-2px);}
+.vcard .icon{font-size:18px;margin-bottom:4px;display:block;}
+.vcard .label{font-size:9.5px;color:rgba(255,255,255,0.5);line-height:1.3;}
+.vcard .val{font-size:11.5px;font-weight:600;color:var(--white);margin-top:3px;}
+.checklist{list-style:none;}
+.checklist li{display:flex;align-items:flex-start;gap:9px;font-size:12.5px;color:rgba(255,255,255,0.78);margin-bottom:8px;line-height:1.45;}
+.check-icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:9.5px;margin-top:1px;}
+.ci-good{background:rgba(39,174,96,0.2);color:#27AE60;}
+.ci-bad{background:rgba(226,75,74,0.2);color:#E24B4A;}
+.ci-info{background:rgba(0,180,216,0.2);color:#00B4D8;}
+
+/* ── Strength demo ── */
+.strength-demo{margin:8px 0;}
+.s-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+.s-label{font-size:11px;color:rgba(255,255,255,0.55);width:150px;flex-shrink:0;font-family:'JetBrains Mono',monospace,sans-serif;}
+.s-bar{flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,0.08);}
+.s-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.s-time{font-size:9.5px;color:rgba(255,255,255,0.4);width:90px;text-align:right;flex-shrink:0;}
+
+/* ── MFA factors ── */
+.factors{display:flex;gap:8px;margin-top:10px;}
+.factor{flex:1;border-radius:10px;padding:10px 8px;text-align:center;transition:transform .2s;}
+.factor:hover{transform:translateY(-2px);}
+.f-know{background:rgba(0,180,216,0.10);border:1px solid rgba(0,180,216,0.25);}
+.f-have{background:rgba(240,165,0,0.10);border:1px solid rgba(240,165,0,0.25);}
+.f-are{background:rgba(39,174,96,0.10);border:1px solid rgba(39,174,96,0.25);}
+.factor .fi{font-size:18px;margin-bottom:5px;display:block;}
+.factor .ft{font-size:8.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:3px;}
+.f-know .ft{color:#00B4D8;}.f-have .ft{color:#F0A500;}.f-are .ft{color:#27AE60;}
+.factor .fd{font-size:9.5px;color:rgba(255,255,255,0.5);line-height:1.4;}
+
+/* ── Quiz ── */
+.quiz-q{font-family:'Sora',sans-serif;font-size:14px;font-weight:600;color:var(--white);margin-bottom:13px;line-height:1.4;}
+.quiz-opts{display:flex;flex-direction:column;gap:7px;}
+.quiz-opt{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:9px;padding:10px 14px;font-size:12.5px;color:rgba(255,255,255,0.78);cursor:pointer;transition:all 0.2s;text-align:left;font-family:'Inter',sans-serif;position:relative;overflow:hidden;}
+.quiz-opt:hover{background:rgba(0,180,216,0.10);border-color:rgba(0,180,216,0.35);}
+.quiz-opt.correct{background:rgba(39,174,96,0.14);border-color:#27AE60;color:var(--white);}
+.quiz-opt.wrong{background:rgba(226,75,74,0.14);border-color:#E24B4A;color:var(--white);}
+.quiz-opt.disabled{pointer-events:none;}
+.quiz-feedback{margin-top:9px;font-size:12px;padding:9px 13px;border-radius:9px;line-height:1.5;}
+.qf-correct{background:rgba(39,174,96,0.10);color:#6ee7a0;border:1px solid rgba(39,174,96,0.18);}
+.qf-wrong{background:rgba(226,75,74,0.10);color:#f9a8a7;border:1px solid rgba(226,75,74,0.18);}
+.quiz-counter{font-size:10px;color:rgba(255,255,255,0.35);margin-bottom:5px;font-family:'Sora',sans-serif;}
+
+/* ── Result ── */
+.result-wrap{text-align:center;padding:12px 0 8px;}
+.result-score{font-family:'Sora',sans-serif;font-size:56px;font-weight:800;line-height:1;letter-spacing:-0.04em;}
+.result-score.pass{color:#27AE60;text-shadow:0 0 40px rgba(39,174,96,0.4);}
+.result-score.fail{color:#E24B4A;}
+.result-label{font-size:13px;color:rgba(255,255,255,0.55);margin:6px 0 14px;}
+.cert-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,180,216,0.08);border:1px solid rgba(0,180,216,0.25);border-radius:9px;padding:10px 16px;font-size:12.5px;color:#00B4D8;font-weight:500;margin-bottom:10px;}
+.cert-iso{font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:12px;line-height:1.6;}
+.cert-iso strong{color:#00B4D8;}
+
+/* ── Controls bar ── */
+.controls{display:flex;align-items:center;justify-content:space-between;padding:11px 20px;background:rgba(0,0,0,0.20);border-top:1px solid rgba(255,255,255,0.06);}
+.btn{font-family:'Sora',sans-serif;font-size:12.5px;font-weight:600;padding:8px 18px;border-radius:8px;cursor:pointer;border:none;transition:all 0.2s;}
+.btn-primary{background:linear-gradient(135deg,#00B4D8,#0099bb);color:#0C1F3F;box-shadow:0 4px 14px rgba(0,180,216,0.25);}
+.btn-primary:hover{background:linear-gradient(135deg,#00c8f0,#00B4D8);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,180,216,0.35);}
+.btn-ghost{background:transparent;color:rgba(255,255,255,0.4);border:1px solid rgba(255,255,255,0.12);}
+.btn-ghost:hover{background:rgba(255,255,255,0.06);color:var(--white);}
+.btn:disabled{opacity:0.25;cursor:not-allowed;transform:none;box-shadow:none;}
+.step-info{font-size:10.5px;color:rgba(255,255,255,0.25);font-family:'Sora',sans-serif;}
+
+/* ── Brand footer ── */
+.brand{text-align:center;padding:10px;font-size:9.5px;color:rgba(255,255,255,0.15);font-family:'Sora',sans-serif;letter-spacing:0.10em;}
+.iso-tag{display:inline-flex;align-items:center;gap:4px;background:rgba(0,180,216,0.08);border:1px solid rgba(0,180,216,0.15);border-radius:5px;padding:2px 8px;font-size:8.5px;color:rgba(0,180,216,0.7);margin-left:6px;}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="course-topbar">
+  <div class="course-brand">
+    <div class="course-brand-icon">B</div>
+    <div class="course-brand-name">Brandvakt Academy</div>
+  </div>
+  <div class="course-meta">
+    Senhas Seguras & MFA · v1.3<br>ISO 27001: A.5.17 · A.8.5
+  </div>
+</div>
+
+<div class="player" id="player">
+  <div class="progress-bar" id="progressBar"></div>
+  <div class="timer-bar-wrap">
+    <div class="timer-row">
+      <span class="timer-total">0:00</span>
+      <div class="timer-track"><div class="timer-fill" id="timerFill" style="width:0%"></div></div>
+      <span class="timer-cur" id="timerCur">5:00</span>
+    </div>
+    <div class="timer-nums">
+      <span>Início</span><span>1:00</span><span>2:00</span><span>3:00</span><span>4:00</span><span>5:00</span>
+    </div>
+  </div>
+  <div class="slide" id="slideArea"></div>
+  <div class="controls">
+    <button class="btn btn-ghost" id="btnBack" onclick="navigate(-1)">← Voltar</button>
+    <span class="step-info" id="stepInfo"></span>
+    <button class="btn btn-primary" id="btnNext" onclick="navigate(1)">Continuar →</button>
+  </div>
+  <div class="brand">
+    BRANDVAKT ACADEMY · SEGURANÇA DA INFORMAÇÃO
+    <span class="iso-tag">🛡 ISO 27001:2022</span>
+  </div>
+</div>
+
+<script>
+const SLIDES=[
+  {
+    tag:'Introdução',
+    title:'Senhas Seguras &<br><span>Autenticação Multifator</span>',
+    duration:'0:15',seconds:15,startSec:0,
+    body:`<p>A <strong>primeira linha de defesa</strong> da empresa começa com você — em cada login, todos os dias. Este curso cobre as práticas essenciais para proteger suas credenciais e ativar MFA corretamente.</p>`,
+    visual:`<div class="visual-row">
+      <div class="vcard"><span class="icon">🎯</span><div class="label">5 módulos</div><div class="val">Objetivos claros</div></div>
+      <div class="vcard"><span class="icon">⏱</span><div class="label">Duração</div><div class="val">5 minutos</div></div>
+      <div class="vcard"><span class="icon">📋</span><div class="label">Quiz final</div><div class="val">5 questões</div></div>
+      <div class="vcard"><span class="icon">🏅</span><div class="label">Conclusão</div><div class="val">Certificado ISO</div></div>
+    </div>`
+  },
+  {
+    tag:'Módulo 1 — Por que importa',
+    title:'Senhas Fracas São a<br><span>Porta de Entrada</span>',
+    duration:'0:55',seconds:55,startSec:15,
+    body:`<p><strong>+80% das violações</strong> de segurança envolvem credenciais comprometidas. Três vetores principais que exploram senhas fracas:</p>`,
+    visual:`<div class="visual-row">
+      <div class="vcard"><span class="icon">🎣</span><div class="label">Phishing</div><div class="val">E-mail falso captura sua senha em tempo real</div></div>
+      <div class="vcard"><span class="icon">💧</span><div class="label">Vazamento</div><div class="val">Senha pessoal reutilizada = risco corporativo direto</div></div>
+      <div class="vcard"><span class="icon">🤖</span><div class="label">Força bruta</div><div class="val">Milhares de tentativas por segundo em senhas fracas</div></div>
+    </div>`
+  },
+  {
+    tag:'Módulo 2 — Crie senhas fortes',
+    title:'Difícil de Adivinhar,<br><span>Fácil de Lembrar</span>',
+    duration:'1:00',seconds:60,startSec:70,
+    body:`<p>Use <strong>frases-senha</strong> em vez de palavras isoladas. "Café&amp;Piano#2024!" é simples para você e impossível para um atacante:</p>`,
+    visual:`<div class="strength-demo">
+      <div class="s-row"><span class="s-label">senha123</span><div class="s-bar"><div class="s-fill" style="width:3%;background:#E24B4A;"></div></div><span class="s-time">&lt; 1 segundo</span></div>
+      <div class="s-row"><span class="s-label">Jo@o1985</span><div class="s-bar"><div class="s-fill" style="width:20%;background:#F0A500;"></div></div><span class="s-time">~2 horas</span></div>
+      <div class="s-row"><span class="s-label">Café&amp;Piano#2024!</span><div class="s-bar"><div class="s-fill" style="width:85%;background:#27AE60;"></div></div><span class="s-time">+300 anos</span></div>
+    </div>
+    <ul class="checklist">
+      <li><span class="check-icon ci-good">✓</span><span>Mínimo <strong>12 caracteres</strong> — maiúsculas, minúsculas, números e símbolos especiais</span></li>
+      <li><span class="check-icon ci-bad">✗</span><span>Nunca reutilize a mesma senha em sistemas diferentes</span></li>
+      <li><span class="check-icon ci-bad">✗</span><span>Evite dados pessoais: nome, data de nascimento, placa do carro</span></li>
+    </ul>`
+  },
+  {
+    tag:'Módulo 3 — Gerenciamento',
+    title:'Uma Senha Mestre<br><span>Protege Todas as Outras</span>',
+    duration:'0:50',seconds:50,startSec:130,
+    body:`<p>Use um <strong>gerenciador de senhas aprovado</strong> pela empresa (1Password, Bitwarden, Keeper). Ele gera, armazena e preenche senhas únicas para cada conta. O que <strong>jamais</strong> fazer:</p>`,
+    visual:`<ul class="checklist">
+      <li><span class="check-icon ci-bad">✗</span><span>Anotar a senha em papel, post-it ou bloco de notas visível no escritório</span></li>
+      <li><span class="check-icon ci-bad">✗</span><span>Compartilhar credenciais por WhatsApp, e-mail ou chat interno</span></li>
+      <li><span class="check-icon ci-bad">✗</span><span>Manter a senha padrão do sistema — altere <strong>imediatamente</strong> no primeiro acesso</span></li>
+      <li><span class="check-icon ci-good">✓</span><span>Gere senhas únicas e complexas automaticamente para cada conta</span></li>
+      <li><span class="check-icon ci-good">✓</span><span>Revise e remova contas e acessos que não usa mais</span></li>
+    </ul>`
+  },
+  {
+    tag:'Módulo 4 — O que é MFA',
+    title:'MFA: A Segunda<br><span>Chave da Fechadura</span>',
+    duration:'0:55',seconds:55,startSec:180,
+    body:`<p>Autenticação Multifator bloqueia <strong style="color:#00B4D8">+99%</strong> dos ataques automatizados, mesmo que sua senha seja roubada. Combina dois ou mais fatores independentes:</p>`,
+    visual:`<div class="factors">
+      <div class="factor f-know"><span class="fi">🧠</span><div class="ft">Você sabe</div><div class="fd">Senha ou PIN — algo memorizado</div></div>
+      <div class="factor f-have"><span class="fi">📱</span><div class="ft">Você possui</div><div class="fd">Celular, token físico, cartão</div></div>
+      <div class="factor f-are"><span class="fi">👆</span><div class="ft">Você é</div><div class="fd">Digital, face, íris — biometria</div></div>
+    </div>
+    <p style="margin-top:10px;font-size:11.5px;color:rgba(255,255,255,0.5);">A combinação de dois ou mais fatores torna o acesso praticamente inviolável, mesmo com a senha comprometida.</p>`
+  },
+  {
+    tag:'Módulo 5 — Boas práticas MFA',
+    title:'Aprove com<br><span>Consciência</span>',
+    duration:'0:45',seconds:45,startSec:235,
+    body:`<p>Só aprove uma notificação de MFA se <strong>você iniciou o login naquele momento</strong>. Um erro aqui pode custar acesso total ao atacante:</p>`,
+    visual:`<ul class="checklist">
+      <li><span class="check-icon ci-bad">✗</span><span><strong>MFA Fatigue:</strong> receber muitas notificações seguidas é um ataque. Negue todas e comunique à TI imediatamente.</span></li>
+      <li><span class="check-icon ci-good">✓</span><span>Prefira <strong>app autenticador</strong> (Google Authenticator, Microsoft Authenticator) ao SMS</span></li>
+      <li><span class="check-icon ci-bad">✗</span><span>Nunca compartilhe um código de verificação — <strong>nem com o suporte de TI</strong></span></li>
+      <li><span class="check-icon ci-good">✓</span><span>Ative MFA em todas as contas que oferecem este recurso, pessoais e corporativas</span></li>
+    </ul>`
+  },
+  {
+    tag:'Encerramento',
+    title:'Segurança é<br><span>Responsabilidade de Todos</span>',
+    duration:'0:20',seconds:20,startSec:280,
+    body:`<p>Quatro hábitos que fazem toda a diferença na proteção da empresa e dos seus dados pessoais:</p>`,
+    visual:`<ul class="checklist">
+      <li><span class="check-icon ci-info">✓</span><span>Senhas <strong>únicas e fortes</strong> — nunca reutilize entre contas</span></li>
+      <li><span class="check-icon ci-info">✓</span><span>Gerenciador de senhas <strong>aprovado pela empresa</strong> para todas as credenciais</span></li>
+      <li><span class="check-icon ci-info">✓</span><span>MFA <strong>ativado sempre</strong> que disponível — especialmente e-mail e VPN</span></li>
+      <li><span class="check-icon ci-info">✓</span><span>Notificação de MFA não solicitada → <strong>negar + avisar a TI imediatamente</strong></span></li>
+    </ul>`
+  }
+];
+
+const QUIZ=[
+  {
+    q:"Qual é um exemplo de senha FORTE?",
+    opts:["joao1985","123456senha","Café&Piano#Azul2024!","nomeempresa"],
+    ans:2,
+    fb:"Correto! Mais de 12 caracteres combinando maiúsculas, minúsculas, números e símbolos — virtualmente impossível de quebrar por força bruta."
+  },
+  {
+    q:"Você recebe uma notificação de MFA sem ter iniciado nenhum login. O que fazer?",
+    opts:["Aprovar para limpar a notificação","Ignorar e esperar","Negar e comunicar à TI imediatamente","Aguardar mais notificações antes de decidir"],
+    ans:2,
+    fb:"Correto! Notificação não solicitada indica tentativa ativa de acesso (MFA Fatigue). Negar imediatamente e reportar à equipe de TI/segurança."
+  },
+  {
+    q:"Qual prática é INCORRETA no gerenciamento de senhas?",
+    opts:["Usar gerenciador corporativo aprovado","Criar senhas únicas por sistema","Anotar a senha em post-it no monitor","Alterar senha padrão no primeiro acesso"],
+    ans:2,
+    fb:"Correto! Anotar senhas em locais visíveis expõe as credenciais a qualquer pessoa que passe pelo seu espaço de trabalho."
+  },
+  {
+    q:"O que é MFA Fatigue?",
+    opts:["Esquecimento da senha mestre","Falha técnica no autenticador","Ataque que envia muitas notificações esperando aprovação por cansaço","Expiração automática do token MFA"],
+    ans:2,
+    fb:"Correto! A defesa é simples: nunca aprovar uma notificação que você não iniciou — e reportar imediatamente à TI."
+  },
+  {
+    q:"Qual fator de autenticação é classificado como 'algo que você é'?",
+    opts:["Sua senha","Um código SMS recebido no celular","Seu token físico","Sua impressão digital ou reconhecimento facial"],
+    ans:3,
+    fb:"Correto! Biometria (digital, face, íris) representa 'algo que você é' — o fator mais difícil de replicar ou roubar."
+  }
+];
+
+const TOTAL_SECONDS=300;
+let current=0,quizIdx=0,quizScore=0,quizAnswered=false,mode='slides',timerInterval=null,elapsed=0;
+
+function secToMMSS(s){const m=Math.floor(s/60),sec=s%60;return m+':'+(sec<10?'0':'')+sec;}
+
+function startTimer(){
+  stopTimer();
+  const slide=SLIDES[current];
+  elapsed=slide.startSec;
+  updateTimerUI();
+  timerInterval=setInterval(()=>{
+    elapsed++;
+    if(elapsed>=TOTAL_SECONDS)stopTimer();
+    updateTimerUI();
+  },1000);
+}
+
+function stopTimer(){clearInterval(timerInterval);timerInterval=null;}
+
+function updateTimerUI(){
+  const pct=Math.min(100,Math.round(elapsed/TOTAL_SECONDS*100));
+  document.getElementById('timerFill').style.width=pct+'%';
+  document.getElementById('timerCur').textContent=secToMMSS(Math.max(0,TOTAL_SECONDS-elapsed));
+}
+
+function renderProgress(){
+  const pb=document.getElementById('progressBar');
+  let steps='';
+  const total=SLIDES.length;
+  for(let i=0;i<total;i++){
+    let cls=i<current?'done':i===current&&mode==='slides'?'active':'';
+    steps+=`<div class="prog-step ${cls}"></div>`;
+  }
+  const label=mode==='slides'
+    ?`Slide ${current+1}/${total}`
+    :mode==='quiz'?`Quiz ${quizIdx+1}/5`:`Resultado`;
+  pb.innerHTML=steps+`<span class="prog-label">${label}</span>`;
+  document.getElementById('stepInfo').textContent=mode==='slides'
+    ?`${current+1} de ${total}`
+    :mode==='quiz'?`Pergunta ${quizIdx+1} de 5`:``;
+}
+
+function renderSlide(){
+  const s=SLIDES[current];
+  document.getElementById('slideArea').innerHTML=`
+    <div class="slide-tag">${s.tag}</div>
+    <div class="slide-title">${s.title}</div>
+    <div class="dur-badge"><span class="dot"></span>${s.duration} neste módulo</div>
+    <div class="slide-body">${s.body}<div class="visual">${s.visual}</div></div>`;
+  document.getElementById('btnBack').disabled=(current===0);
+  const btnNext=document.getElementById('btnNext');
+  btnNext.textContent=current===SLIDES.length-1?'Iniciar Quiz →':'Continuar →';
+  btnNext.disabled=false;
+  btnNext.style.display='';
+  startTimer();
+}
+
+function renderQuiz(){
+  stopTimer();quizAnswered=false;
+  const q=QUIZ[quizIdx];
+  const opts=q.opts.map((o,i)=>`
+    <button class="quiz-opt" id="opt${i}" onclick="answerQuiz(${i})">
+      <strong>${String.fromCharCode(65+i)})</strong> ${o}
+    </button>`).join('');
+  document.getElementById('slideArea').innerHTML=`
+    <div class="slide-tag">Quiz Final</div>
+    <div class="quiz-counter">Pergunta ${quizIdx+1} de ${QUIZ.length}</div>
+    <div class="quiz-q">${q.q}</div>
+    <div class="quiz-opts">${opts}</div>
+    <div id="quizFeedback"></div>`;
+  document.getElementById('btnBack').disabled=true;
+  const btnNext=document.getElementById('btnNext');
+  btnNext.textContent='Próxima →';
+  btnNext.disabled=true;
+  document.getElementById('timerFill').style.width='100%';
+  document.getElementById('timerCur').textContent='0:00';
+}
+
+function answerQuiz(i){
+  if(quizAnswered)return;
+  quizAnswered=true;
+  const q=QUIZ[quizIdx];
+  const correct=(i===q.ans);
+  if(correct)quizScore++;
+  document.querySelectorAll('.quiz-opt').forEach((el,idx)=>{
+    el.classList.add('disabled');
+    if(idx===q.ans)el.classList.add('correct');
+    else if(idx===i)el.classList.add('wrong');
+  });
+  document.getElementById('quizFeedback').innerHTML=`
+    <div class="quiz-feedback ${correct?'qf-correct':'qf-wrong'}">
+      ${correct?'✅':'❌'} ${q.fb}
+    </div>`;
+  document.getElementById('btnNext').disabled=false;
+}
+
+function renderResult(){
+  stopTimer();
+  const pct=Math.round(quizScore/QUIZ.length*100);
+  const pass=(quizScore>=4);
+  const completedAt=new Date().toLocaleDateString('pt-BR');
+
+  document.getElementById('slideArea').innerHTML=`
+    <div class="slide-tag">Resultado Final</div>
+    <div class="result-wrap">
+      <div class="result-score ${pass?'pass':'fail'}">${pct}%</div>
+      <div class="result-label">${quizScore} de ${QUIZ.length} respostas corretas</div>
+      ${pass?`
+        <div class="cert-badge">🏅 Aprovado — nota mínima atingida (80%)</div>
+        <div class="cert-iso">
+          Certificado emitido por <strong>Brandvakt Academy</strong> · ${completedAt}<br>
+          Controles ISO 27001:2022 cobertos: <strong>A.5.17 · A.8.5</strong>
+        </div>
+        <p style="font-size:11.5px;color:rgba(255,255,255,0.4);margin-bottom:14px;">
+          O certificado já está disponível na sua área de certificados na plataforma.
+        </p>`
+      :`
+        <div style="background:rgba(226,75,74,0.10);border:1px solid rgba(226,75,74,0.22);border-radius:9px;padding:10px 14px;font-size:12.5px;color:#f9a8a7;margin-bottom:12px;">
+          Você precisa de pelo menos 4 acertos para obter o certificado. Revise os módulos e tente novamente.
+        </div>`}
+      <button class="btn btn-ghost" onclick="restart()" style="margin-top:6px;">↺ Refazer o curso</button>
+    </div>`;
+
+  document.getElementById('btnBack').disabled=true;
+  const btnNext=document.getElementById('btnNext');
+  btnNext.disabled=true;
+  btnNext.style.display='none';
+
+  // Notify parent platform of completion
+  try {
+    window.parent.postMessage({
+      type: 'brandvakt_course_complete',
+      courseId: 'senhas-mfa',
+      score: pct,
+      passed: pass,
+      quizScore: quizScore,
+      totalQuestions: QUIZ.length,
+      completedAt: new Date().toISOString(),
+      isoControls: ['A.5.17','A.8.5'],
+    }, '*');
+  } catch(e) {}
+}
+
+function navigate(dir){
+  if(mode==='slides'){
+    if(dir===1){
+      if(current<SLIDES.length-1){current++;renderSlide();}
+      else{mode='quiz';quizIdx=0;quizScore=0;renderQuiz();}
+    } else {
+      if(current>0){current--;renderSlide();}
+    }
+  } else if(mode==='quiz'&&dir===1){
+    if(quizIdx<QUIZ.length-1){quizIdx++;renderQuiz();}
+    else{mode='result';renderResult();}
+  }
+  renderProgress();
+}
+
+function restart(){
+  stopTimer();
+  current=0;quizIdx=0;quizScore=0;quizAnswered=false;mode='slides';elapsed=0;
+  document.getElementById('btnNext').style.display='';
+  updateTimerUI();renderSlide();renderProgress();
+}
+
+// Init
+renderSlide();renderProgress();
+</script>
+</body>
+</html>
