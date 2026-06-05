@@ -97,6 +97,18 @@
     .orb{position:absolute;border-radius:50%;filter:blur(60px);pointer-events:none;opacity:.4;animation:orbFloat 8s ease-in-out infinite alternate}.orb-1{width:300px;height:300px;background:var(--brand-accent);top:10%;left:15%;animation-delay:0s}.orb-2{width:200px;height:200px;background:var(--brand-accent2);bottom:20%;right:20%;animation-delay:-3s}.orb-3{width:150px;height:150px;background:var(--brand-purple);top:50%;right:30%;animation-delay:-6s}
     @keyframes orbFloat{0%{transform:translate(0,0) scale(1)}100%{transform:translate(20px,-20px) scale(1.05)}}
     @media(max-width:900px){.login-left{display:none}.login-right{width:100%;border-left:none}.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.topbar{left:0}[dir=rtl] .topbar{right:0}.main-content{margin-left:0}[dir=rtl] .main-content{margin-right:0}}
+  /* ── User Menu Popup ── */
+  @keyframes umIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .um-header{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,0.08);}
+  .um-avatar-lg{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#fff;flex-shrink:0;position:relative;}
+  .um-status-dot{position:absolute;bottom:1px;right:1px;width:11px;height:11px;border-radius:50%;border:2px solid #14141e;}
+  .um-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:0.83rem;font-weight:500;color:#94a3b8;cursor:pointer;transition:all 0.15s;border:none;background:none;width:100%;text-align:left;font-family:inherit;}
+  .um-item:hover{background:rgba(255,255,255,0.05);color:#e2e8f0;}
+  .um-item-icon{font-size:1.0rem;width:20px;text-align:center;flex-shrink:0;}
+  .um-divider{height:1px;background:rgba(255,255,255,0.07);margin:4px 0;}
+  .um-status-btn{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:99px;border:1px solid rgba(255,255,255,0.10);font-size:0.72rem;font-weight:600;cursor:pointer;transition:all 0.15s;background:transparent;color:#94a3b8;font-family:inherit;}
+  .um-status-btn:hover{border-color:rgba(255,255,255,0.20);color:#e2e8f0;}
+  .um-status-btn.active{border-color:currentColor;}
   </style>
 </head>
 <body>
@@ -234,11 +246,14 @@
       <a class="nav-item" data-page="integrations" onclick="navTo('integrations',this)"><span class="nav-item-icon">🔌</span><span id="nav-integrations">Integrações</span></a>
     </nav>
 
-    <div class="sidebar-footer">
-      <div class="sidebar-user">
+    <div class="sidebar-footer" style="position:relative;">
+      <div class="sidebar-user" id="sidebar-user-btn" onclick="toggleUserMenu(event)">
         <div class="sidebar-avatar" id="user-avatar">AL</div>
         <div class="sidebar-user-info"><div class="sidebar-user-name" id="user-name">Admin Local</div><div class="sidebar-user-role" id="user-role">Super Admin</div></div>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 3l4 4-4 4" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <svg id="user-menu-chevron" width="14" height="14" viewBox="0 0 14 14" fill="none" style="transition:transform 0.2s;flex-shrink:0;"><path d="M5 3l4 4-4 4" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <!-- User menu popup -->
+      <div id="user-menu-popup" style="display:none;position:absolute;bottom:calc(100% + 8px);left:10px;right:10px;background:#14141e;border:1px solid rgba(255,255,255,0.12);border-radius:16px;box-shadow:0 -8px 40px rgba(0,0,0,0.6);z-index:9999;overflow:hidden;animation:umIn 0.2s ease;">
       </div>
     </div>
   </aside>
@@ -483,6 +498,149 @@ function sparklineSVG(data,color='#0057FF',w=120,h=40){
 // Expose
 window.showToast=showToast;window.showModal=showModal;window.hideModal=hideModal;window.navTo=navTo;
 window.scoreRingSVG=scoreRingSVG;window.sparklineSVG=sparklineSVG;
+
+// ── User Menu ──────────────────────────────────────────────────
+let _umOpen = false;
+let _umStatus = 'online'; // online | busy | away | offline
+
+function buildUserMenuHTML() {
+  const u = APP.user || { name:'Admin Local', role:'Super Admin', initials:'AL' };
+  const tenant = APP.tenant || { name:'Empresa Demo S.A.', plan:'Enterprise' };
+  const statusCfg = {
+    online:  { color:'#22c55e', label:'Online'    },
+    busy:    { color:'#ef4444', label:'Ocupado'   },
+    away:    { color:'#f59e0b', label:'Ausente'   },
+    offline: { color:'#6b7280', label:'Invisível' },
+  };
+  const sc = statusCfg[_umStatus];
+
+  const navItems = [
+    { icon:'👤', label:'Minha Conta',        action:"navTo('settings',null);stPanel&&stPanel(1);closeUserMenu()" },
+    { icon:'⚙️', label:'Configurações',       action:"navTo('settings',null);closeUserMenu()" },
+    { icon:'🏢', label:'Trocar Empresa',      action:"showModal('modal-tenant');closeUserMenu()" },
+    { icon:'📊', label:'Relatório Pessoal',   action:"navTo('reports',null);closeUserMenu()" },
+    { icon:'🌍', label:'Idioma & Região',     action:"navTo('settings',null);stPanel&&stPanel(3);closeUserMenu()" },
+    { icon:'🎨', label:'Aparência',           action:"navTo('settings',null);stPanel&&stPanel(5);closeUserMenu()" },
+    { icon:'🔒', label:'Segurança',           action:"navTo('settings',null);stPanel&&stPanel(2);closeUserMenu()" },
+    { icon:'📚', label:'Meu Progresso',       action:"navTo('library',null);closeUserMenu()" },
+  ];
+
+  return `
+    <!-- Header: Avatar + info -->
+    <div class="um-header">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+        <div class="um-avatar-lg">
+          ${u.initials||'AL'}
+          <div class="um-status-dot" style="background:${sc.color};"></div>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:800;font-size:0.90rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.name}</div>
+          <div style="font-size:0.72rem;color:#6b7280;margin-top:1px;">${u.role}</div>
+          <div style="font-size:0.68rem;color:#6b7280;margin-top:1px;">📧 admin@empresa.com</div>
+        </div>
+      </div>
+      <!-- Status selector -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        ${Object.entries(statusCfg).map(([k,v])=>`
+          <button class="um-status-btn${_umStatus===k?' active':''}" style="${_umStatus===k?'color:'+v.color+';border-color:'+v.color:''}" onclick="setUserStatus('${k}')">
+            <span style="width:8px;height:8px;border-radius:50%;background:${v.color};display:inline-block;"></span>${v.label}
+          </button>`).join('')}
+      </div>
+    </div>
+
+    <!-- Tenant badge -->
+    <div style="padding:10px 16px 6px;display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="showModal('modal-tenant');closeUserMenu()">
+      <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,#00d4ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;color:#000;flex-shrink:0;">${tenant.name.slice(0,2).toUpperCase()}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.78rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${tenant.name}</div>
+        <div style="font-size:0.66rem;color:#6b7280;">${tenant.plan} · Trocar →</div>
+      </div>
+    </div>
+
+    <div class="um-divider"></div>
+
+    <!-- Nav items (2 columns) -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;padding:4px 6px;">
+      ${navItems.map(item=>`
+        <button class="um-item" onclick="${item.action}">
+          <span class="um-item-icon">${item.icon}</span>${item.label}
+        </button>`).join('')}
+    </div>
+
+    <div class="um-divider"></div>
+
+    <!-- Footer: keyboard shortcut hint + logout -->
+    <div style="padding:6px 6px 10px;display:flex;align-items:center;gap:6px;">
+      <button class="um-item" style="flex:1;" onclick="showToast('Atalhos de teclado em breve','info')">
+        <span class="um-item-icon">⌨️</span>Atalhos
+      </button>
+      <button class="um-item" style="flex:1;" onclick="showToast('Suporte: suporte@brandvakt.com','info')">
+        <span class="um-item-icon">❓</span>Suporte
+      </button>
+      <button class="um-item" style="flex:1;color:#ef4444;" onclick="doLogout()">
+        <span class="um-item-icon">🚪</span>Sair
+      </button>
+    </div>`;
+}
+
+window.toggleUserMenu = function(e) {
+  if (e) e.stopPropagation();
+  const popup   = document.getElementById('user-menu-popup');
+  const chevron = document.getElementById('user-menu-chevron');
+  if (!popup) return;
+  _umOpen = !_umOpen;
+  if (_umOpen) {
+    popup.innerHTML = buildUserMenuHTML();
+    popup.style.display = 'block';
+    if (chevron) chevron.style.transform = 'rotate(-90deg)';
+  } else {
+    popup.style.display = 'none';
+    if (chevron) chevron.style.transform = 'rotate(0deg)';
+  }
+};
+
+window.closeUserMenu = function() {
+  _umOpen = false;
+  const popup   = document.getElementById('user-menu-popup');
+  const chevron = document.getElementById('user-menu-chevron');
+  if (popup)   popup.style.display = 'none';
+  if (chevron) chevron.style.transform = 'rotate(0deg)';
+};
+
+window.setUserStatus = function(status) {
+  _umStatus = status;
+  const statusColors = { online:'#22c55e', busy:'#ef4444', away:'#f59e0b', offline:'#6b7280' };
+  const statusLabels = { online:'Online', busy:'Ocupado', away:'Ausente', offline:'Invisível' };
+  // Re-render popup content
+  const popup = document.getElementById('user-menu-popup');
+  if (popup && _umOpen) popup.innerHTML = buildUserMenuHTML();
+  showToast('Status: ' + statusLabels[status], 'info');
+};
+
+window.doLogout = function() {
+  closeUserMenu();
+  showToast('Encerrando sessão...', 'info');
+  setTimeout(() => {
+    document.getElementById('screen-app').style.display  = 'none';
+    document.getElementById('screen-app').classList.remove('active');
+    document.getElementById('screen-login').style.display = '';
+    // Reset login steps
+    document.getElementById('login-step-1').classList.remove('hidden');
+    document.getElementById('login-step-2').classList.add('hidden');
+    APP.currentPage = 'dashboard';
+  }, 800);
+};
+
+// Close on outside click
+document.addEventListener('click', function(e) {
+  if (_umOpen && !e.target.closest('#sidebar-user-btn') && !e.target.closest('#user-menu-popup')) {
+    closeUserMenu();
+  }
+});
+// Close on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && _umOpen) closeUserMenu();
+});
 </script>
 
 <!-- ══════ Page scripts ══════ -->
