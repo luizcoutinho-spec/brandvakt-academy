@@ -109,6 +109,34 @@
   .um-status-btn{display:flex;align-items:center;gap:6px;padding:5px 9px;border-radius:99px;border:1px solid rgba(255,255,255,0.10);font-size:0.72rem;font-weight:600;cursor:pointer;transition:all 0.15s;background:transparent;color:#94a3b8;font-family:inherit;}
   .um-status-btn:hover{border-color:rgba(255,255,255,0.20);color:#e2e8f0;}
   .um-status-btn.active{border-color:currentColor;}
+
+  /* ── Support Modal ── */
+  @keyframes supIn{from{opacity:0;transform:scale(0.96) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+  .sup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(6px);z-index:9100;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .sup-modal{background:#14141e;border:1px solid rgba(255,255,255,0.10);border-radius:20px;width:100%;max-width:760px;max-height:92vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,0.7);animation:supIn 0.25s ease;}
+  .sup-tabs{display:flex;gap:3px;background:rgba(255,255,255,0.04);border-radius:10px;padding:4px;}
+  .sup-tab{flex:1;padding:8px 14px;border-radius:8px;border:none;background:transparent;color:#94a3b8;font-size:0.80rem;font-weight:600;cursor:pointer;transition:all 0.18s;font-family:inherit;}
+  .sup-tab.active{background:#00d4ff;color:#000;}
+  .sup-tab:hover:not(.active){background:rgba(255,255,255,0.06);color:#e2e8f0;}
+  .sup-channel{display:flex;align-items:center;gap:14px;padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.02);transition:all 0.2s;cursor:pointer;}
+  .sup-channel:hover{border-color:rgba(255,255,255,0.16);background:rgba(255,255,255,0.04);transform:translateY(-1px);}
+  .sup-channel-icon{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;flex-shrink:0;}
+  .sup-faq-item{border:1px solid rgba(255,255,255,0.07);border-radius:12px;overflow:hidden;margin-bottom:8px;}
+  .sup-faq-q{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;cursor:pointer;font-size:0.86rem;font-weight:600;transition:background 0.15s;}
+  .sup-faq-q:hover{background:rgba(255,255,255,0.04);}
+  .sup-faq-a{padding:0 16px;font-size:0.80rem;color:#94a3b8;line-height:1.6;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.3s;}
+  .sup-faq-a.open{max-height:300px;padding:12px 16px;}
+  .sup-input{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:9px;padding:10px 13px;color:#f1f5f9;font-size:0.85rem;font-family:inherit;outline:none;transition:border-color 0.2s;width:100%;box-sizing:border-box;}
+  .sup-input:focus{border-color:#00d4ff;box-shadow:0 0 0 3px rgba(0,212,255,0.10);}
+  .sup-input::placeholder{color:#6b7280;}
+  .sup-select option{background:#1a1a26;}
+  .sup-label{display:block;font-size:0.70rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;}
+  .sup-btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:9px;border:none;font-size:0.83rem;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:inherit;}
+  .sup-btn-primary{background:#00d4ff;color:#000;box-shadow:0 4px 14px rgba(0,212,255,0.25);}
+  .sup-btn-primary:hover{opacity:0.9;transform:translateY(-1px);}
+  .sup-btn-ghost{background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.10);}
+  .sup-btn-ghost:hover{background:rgba(255,255,255,0.10);color:#e2e8f0;}
+  .sup-status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;}
   </style>
 </head>
 <body>
@@ -574,7 +602,7 @@ function buildUserMenuHTML() {
       <button class="um-item" style="flex:1;" onclick="showToast('Atalhos de teclado em breve','info')">
         <span class="um-item-icon">⌨️</span>Atalhos
       </button>
-      <button class="um-item" style="flex:1;" onclick="showToast('Suporte: suporte@brandvakt.com','info')">
+      <button class="um-item" style="flex:1;" onclick="openSupportModal();closeUserMenu()">
         <span class="um-item-icon">❓</span>Suporte
       </button>
       <button class="um-item" style="flex:1;color:#ef4444;" onclick="doLogout()">
@@ -636,6 +664,231 @@ document.addEventListener('click', function(e) {
   if (_umOpen && !e.target.closest('#sidebar-user-btn') && !e.target.closest('#user-menu-popup')) {
     closeUserMenu();
   }
+});
+
+// ── Support Modal ──────────────────────────────────────────────
+let _supTab = 'contact';
+
+const SUP_FAQS = [
+  { q:'Como redefinir a senha de um usuário?',            a:'Acesse Usuários → selecione o usuário → clique em "Ações" → "Redefinir Senha". Um e-mail de redefinição será enviado automaticamente para o endereço cadastrado.' },
+  { q:'Como adicionar um novo departamento?',            a:'Acesse Departamentos & Trilhas → clique em "+ Novo Departamento" → preencha nome, gestor e configurações. O departamento já ficará disponível para atribuição de usuários.' },
+  { q:'Os certificados têm validade?',                   a:'Sim. Por padrão, os certificados têm validade de 12 meses. Você pode personalizar a validade em Configurações → Empresa → Certificados. Alertas automáticos são enviados 30 dias antes do vencimento.' },
+  { q:'Como configurar o SSO com Azure AD?',             a:'Acesse Configurações → Integrações → Microsoft Azure AD → clique em "Conectar". Você precisará do Tenant ID, Client ID e Client Secret fornecidos pelo Azure Portal. Nossa equipe pode auxiliar na configuração.' },
+  { q:'Como exportar o relatório de compliance?',        a:'Acesse Relatórios → selecione "Compliance Score Executivo" → clique em "Exportar PDF". Para agendamento automático, use a aba "Agendamentos" para enviar por e-mail periodicamente.' },
+  { q:'É possível personalizar os e-mails da plataforma?', a:'Sim. Em Configurações → E-mail você pode editar o remetente, templates de e-mail (boas-vindas, certificados, lembretes) e configurar o servidor SMTP da sua empresa.' },
+  { q:'Como funciona o Human Risk Score?',               a:'O score é calculado com base em comportamentos de risco: cliques em phishing, pendências de treinamento, certificados vencidos e senhas fracas. Quanto mais alto o score, maior o risco. A meta recomendada é abaixo de 30 pontos.' },
+  { q:'Posso importar usuários em massa?',               a:'Sim. Acesse Usuários → "Importar" → faça upload de uma planilha CSV com os campos: nome, e-mail, departamento e cargo. O template está disponível na mesma tela.' },
+];
+
+function supBuildHTML(tab) {
+  const channels = [
+    { icon:'📧', label:'E-mail de Suporte', value:'suporte@brandvakt.com', desc:'Resposta em até 4h úteis', color:'#00d4ff', action:`window.open('mailto:suporte@brandvakt.com?subject=Suporte Brandvakt Academy')` },
+    { icon:'💬', label:'Chat ao Vivo',       value:'Segunda a Sexta, 08h–18h', desc:'Tempo médio: 3 minutos', color:'#22c55e', action:`showToast('Chat iniciando...','info')` },
+    { icon:'📞', label:'Telefone',           value:'+55 11 3000-0000', desc:'Suporte técnico urgente', color:'#8b5cf6', action:`window.open('tel:+551130000000')` },
+    { icon:'📖', label:'Base de Conhecimento', value:'docs.brandvakt.com', desc:'Artigos e tutoriais', color:'#f59e0b', action:`showToast('Abrindo documentação...','info')` },
+  ];
+
+  const tabContent = {
+    contact: `
+      <!-- Status banner -->
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.20);margin-bottom:20px;">
+        <span class="sup-status-dot" style="background:#22c55e;box-shadow:0 0 8px #22c55e88;"></span>
+        <div>
+          <span style="font-size:0.82rem;font-weight:700;color:#22c55e;">Todos os sistemas operacionais</span>
+          <span style="font-size:0.72rem;color:#6b7280;margin-left:10px;">Uptime: 99.97% · Atualizado há 2 min</span>
+        </div>
+      </div>
+
+      <!-- Channels grid -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;">
+        ${channels.map(c=>`
+          <div class="sup-channel" onclick="${c.action}">
+            <div class="sup-channel-icon" style="background:${c.color}18;border:1px solid ${c.color}25;">${c.icon}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:0.86rem;margin-bottom:2px;">${c.label}</div>
+              <div style="font-size:0.78rem;color:${c.color};font-weight:600;">${c.value}</div>
+              <div style="font-size:0.70rem;color:#6b7280;margin-top:2px;">${c.desc}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+
+      <!-- Quick info -->
+      <div style="padding:16px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
+        <div style="font-size:0.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;">📌 Informações Rápidas</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          ${[
+            ['Horário de atendimento','Seg–Sex, 08h–18h (BRT)'],
+            ['E-mail','suporte@brandvakt.com'],
+            ['SLA Padrão','4 horas úteis'],
+            ['SLA Enterprise','1 hora (24/7)'],
+            ['Versão da plataforma','v3.2.1'],
+            ['Última atualização','05 de Jun, 2025'],
+          ].map(([k,v])=>`
+            <div style="padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.02);">
+              <div style="font-size:0.68rem;color:#6b7280;">${k}</div>
+              <div style="font-size:0.80rem;font-weight:600;margin-top:2px;">${v}</div>
+            </div>`).join('')}
+        </div>
+      </div>`,
+
+    ticket: `
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div><label class="sup-label">Nome *</label><input class="sup-input" id="sup-name" placeholder="Seu nome completo" value="${(typeof APP!=='undefined'&&APP.user?APP.user.name:'')}"></div>
+          <div><label class="sup-label">E-mail *</label><input class="sup-input" id="sup-email" placeholder="seu@empresa.com" value="admin@empresa.com"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div><label class="sup-label">Categoria *</label>
+            <select class="sup-input sup-select" id="sup-cat">
+              <option value="">Selecione...</option>
+              <option>🔐 Acesso & Autenticação</option>
+              <option>👤 Gestão de Usuários</option>
+              <option>📚 Treinamentos & Cursos</option>
+              <option>🏆 Certificados</option>
+              <option>📧 Phishing & Campanhas</option>
+              <option>⚠️ Human Risk</option>
+              <option>📊 Relatórios</option>
+              <option>🔌 Integrações & API</option>
+              <option>💳 Faturamento & Planos</option>
+              <option>🐛 Bug / Erro na plataforma</option>
+              <option>💡 Sugestão de melhoria</option>
+              <option>🔧 Outro</option>
+            </select>
+          </div>
+          <div><label class="sup-label">Prioridade</label>
+            <select class="sup-input sup-select" id="sup-priority">
+              <option>🟢 Baixa — dúvida geral</option>
+              <option selected>🟡 Média — afeta meu trabalho</option>
+              <option>🔴 Alta — sistema indisponível</option>
+            </select>
+          </div>
+        </div>
+        <div><label class="sup-label">Assunto *</label><input class="sup-input" id="sup-subject" placeholder="Descreva o problema em uma linha"></div>
+        <div><label class="sup-label">Descrição detalhada *</label>
+          <textarea class="sup-input" id="sup-desc" rows="5" placeholder="Descreva o problema com o máximo de detalhes possível. Inclua: o que tentou fazer, o que aconteceu, mensagem de erro (se houver) e passos para reproduzir." style="resize:vertical;min-height:100px;"></textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.15);">
+          <span style="font-size:1.1rem;">📎</span>
+          <div style="flex:1;font-size:0.78rem;color:#94a3b8;">Anexar capturas de tela ou logs (opcional)</div>
+          <button class="sup-btn sup-btn-ghost" style="padding:6px 12px;font-size:0.76rem;" onclick="showToast('Upload em breve','info')">Selecionar arquivo</button>
+        </div>
+        <div style="display:flex;gap:10px;padding-top:4px;">
+          <button class="sup-btn sup-btn-ghost" style="flex:1;" onclick="closeSupportModal()">Cancelar</button>
+          <button class="sup-btn sup-btn-primary" style="flex:1;" onclick="supSendTicket()">📨 Enviar Chamado</button>
+        </div>
+      </div>`,
+
+    faq: `
+      <div style="margin-bottom:16px;">
+        <input class="sup-input" id="sup-faq-search" placeholder="🔍 Buscar nas perguntas frequentes..." oninput="supFilterFaq(this.value)">
+      </div>
+      <div id="sup-faq-list">
+        ${SUP_FAQS.map((f,i)=>`
+          <div class="sup-faq-item">
+            <div class="sup-faq-q" onclick="supToggleFaq(${i})">
+              <span>${f.q}</span>
+              <span id="sup-faq-chevron-${i}" style="color:#6b7280;font-size:0.80rem;flex-shrink:0;margin-left:8px;transition:transform 0.2s;">▼</span>
+            </div>
+            <div class="sup-faq-a" id="sup-faq-a-${i}">${f.a}</div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:16px;text-align:center;padding:14px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
+        <div style="font-size:0.80rem;color:#6b7280;margin-bottom:10px;">Não encontrou o que procurava?</div>
+        <button class="sup-btn sup-btn-primary" onclick="supSwitchTab('ticket')">📨 Abrir Chamado de Suporte</button>
+      </div>`,
+  };
+
+  return `
+    <!-- Header -->
+    <div style="padding:28px 28px 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:rgba(0,212,255,0.12);border:1px solid rgba(0,212,255,0.25);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">❓</div>
+        <div>
+          <div style="font-size:1.1rem;font-weight:800;">Central de Suporte</div>
+          <div style="font-size:0.74rem;color:#6b7280;margin-top:1px;">📧 suporte@brandvakt.com</div>
+        </div>
+      </div>
+      <button onclick="closeSupportModal()" style="background:none;border:none;color:#6b7280;font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:8px;transition:all 0.15s;" onmouseover="this.style.color='#f1f5f9';this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.color='#6b7280';this.style.background='none'">✕</button>
+    </div>
+
+    <!-- Tabs -->
+    <div style="padding:0 28px;margin-bottom:20px;">
+      <div class="sup-tabs">
+        <button class="sup-tab${tab==='contact'?' active':''}" onclick="supSwitchTab('contact')">📞 Contato</button>
+        <button class="sup-tab${tab==='ticket'?' active':''}"  onclick="supSwitchTab('ticket')">📨 Abrir Chamado</button>
+        <button class="sup-tab${tab==='faq'?' active':''}"    onclick="supSwitchTab('faq')">❓ FAQ</button>
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div style="padding:0 28px 28px;">
+      ${tabContent[tab] || tabContent.contact}
+    </div>`;
+}
+
+window.openSupportModal = function() {
+  _supTab = 'contact';
+  let ov = document.getElementById('sup-overlay');
+  if (!ov) {
+    ov = document.createElement('div');
+    ov.id = 'sup-overlay';
+    ov.className = 'sup-overlay';
+    ov.addEventListener('click', e => { if (e.target === ov) closeSupportModal(); });
+    const modal = document.createElement('div');
+    modal.id = 'sup-modal';
+    modal.className = 'sup-modal';
+    ov.appendChild(modal);
+    document.body.appendChild(ov);
+  }
+  ov.style.display = 'flex';
+  document.getElementById('sup-modal').innerHTML = supBuildHTML(_supTab);
+};
+
+window.closeSupportModal = function() {
+  const ov = document.getElementById('sup-overlay');
+  if (ov) ov.style.display = 'none';
+};
+
+window.supSwitchTab = function(tab) {
+  _supTab = tab;
+  const modal = document.getElementById('sup-modal');
+  if (modal) modal.innerHTML = supBuildHTML(tab);
+};
+
+window.supToggleFaq = function(i) {
+  const ans = document.getElementById('sup-faq-a-'+i);
+  const chv = document.getElementById('sup-faq-chevron-'+i);
+  if (!ans) return;
+  const isOpen = ans.classList.toggle('open');
+  if (chv) chv.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+};
+
+window.supFilterFaq = function(query) {
+  const q = query.toLowerCase();
+  SUP_FAQS.forEach((f, i) => {
+    const item = document.querySelector('.sup-faq-item:nth-child('+(i+1)+')');
+    if (!item) return;
+    const match = !q || f.q.toLowerCase().includes(q) || f.a.toLowerCase().includes(q);
+    item.style.display = match ? '' : 'none';
+  });
+};
+
+window.supSendTicket = function() {
+  const name    = document.getElementById('sup-name')?.value.trim();
+  const email   = document.getElementById('sup-email')?.value.trim();
+  const cat     = document.getElementById('sup-cat')?.value;
+  const subject = document.getElementById('sup-subject')?.value.trim();
+  const desc    = document.getElementById('sup-desc')?.value.trim();
+  if (!name || !email || !cat || !subject || !desc) {
+    showToast('Preencha todos os campos obrigatórios (*)','error'); return;
+  }
+  const ticketId = 'BV-' + Date.now().toString().slice(-6);
+  closeSupportModal();
+  showToast('✅ Chamado ' + ticketId + ' aberto! Resposta em até 4h úteis.', 'success');
+};
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { closeSupportModal(); }
 });
 // Close on Escape
 document.addEventListener('keydown', function(e) {
