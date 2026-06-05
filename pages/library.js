@@ -2,7 +2,7 @@
 //  PAGE: BIBLIOTECA DE TREINAMENTOS
 // ══════════════════════════════════════════════════════════════
 
-// ── Inline Course Player (no iframe) ────────────────────────────
+// ── Inline Course Player v2 — fully embedded, zero iframe ──────────
 
 const COURSE_COMPLETIONS = {};
 const COURSE_FILES = { 2: true };
