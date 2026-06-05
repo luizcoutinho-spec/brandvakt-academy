@@ -790,69 +790,252 @@ function stPanelIntegracoes() {
 // ══════════════════════════════════════════════════════════════
 //  PANEL 8 — PLANO
 // ══════════════════════════════════════════════════════════════
+
+// Product activation state (persists while panel is open)
+const ST_PRODUCTS = {
+  phisher:    { active: true  },
+  cats:       { active: true  },
+  compliance: { active: true  },
+  ia:         { active: false },
+};
+
 function stPanelPlano() {
-  const plans = [
-    { id:'starter', name:'Starter',    price:'R$ 490/mês',  users:'Até 50',  color:'#6b7280', features:['Dashboard básico','5 treinamentos','Certificados simples','Suporte email'] },
-    { id:'pro',     name:'Pro',        price:'R$ 1.290/mês',users:'Até 500', color:'#00d4ff', features:['Todos do Starter','Relatórios avançados','HRM & Phishing','SSO / SAML','API REST','Suporte prioritário'], current:true },
-    { id:'enterprise',name:'Enterprise',price:'Sob consulta',users:'Ilimitado',color:'#8b5cf6',features:['Tudo do Pro','SLA 99.9%','Ambiente dedicado','SCIM 2.0','White-label','Gerente de Conta'] },
+  const products = [
+    {
+      id: 'phisher',
+      name: 'Phisher',
+      subtitle: 'Phishing Simulation Platform',
+      icon: '🎣',
+      color: '#ef4444',
+      price: 'R$ 490 / mês',
+      users: 'Usuários ilimitados',
+      description: 'Simule ataques de phishing realistas para treinar seus colaboradores a identificar e-mails maliciosos, links suspeitos e engenharia social.',
+      features: [
+        'Campanhas de phishing automatizadas',
+        'Templates de e-mail personalizáveis',
+        'Relatórios de cliques e exposição',
+        'Treinamento corretivo automático',
+        'Integração com Active Directory',
+        'Dashboard de risco por usuário',
+      ],
+    },
+    {
+      id: 'cats',
+      name: 'CATs',
+      subtitle: 'Cybersecurity Awareness Training',
+      icon: '🛡',
+      color: '#00d4ff',
+      price: 'R$ 890 / mês',
+      users: 'Usuários ilimitados',
+      description: 'Trilhas de conscientização em cibersegurança com microlearning gamificado, quizzes adaptativos e certificação por conclusão.',
+      features: [
+        'Biblioteca com 200+ conteúdos',
+        'Microlearning & gamificação',
+        'Certificados digitais verificáveis',
+        'Progresso por departamento',
+        'Suporte a 4 idiomas (PT/EN/ES/FR)',
+        'Relatórios de conformidade',
+      ],
+    },
+    {
+      id: 'compliance',
+      name: 'Compliance Training',
+      subtitle: 'Treinamento de Compliance & Ética',
+      icon: '📋',
+      color: '#22c55e',
+      price: 'R$ 690 / mês',
+      users: 'Usuários ilimitados',
+      description: 'Programas de treinamento em LGPD, GDPR, Anticorrupção, Código de Ética, ESG e demais regulatórios com trilhas por cargo e departamento.',
+      features: [
+        'LGPD, GDPR, NIS2, SOC2',
+        'Anticorrupção & Lei 12.846',
+        'Canal de denúncias integrado',
+        'Evidências de auditoria',
+        'Assinatura digital de aceite',
+        'Relatórios regulatórios automáticos',
+      ],
+    },
+    {
+      id: 'ia',
+      name: 'IA Assistance',
+      subtitle: 'Inteligência Artificial para GRC',
+      icon: '🤖',
+      color: '#8b5cf6',
+      price: 'R$ 990 / mês',
+      users: 'Usuários ilimitados',
+      description: 'Assistente de IA generativa para análise de riscos, geração de políticas, recomendações personalizadas e suporte à decisão em GRC.',
+      features: [
+        'Chat IA para dúvidas de compliance',
+        'Geração automática de políticas',
+        'Análise preditiva de risco humano',
+        'Recomendações personalizadas',
+        'Integração com GPT-4 / Claude',
+        'Relatórios narrativos automáticos',
+      ],
+    },
   ];
 
-  return `
-  <div class="st-section-title">💎 Plano Atual</div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:22px;">
-    ${plans.map(p=>`
-      <div class="st-plan-card" style="border-color:${p.current?p.color:'rgba(255,255,255,0.08)'};background:${p.current?p.color+'0d':'rgba(255,255,255,0.01)'};">
-        ${p.current?`<div style="font-size:0.65rem;font-weight:700;color:${p.color};text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;">● Plano Atual</div>`:''}
-        <div style="font-weight:800;font-size:1.0rem;margin-bottom:4px;">${p.name}</div>
-        <div style="font-size:1.3rem;font-weight:900;color:${p.color};margin-bottom:4px;">${p.price}</div>
-        <div style="font-size:0.72rem;color:#6b7280;margin-bottom:12px;">Usuários: ${p.users}</div>
-        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:14px;">
-          ${p.features.map(f=>`<div style="font-size:0.76rem;color:#94a3b8;display:flex;gap:6px;"><span style="color:${p.color};">✓</span>${f}</div>`).join('')}
+  function productCard(p) {
+    const active = ST_PRODUCTS[p.id].active;
+    return `
+    <div id="plan-card-${p.id}" style="padding:22px;border-radius:16px;border:2px solid ${active ? p.color : 'rgba(255,255,255,0.08)'};background:${active ? p.color+'0d' : 'rgba(255,255,255,0.01)'};transition:all 0.3s;position:relative;overflow:hidden;">
+      <!-- Active glow -->
+      ${active ? `<div style="position:absolute;top:0;right:0;width:80px;height:80px;background:radial-gradient(circle,${p.color}20,transparent 70%);pointer-events:none;"></div>` : ''}
+
+      <!-- Header -->
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:14px;">
+        <div style="width:46px;height:46px;border-radius:13px;background:${p.color}18;border:1px solid ${p.color}30;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;">${p.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:900;font-size:1.05rem;letter-spacing:-0.01em;">${p.name}</div>
+          <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">${p.subtitle}</div>
         </div>
-        ${!p.current
-          ? `<button class="st-btn st-btn-ghost" style="width:100%;justify-content:center;" onclick="showToast&&showToast('Entre em contato: comercial@brandvakt.com','info')">${p.id==='enterprise'?'Falar com Vendas':'Fazer Upgrade'}</button>`
-          : `<div style="font-size:0.76rem;color:${p.color};text-align:center;font-weight:600;">Ativo ✓</div>`}
-      </div>`).join('')}
+        ${active
+          ? `<span style="font-size:0.65rem;font-weight:700;color:${p.color};background:${p.color}18;border:1px solid ${p.color}30;padding:3px 10px;border-radius:99px;flex-shrink:0;white-space:nowrap;">● ATIVO</span>`
+          : `<span style="font-size:0.65rem;font-weight:700;color:#6b7280;background:rgba(255,255,255,0.05);padding:3px 10px;border-radius:99px;flex-shrink:0;white-space:nowrap;">INATIVO</span>`}
+      </div>
+
+      <!-- Price -->
+      <div style="font-size:1.2rem;font-weight:900;color:${p.color};margin-bottom:4px;">${p.price}</div>
+      <div style="font-size:0.70rem;color:#6b7280;margin-bottom:14px;">${p.users}</div>
+
+      <!-- Description -->
+      <p style="font-size:0.78rem;color:#94a3b8;line-height:1.55;margin-bottom:14px;">${p.description}</p>
+
+      <!-- Features -->
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;">
+        ${p.features.map(f=>`
+          <div style="display:flex;align-items:center;gap:8px;font-size:0.76rem;color:${active?'#e2e8f0':'#6b7280'};">
+            <span style="color:${active?p.color:'#4b5563'};font-size:0.70rem;">✓</span>${f}
+          </div>`).join('')}
+      </div>
+
+      <!-- Action button -->
+      <button
+        id="plan-btn-${p.id}"
+        onclick="stToggleProduct('${p.id}')"
+        style="width:100%;padding:11px;border-radius:10px;border:2px solid ${active?p.color:'rgba(255,255,255,0.12)'};background:${active?p.color:'transparent'};color:${active?'#000':'#94a3b8'};font-weight:700;font-size:0.84rem;cursor:pointer;transition:all 0.2s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;">
+        ${active
+          ? `<span>✓</span> Ativo — Clique para desativar`
+          : `<span>＋</span> Ativar produto`}
+      </button>
+    </div>`;
+  }
+
+  return `
+  <div class="st-section-title">📦 Produtos Contratados</div>
+
+  <!-- Product grid -->
+  <div id="plan-products-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+    ${products.map(p => productCard(p)).join('')}
   </div>
 
-  <div class="st-section-title">📊 Uso do Plano</div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;">
+  <!-- Usage meters -->
+  <div class="st-section-title">📊 Uso Consolidado</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;">
     ${[
-      { label:'Usuários Ativos',    used:340,  total:500,   color:'#00d4ff' },
-      { label:'Treinamentos',       used:47,   total:'∞',   color:'#22c55e' },
-      { label:'Armazenamento',      used:'6.4 GB', total:'20 GB', color:'#8b5cf6', pct:32 },
-      { label:'API Calls / mês',    used:'12.400', total:'50.000', color:'#f59e0b', pct:24 },
-    ].map(u=>{
-      const pct = u.pct ?? (typeof u.used==='number' && typeof u.total==='number' ? Math.round(u.used/u.total*100) : null);
-      return `<div style="padding:14px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
-        <div style="display:flex;justify-content:space-between;font-size:0.78rem;margin-bottom:6px;">
+      { label:'Usuários Ativos',   used:340,  total:500,      color:'#00d4ff', pct:68 },
+      { label:'Campanhas Phishing',used:8,    total:'∞',      color:'#ef4444', pct:null },
+      { label:'Armazenamento',     used:'6.4 GB', total:'20 GB', color:'#8b5cf6', pct:32 },
+      { label:'API Calls / mês',   used:'12.400', total:'50.000', color:'#f59e0b', pct:24 },
+    ].map(u=>`
+      <div style="padding:13px 15px;border-radius:11px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
+        <div style="display:flex;justify-content:space-between;font-size:0.76rem;margin-bottom:6px;">
           <span style="color:#94a3b8;">${u.label}</span>
           <span style="font-weight:700;color:${u.color};">${u.used} / ${u.total}</span>
         </div>
-        ${pct!==null?`<div class="st-prog"><div class="st-prog-fill" style="width:${pct}%;background:${u.color};"></div></div>`:''}
-      </div>`;
-    }).join('')}
+        ${u.pct!==null?`<div class="st-prog"><div class="st-prog-fill" style="width:${u.pct}%;background:${u.color};transition:width 0.8s ease;"></div></div>`:'<div style="font-size:0.68rem;color:#6b7280;">Ilimitado no plano atual</div>'}
+      </div>`).join('')}
   </div>
 
+  <!-- Billing -->
   <div class="st-section-title">💳 Faturamento</div>
   <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;">
-    <div style="flex:1;min-width:200px;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
-      <div style="font-size:0.72rem;color:#6b7280;margin-bottom:4px;">Próximo vencimento</div>
-      <div style="font-weight:700;">01 de Julho, 2025</div>
-      <div style="font-size:0.80rem;font-weight:800;color:#00d4ff;margin-top:4px;">R$ 1.290,00</div>
+    <div style="flex:1;min-width:190px;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
+      <div style="font-size:0.70rem;color:#6b7280;margin-bottom:4px;">Próximo vencimento</div>
+      <div style="font-weight:700;font-size:0.92rem;">01 de Julho, 2025</div>
+      <div id="plan-total-price" style="font-size:0.84rem;font-weight:800;color:#00d4ff;margin-top:5px;">${stCalcTotal()}</div>
     </div>
-    <div style="flex:1;min-width:200px;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
-      <div style="font-size:0.72rem;color:#6b7280;margin-bottom:4px;">Forma de pagamento</div>
+    <div style="flex:1;min-width:190px;padding:14px 16px;border-radius:12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
+      <div style="font-size:0.70rem;color:#6b7280;margin-bottom:4px;">Forma de pagamento</div>
       <div style="font-weight:700;">•••• •••• •••• 4242</div>
-      <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">Visa · Expira 12/2027</div>
+      <div style="font-size:0.70rem;color:#6b7280;margin-top:2px;">Visa · Expira 12/2027</div>
     </div>
   </div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;">
     <button class="st-btn st-btn-ghost st-btn-sm" onclick="showToast&&showToast('Histórico de faturas em breve','info')">📄 Ver Faturas</button>
     <button class="st-btn st-btn-ghost st-btn-sm" onclick="showToast&&showToast('Atualizar cartão em breve','info')">💳 Atualizar Cartão</button>
-    <button class="st-btn st-btn-danger st-btn-sm" onclick="showToast&&showToast('Entre em contato para cancelar: suporte@brandvakt.com','info')">Cancelar Plano</button>
+    <button class="st-btn st-btn-ghost st-btn-sm" onclick="showToast&&showToast('Fale com o comercial: comercial@brandvakt.com','info')">➕ Adicionar Produto</button>
   </div>`;
 }
+
+// Product prices map
+const ST_PRODUCT_PRICES = { phisher:490, cats:890, compliance:690, ia:990 };
+
+function stCalcTotal() {
+  const total = Object.entries(ST_PRODUCTS)
+    .filter(([,v])=>v.active)
+    .reduce((sum,[k])=>sum + ST_PRODUCT_PRICES[k], 0);
+  return 'R$ ' + total.toLocaleString('pt-BR') + ',00 / mês';
+}
+
+window.stToggleProduct = function(id) {
+  const wasActive = ST_PRODUCTS[id].active;
+  ST_PRODUCTS[id].active = !wasActive;
+
+  // Product visual config
+  const cfg = {
+    phisher:    { color:'#ef4444', name:'Phisher'           },
+    cats:       { color:'#00d4ff', name:'CATs'              },
+    compliance: { color:'#22c55e', name:'Compliance Training'},
+    ia:         { color:'#8b5cf6', name:'IA Assistance'     },
+  }[id];
+  const active = ST_PRODUCTS[id].active;
+
+  // Update card border & background
+  const card = document.getElementById('plan-card-'+id);
+  if (card) {
+    card.style.borderColor = active ? cfg.color : 'rgba(255,255,255,0.08)';
+    card.style.background  = active ? cfg.color+'0d' : 'rgba(255,255,255,0.01)';
+  }
+
+  // Update button
+  const btn = document.getElementById('plan-btn-'+id);
+  if (btn) {
+    btn.style.borderColor = active ? cfg.color : 'rgba(255,255,255,0.12)';
+    btn.style.background  = active ? cfg.color : 'transparent';
+    btn.style.color       = active ? '#000' : '#94a3b8';
+    btn.innerHTML = active
+      ? '<span>✓</span> Ativo — Clique para desativar'
+      : '<span>＋</span> Ativar produto';
+  }
+
+  // Update status badge (first span.active badge in card)
+  if (card) {
+    const badge = card.querySelector('span[style*="ATIVO"], span[style*="INATIVO"]');
+    if (badge) {
+      if (active) {
+        badge.textContent = '● ATIVO';
+        badge.style.color = cfg.color;
+        badge.style.background = cfg.color+'18';
+        badge.style.border = `1px solid ${cfg.color}30`;
+      } else {
+        badge.textContent = 'INATIVO';
+        badge.style.color = '#6b7280';
+        badge.style.background = 'rgba(255,255,255,0.05)';
+        badge.style.border = '1px solid rgba(255,255,255,0.08)';
+      }
+    }
+  }
+
+  // Update total price
+  const priceEl = document.getElementById('plan-total-price');
+  if (priceEl) priceEl.textContent = stCalcTotal();
+
+  showToast&&showToast(
+    (active ? '✅ ' : '⏹ ') + cfg.name + (active ? ' ativado' : ' desativado'),
+    active ? 'success' : 'info'
+  );
+};
 
 // ══════════════════════════════════════════════════════════════
 //  PANEL 9 — AUDITORIA
@@ -927,3 +1110,4 @@ function stPanelAuditoria() {
 }
 
 window.stRenderPanel = stRenderPanel;
+window.stCalcTotal = stCalcTotal;
