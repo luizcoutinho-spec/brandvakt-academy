@@ -237,9 +237,11 @@ function asLoadTenantPool() {
   ASSIGN_DATA.assignments = pool.filter(a => !a.isDemo).map(a => ({ ...a }));
 }
 
-// Save current non-demo assignments back to the active tenant's pool
+// Save current non-demo assignments back to the active tenant's pool.
+// Always calls asEnsurePools() first so the save works even if the
+// Assignments page hasn't been visited yet (pool still null).
 function asSaveTenantPool() {
-  if (!_AS_POOLS) return; // not yet initialized
+  asEnsurePools(); // initialize pool if not yet done
   const tid = asGetActiveTenantId();
   _AS_POOLS[tid] = ASSIGN_DATA.assignments.filter(a => !a.isDemo).map(a => ({ ...a }));
 }
