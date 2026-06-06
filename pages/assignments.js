@@ -134,13 +134,13 @@ injectAssignCSS();
 const ASSIGN_DATA = {
   assignments: [
     { id:1,  course:'Phishing & Engenharia Social',  target:'Todos os usuários',       targetType:'global',  due:'2024-12-31', completion:87, status:'ativa',    mandatory:true,  enviados:11, concluidos:10, pendentes:1,  atrasados:1, created:'2024-10-01', priority:'Alta',  category:'Cybersecurity', notify:true },
-    { id:2,  course:'LGPD na Prática',               target:'Brasil · RH · Jurídico',  targetType:'group',   due:'2024-12-15', completion:91, status:'ativa',    mandatory:true,  enviados:156, concluidos:142, pendentes:14,  atrasados:8,  created:'2024-09-15', priority:'Alta',  category:'Privacidade',   notify:true },
+    { id:2,  course:'LGPD na Prática',               target:'RH · Jurídico',           targetType:'group',   due:'2024-12-15', completion:91, status:'ativa',    mandatory:true,  enviados:4,  concluidos:4,  pendentes:0,  atrasados:0, created:'2024-09-15', priority:'Alta',  category:'Privacidade',   notify:true },
     { id:3,  course:'Código de Ética Empresarial',   target:'Todos os usuários',       targetType:'global',  due:'2025-01-31', completion:76, status:'ativa',    mandatory:true,  enviados:11, concluidos:8, pendentes:3,  atrasados:0,  created:'2024-10-15', priority:'Alta',  category:'Compliance',    notify:true },
-    { id:4,  course:'Anticorrupção e Antissuborno',  target:'Gestores · Financeiro',   targetType:'group',   due:'2024-12-20', completion:68, status:'ativa',    mandatory:true,  enviados:89,  concluidos:60,  pendentes:29,  atrasados:14, created:'2024-11-01', priority:'Alta',  category:'Compliance',    notify:false },
-    { id:5,  course:'Home Office Seguro',            target:'Trabalho Remoto',         targetType:'group',   due:'2025-02-28', completion:55, status:'ativa',    mandatory:false, enviados:78,  concluidos:43,  pendentes:35,  atrasados:0,  created:'2024-11-15', priority:'Média', category:'Cybersecurity', notify:true },
-    { id:6,  course:'Cloud Security Awareness',     target:'TI · DevOps',             targetType:'dept',    due:'2025-03-31', completion:42, status:'ativa',    mandatory:false, enviados:48,  concluidos:20,  pendentes:28,  atrasados:0,  created:'2024-12-01', priority:'Média', category:'Cybersecurity', notify:false },
-    { id:7,  course:'ESG e Sustentabilidade',        target:'Lideranças',              targetType:'group',   due:'2025-04-30', completion:18, status:'rascunho', mandatory:false, enviados:0,   concluidos:0,   pendentes:0,   atrasados:0,  created:'2024-12-10', priority:'Baixa', category:'ESG',           notify:false },
-    { id:8,  course:'ISO 27001 Fundamentos',         target:'TI · Segurança',          targetType:'dept',    due:'2025-02-15', completion:100,status:'concluida',mandatory:true,  enviados:55,  concluidos:55,  pendentes:0,   atrasados:0,  created:'2024-09-01', priority:'Alta',  category:'Information Security', notify:false },
+    { id:4,  course:'Anticorrupção e Antissuborno',  target:'Gestores · Financeiro',   targetType:'group',   due:'2024-12-20', completion:68, status:'ativa',    mandatory:true,  enviados:5,  concluidos:3,  pendentes:2,  atrasados:1, created:'2024-11-01', priority:'Alta',  category:'Compliance',    notify:false },
+    { id:5,  course:'Home Office Seguro',            target:'Trabalho Remoto',         targetType:'group',   due:'2025-02-28', completion:55, status:'ativa',    mandatory:false, enviados:5,  concluidos:3,  pendentes:2,  atrasados:0,  created:'2024-11-15', priority:'Média', category:'Cybersecurity', notify:true },
+    { id:6,  course:'Cloud Security Awareness',     target:'TI · DevOps',             targetType:'dept',    due:'2025-03-31', completion:42, status:'ativa',    mandatory:false, enviados:2,  concluidos:1,  pendentes:1,  atrasados:0,  created:'2024-12-01', priority:'Média', category:'Cybersecurity', notify:false },
+    { id:7,  course:'ESG e Sustentabilidade',        target:'Lideranças',              targetType:'group',   due:'2025-04-30', completion:0,  status:'rascunho', mandatory:false, enviados:0,  concluidos:0,  pendentes:0,  atrasados:0,  created:'2024-12-10', priority:'Baixa', category:'ESG',           notify:false },
+    { id:8,  course:'ISO 27001 Fundamentos',         target:'TI',                      targetType:'dept',    due:'2025-02-15', completion:100,status:'concluida',mandatory:true,  enviados:2,  concluidos:2,  pendentes:0,  atrasados:0,  created:'2024-09-01', priority:'Alta',  category:'Information Security', notify:false },
     { id:9,  course:'Gestão de Senhas e MFA',        target:'Todos os usuários',       targetType:'global',  due:'2025-01-15', completion:63, status:'pausada',  mandatory:true,  enviados:11, concluidos:7, pendentes:4, atrasados:2, created:'2024-10-20', priority:'Alta',  category:'Cybersecurity', notify:true },
     { id:10, course:'Canal de Denúncias',            target:'Todos os usuários',       targetType:'global',  due:'2025-03-01', completion:34, status:'ativa',    mandatory:true,  enviados:11, concluidos:4, pendentes:7, atrasados:0,  created:'2024-12-05', priority:'Média', category:'Compliance',    notify:true },
   ],
@@ -156,6 +156,93 @@ const ASSIGN_DATA = {
   ],
   categories: ['Cybersecurity','Compliance','Privacidade','Information Security','ESG','RH'],
 };
+
+// ══════════════════════════════════════════════════════════════
+//  PER-TENANT ASSIGNMENT POOL
+//  Cada empresa tem seu próprio conjunto de atribuições.
+//  Ao trocar de empresa, as atribuições da empresa anterior são
+//  salvas no pool e as da nova empresa são carregadas.
+// ══════════════════════════════════════════════════════════════
+
+// Base assignments para cada tenant (escaladas a partir dos dados originais)
+const _AS_BASE_TENANT1 = JSON.parse(JSON.stringify(ASSIGN_DATA.assignments)); // Empresa Demo S.A. (11 users)
+
+function asGetActiveTenantId() {
+  if (typeof APP !== 'undefined' && APP.tenants) {
+    const t = APP.tenants.find(t => t.active);
+    return t ? t.id : 1;
+  }
+  return 1;
+}
+
+function asBuildPoolForTenant(tenantId) {
+  // Get user count for the TARGET tenant directly from APP (not getActiveTenantUsers)
+  const targetTenant = (typeof APP !== 'undefined' && APP.tenants)
+    ? APP.tenants.find(t => t.id === tenantId) : null;
+  const targetUsers  = targetTenant ? (targetTenant.userData || []) : [];
+  const actualTotal  = targetUsers.length + (tenantId === 1 ? 1 : 0); // +1 for DEMO_STATE on tenant 1
+  const baseTotal    = 11; // Empresa Demo S.A. base user count (including Admin Local)
+  const ratio        = actualTotal / baseTotal;
+
+  return _AS_BASE_TENANT1.map((a, idx) => {
+    const newId = tenantId === 1 ? a.id : (tenantId * 100 + idx + 1);
+    if (a.enviados === 0) return { ...a, id: newId }; // draft — keep as-is
+
+    if (a.targetType === 'global') {
+      // All-user: enviados = actual total
+      const env  = actualTotal;
+      const rate = a.concluidos / Math.max(a.enviados, 1);
+      const conc = Math.min(env, Math.round(rate * env));
+      const pend = env - conc;
+      const atrR = a.atrasados / Math.max(a.enviados, 1);
+      const atr  = Math.min(pend, Math.max(0, Math.round(atrR * env)));
+      const comp = env ? Math.round(conc / env * 100) : a.completion;
+      return { ...a, id: newId, enviados: env, concluidos: conc, pendentes: Math.max(0, pend), atrasados: atr, completion: comp };
+    } else {
+      // Group/dept: scale proportionally
+      const env  = Math.max(1, Math.round(a.enviados * ratio));
+      const conc = Math.min(env, Math.round(a.concluidos * ratio));
+      const pend = env - conc;
+      const atr  = Math.min(pend, Math.max(0, Math.round(a.atrasados * ratio)));
+      const comp = env ? Math.round(conc / env * 100) : a.completion;
+      return { ...a, id: newId, enviados: env, concluidos: conc, pendentes: Math.max(0, pend), atrasados: atr, completion: comp };
+    }
+  });
+}
+
+// Pool: maps tenantId → assignments[] (persists across tenant switches in the session)
+let _AS_POOLS = null;
+
+function asEnsurePools() {
+  if (_AS_POOLS) return;
+  _AS_POOLS = {
+    1: JSON.parse(JSON.stringify(_AS_BASE_TENANT1)),
+    // Tenants 2 and 3 are lazily built on first access
+  };
+}
+
+function asGetTenantPool(tenantId) {
+  asEnsurePools();
+  if (!_AS_POOLS[tenantId]) {
+    _AS_POOLS[tenantId] = asBuildPoolForTenant(tenantId);
+  }
+  return _AS_POOLS[tenantId];
+}
+
+// Load the active tenant's assignments into ASSIGN_DATA
+function asLoadTenantPool() {
+  const tid = asGetActiveTenantId();
+  const pool = asGetTenantPool(tid);
+  // Replace non-demo assignments
+  ASSIGN_DATA.assignments = pool.filter(a => !a.isDemo).map(a => ({ ...a }));
+}
+
+// Save current non-demo assignments back to the active tenant's pool
+function asSaveTenantPool() {
+  if (!_AS_POOLS) return; // not yet initialized
+  const tid = asGetActiveTenantId();
+  _AS_POOLS[tid] = ASSIGN_DATA.assignments.filter(a => !a.isDemo).map(a => ({ ...a }));
+}
 
 // ── Tamanho de grupo baseado nos usuários reais (_usersAll de users.js) ──
 function asGroupSize(group) {
@@ -259,6 +346,9 @@ function asSortArrow(col) {
 // ── Main Render ───────────────────────────────────────────────
 window.renderPage_assignments = function() {
   injectAssignCSS();
+
+  // ── Load this tenant's assignment pool (tenant isolation) ──
+  asLoadTenantPool();
 
   // ── Inject Admin Local DEMO assignments (Diretoria · DEMO SA) ──
   if (typeof DEMO_STATE !== 'undefined') {
@@ -447,6 +537,7 @@ function asRefreshKPIs() {
 
 // ── Full refresh: KPIs + tab body ──────────────────────────────
 function asRefreshAll() {
+  asSaveTenantPool(); // persist changes to active tenant's pool
   asRefreshKPIs();
   asTab(AS.tab);
 }

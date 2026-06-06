@@ -566,10 +566,16 @@ function switchTenant(id){
   const tenant=APP.tenants.find(t=>t.id===id);
   APP.tenant=tenant;
   document.getElementById('tenant-name').textContent=tenant.name;
-  // Resetar cache de usuários para forçar reload com dados da nova empresa
-  if(typeof _usersAll !== 'undefined') { _usersAll = getActiveTenantUsers(); }
+  // ── Reset module-level caches so every page re-reads from the new tenant ──
+  if(typeof _usersAll !== 'undefined')   { _usersAll = getActiveTenantUsers(); }
+  // Force phishing campaigns to re-scale for new tenant on next render
+  // (_PH_POOLS keeps per-tenant state; phRebuildFromTenant() re-selects the right pool)
+  // Force departments to rebuild
+  if(typeof DEPT_DATA !== 'undefined' && DEPT_DATA.departments) {
+    // departments.js will call rebuildDeptsFromTenant() on next renderPage_departments
+  }
   hideModal('modal-tenant');
-  showToast('Empresa: '+tenant.name,'success');
+  showToast('✅ Empresa: '+tenant.name,'success');
   renderPage(APP.currentPage);
 }
 

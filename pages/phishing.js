@@ -440,11 +440,60 @@ function companyRisk() {
   return Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
 }
 
+// ── Base campaign data (original reference — never mutate this) ──
+const _PH_BASE_CAMPANHAS = JSON.parse(JSON.stringify(PHISHING_MOCK.campanhas));
+const _PH_BASE_HISTORICO  = JSON.parse(JSON.stringify(PHISHING_MOCK.historico_mensal));
+
+// Per-tenant campaign pool (persists mutations within session)
+const _PH_POOLS = {};
+
+function phGetActiveTenantId() {
+  if (typeof APP !== 'undefined' && APP.tenants) {
+    const t = APP.tenants.find(t => t.active);
+    return t ? t.id : 1;
+  }
+  return 1;
+}
+
+function phScaleCampanhas(tenantId, tenantUsers) {
+  const actual   = tenantUsers.length || 1;
+  const baseMax  = Math.max(..._PH_BASE_CAMPANHAS.map(c => c.enviados), 1);
+  const ratio    = actual / 342; // base dataset was designed for 342 users
+
+  return _PH_BASE_CAMPANHAS.map(c => {
+    if (c.enviados === 0) return { ...c }; // draft — no scaling
+    const env  = Math.max(1, Math.round(c.enviados * ratio));
+    const abr  = Math.min(env, Math.round(c.abertos  / Math.max(c.enviados,1) * env));
+    const clic = Math.min(abr, Math.round(c.cliques  / Math.max(c.enviados,1) * env));
+    const subm = Math.min(clic, Math.round(c.submeteu / Math.max(c.enviados,1) * env));
+    const rep  = Math.min(env - clic, Math.round(c.reportou / Math.max(c.enviados,1) * env));
+    return { ...c, enviados: env, abertos: abr, cliques: Math.max(0,clic), submeteu: Math.max(0,subm), reportou: Math.max(0,rep) };
+  });
+}
+
+function phScaleHistorico(tenantUsers) {
+  const ratio = (tenantUsers.length || 1) / 342;
+  return _PH_BASE_HISTORICO.map(h => ({
+    mes:     h.mes,
+    clique:  Math.max(1, Math.round(h.clique  * ratio)),
+    reporte: Math.max(0, Math.round(h.reporte * ratio)),
+  }));
+}
+
 // ── Rebuild usuarios + grupos from active tenant (single source of truth) ──
 function phRebuildFromTenant() {
   if (typeof getActiveTenantUsers !== 'function') return;
   const tenantUsers = getActiveTenantUsers();
   if (!tenantUsers || !tenantUsers.length) return;
+
+  // ── Scale campaigns to active tenant's actual user count ──
+  const tid = phGetActiveTenantId();
+  if (!_PH_POOLS[tid]) {
+    // First time for this tenant — build scaled copy from base
+    _PH_POOLS[tid] = phScaleCampanhas(tid, tenantUsers);
+  }
+  PHISHING_MOCK.campanhas = _PH_POOLS[tid].map(c => ({ ...c }));
+  PHISHING_MOCK.historico_mensal = phScaleHistorico(tenantUsers);
 
   // helper: dept → stable group id
   function deptToId(dept) {
@@ -921,11 +970,18 @@ window.phViewCampaign = function(id) {
   `);
 };
 
+// Save current campaigns back to the active tenant's pool
+function phSaveTenantPool() {
+  const tid = phGetActiveTenantId();
+  _PH_POOLS[tid] = PHISHING_MOCK.campanhas.map(c => ({ ...c }));
+}
+
 window.phDuplicateCampaign = function(id) {
   const c = PHISHING_MOCK.campanhas.find(x=>x.id===id);
   if (!c) return;
   const dup = {...c, id: Date.now(), nome: c.nome+' (Cópia)', status:'Rascunho', enviados:0, abertos:0, cliques:0, submeteu:0, reportou:0 };
   PHISHING_MOCK.campanhas.push(dup);
+  phSaveTenantPool();
   if (PH.tab === 'campanhas') phTab('campanhas');
   showToast && showToast('Campanha duplicada como rascunho!','success');
 };
@@ -933,6 +989,7 @@ window.phDuplicateCampaign = function(id) {
 window.phArchiveCampaign = function(id) {
   const c = PHISHING_MOCK.campanhas.find(x=>x.id===id);
   if (c) c.status = 'Concluída';
+  phSaveTenantPool();
   if (PH.tab === 'campanhas') phTab('campanhas');
   showToast && showToast('Campanha arquivada.','info');
 };
@@ -1138,6 +1195,7 @@ window.phLaunchCampaign = function() {
     data_fim: PH.newCampaign.dataFim||'', grupo: g.nome
   };
   PHISHING_MOCK.campanhas.unshift(newCamp);
+  phSaveTenantPool();
   phCloseModal();
   PH.tab = 'campanhas';
   phTab('campanhas');
