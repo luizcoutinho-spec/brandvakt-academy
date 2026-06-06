@@ -934,6 +934,369 @@ function renderHRMMatriz() {
   </div>`;
 }
 
+// ── Deterministic pseudo-random seeded by user id ─────────────
+function _hrmR(uid, salt, max) {
+  const v = ((uid * 1664525 + salt * 22695477 + 1013904223) & 0x7FFFFFFF);
+  return v % (max || 100);
+}
+
+// ── Rich detail generators per factor ─────────────────────────
+function hrmFactorDetail(u, factorId) {
+  const uid = typeof u.id === 'number' ? u.id : 1;
+
+  // ── Courses catalogue ──────────────────────────────────────
+  const COURSES = [
+    { id:'c1', name:'Segurança da Informação Básica',       dur:'45min', mandatory:true  },
+    { id:'c2', name:'Phishing e Engenharia Social',          dur:'30min', mandatory:true  },
+    { id:'c3', name:'LGPD e Proteção de Dados Pessoais',    dur:'60min', mandatory:true  },
+    { id:'c4', name:'Gestão de Senhas e Autenticação',       dur:'25min', mandatory:true  },
+    { id:'c5', name:'Acesso Remoto e VPN Segura',            dur:'20min', mandatory:false },
+    { id:'c6', name:'Classificação de Informações',          dur:'35min', mandatory:true  },
+    { id:'c7', name:'Resposta a Incidentes de Segurança',   dur:'50min', mandatory:false },
+    { id:'c8', name:'Compliance e Ética Corporativa',        dur:'40min', mandatory:true  },
+    { id:'c9', name:'Segurança em Dispositivos Móveis',      dur:'20min', mandatory:false },
+    { id:'c10',name:'Boas Práticas em Ambientes de Nuvem',  dur:'30min', mandatory:false },
+  ];
+
+  // ── Phishing campaigns catalogue ──────────────────────────
+  const CAMPAIGNS = [
+    { id:'ph1', name:'Promoção Black Friday — TI',      date:'12/11/2024', type:'Oferta comercial'  },
+    { id:'ph2', name:'Atualização Urgente de Senha',     date:'05/12/2024', type:'Credencial'        },
+    { id:'ph3', name:'Reunião Emergencial — CEO',        date:'18/12/2024', type:'Urgência executiva'},
+    { id:'ph4', name:'Benefícios 2025 — Portal RH',     date:'08/01/2025', type:'Portal interno'   },
+    { id:'ph5', name:'Entrega Frustrada — Correios',     date:'22/01/2025', type:'Logística'         },
+    { id:'ph6', name:'Alerta de Segurança — Banco',      date:'03/02/2025', type:'Bancário'          },
+    { id:'ph7', name:'Convite Exclusivo LinkedIn',       date:'14/02/2025', type:'Rede social'       },
+    { id:'ph8', name:'Fatura Pendente — Financeiro',     date:'28/02/2025', type:'Financeiro'        },
+  ];
+
+  // ── Password weaknesses ───────────────────────────────────
+  const PWD_ISSUES = [
+    { icon:'🔁', label:'Reutilização de senha',      detail:'Senha idêntica detectada em 3 sistemas distintos',           sev:'high'  },
+    { icon:'🔡', label:'Força insuficiente',          detail:'Senha com 7 caracteres, sem caracteres especiais',           sev:'high'  },
+    { icon:'📵', label:'2FA não ativado',             detail:'Autenticação de dois fatores desabilitada no portal',        sev:'med'   },
+    { icon:'⏳', label:'Senha expirada',              detail:'Senha não foi alterada há 97 dias (política: 90 dias)',      sev:'med'   },
+    { icon:'🔤', label:'Padrão previsível',           detail:'Senha segue padrão Nome+Ano detectado pelo auditor',         sev:'med'   },
+    { icon:'📋', label:'Sem rotação de token',        detail:'Token de API corporativo não rotacionado em 180 dias',      sev:'low'   },
+    { icon:'🔓', label:'Sessão sem timeout',          detail:'Sessões ativas por mais de 12h sem reautenticação',         sev:'low'   },
+  ];
+
+  // ── Access violations ─────────────────────────────────────
+  const ACCESS_ISSUES = [
+    { icon:'🌙', label:'Login fora do horário',       detail:'Acesso às 02h47 — fora do padrão (08h–20h)',                sys:'Portal Corporativo',  date:'14/02/2025', sev:'high' },
+    { icon:'🌍', label:'IP desconhecido',             detail:'Login de IP 179.214.xx.xx (localização: Rússia)',           sys:'Office 365',           date:'10/02/2025', sev:'high' },
+    { icon:'🚫', label:'Acesso negado recorrente',    detail:'8 tentativas de acesso ao módulo Financeiro em 24h',        sys:'ERP Financeiro',       date:'07/02/2025', sev:'high' },
+    { icon:'📥', label:'Download em massa',           detail:'847 arquivos baixados em 12 minutos via SharePoint',        sys:'SharePoint',           date:'03/02/2025', sev:'med'  },
+    { icon:'👤', label:'Dados de outro dept',         detail:'Acesso a registros do departamento Jurídico sem permissão', sys:'Sistema de Gestão',   date:'28/01/2025', sev:'med'  },
+    { icon:'⬆️', label:'Escalada de privilégio',      detail:'Solicitação de acesso admin negada — 2ª ocorrência',        sys:'Azure AD',             date:'21/01/2025', sev:'med'  },
+    { icon:'🔑', label:'Chave API compartilhada',     detail:'Credencial de API usada em 2 máquinas simultaneamente',    sys:'API Gateway',          date:'15/01/2025', sev:'low'  },
+  ];
+
+  // ── Inactivity modules ─────────────────────────────────────
+  const MODULES = ['Dashboard', 'Treinamentos', 'Phishing', 'Relatórios', 'Certificados', 'Human Risk', 'Configurações'];
+
+  // ── Cert catalogue ─────────────────────────────────────────
+  const CERT_NAMES = [
+    'Segurança da Informação Básica',
+    'LGPD e Proteção de Dados',
+    'Phishing Awareness Level 1',
+    'Compliance Corporativo',
+    'Acesso Seguro e VPN',
+    'Gestão de Incidentes',
+  ];
+
+  // ────────────────────────────────────────────────────────────
+  if (factorId === 'training') {
+    // Admin Local DEMO: usa dados reais do DEMO_STATE
+    if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
+      const comps = DEMO_STATE.completions;
+      const rows = COURSES.map(c => {
+        const found = comps.find(x => x.courseId === c.id || x.courseName === c.name);
+        if (found) {
+          const st = found.passed
+            ? `<span style="color:#22c55e;font-weight:700">✅ Aprovado (${found.score}%)</span>`
+            : `<span style="color:#ef4444;font-weight:700">❌ Reprovado (${found.score}%)</span>`;
+          return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span style="font-size:.8rem;flex:1">${c.name} <span style="color:var(--hrm-muted);font-size:.68rem">${c.dur}</span>${c.mandatory?'<span style="font-size:.6rem;background:rgba(239,68,68,.15);color:#ef4444;padding:1px 5px;border-radius:4px;margin-left:4px">Obrigatório</span>':''}</span>
+            ${st}
+          </div>`;
+        }
+        const pend = c.mandatory
+          ? `<span style="color:#ef4444;font-weight:700">⏰ Atrasado</span>`
+          : `<span style="color:#6b7280">— Pendente</span>`;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+          <span style="font-size:.8rem;flex:1">${c.name} <span style="color:var(--hrm-muted);font-size:.68rem">${c.dur}</span>${c.mandatory?'<span style="font-size:.6rem;background:rgba(239,68,68,.15);color:#ef4444;padding:1px 5px;border-radius:4px;margin-left:4px">Obrigatório</span>':''}</span>
+          ${pend}
+        </div>`;
+      }).join('');
+      const delayed = COURSES.filter(c => c.mandatory && !comps.find(x=>x.courseName===c.name && x.passed)).length;
+      return `<div style="margin-top:8px">
+        <div style="display:flex;gap:12px;margin-bottom:10px;font-size:.72rem">
+          <span style="color:#ef4444">⏰ ${delayed} atrasado${delayed!==1?'s':''}</span>
+          <span style="color:#22c55e">✅ ${comps.filter(c=>c.passed).length} aprovado${comps.filter(c=>c.passed).length!==1?'s':''}</span>
+          <span style="color:#f59e0b">❌ ${comps.filter(c=>!c.passed).length} reprovado${comps.filter(c=>!c.passed).length!==1?'s':''}</span>
+        </div>
+        ${rows}
+      </div>`;
+    }
+    // Outros usuários: gera lista determinística
+    const passed_count = Math.round((u.treinamentos || 0));
+    const rows = COURSES.map((c, i) => {
+      const seed = _hrmR(uid, i*7+1, 100);
+      const done = i < passed_count;
+      const failed = !done && seed < (u.score > 60 ? 40 : u.score > 30 ? 20 : 5);
+      const score = done ? 60 + _hrmR(uid, i*3, 35) : failed ? 30 + _hrmR(uid, i*5, 30) : 0;
+      const st = done
+        ? `<span style="color:#22c55e;font-weight:700">✅ Aprovado (${score}%)</span>`
+        : failed
+          ? `<span style="color:#ef4444;font-weight:700">❌ Reprovado (${score}%)</span>`
+          : c.mandatory
+            ? `<span style="color:#ef4444;font-weight:700">⏰ Atrasado</span>`
+            : `<span style="color:#6b7280">— Pendente</span>`;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <span style="font-size:.8rem;flex:1">${c.name} <span style="color:var(--hrm-muted);font-size:.68rem">${c.dur}</span>${c.mandatory?'<span style="font-size:.6rem;background:rgba(239,68,68,.15);color:#ef4444;padding:1px 5px;border-radius:4px;margin-left:4px">Obrigatório</span>':''}</span>
+        ${st}
+      </div>`;
+    }).join('');
+    const delayed = COURSES.filter((c,i) => c.mandatory && i >= passed_count).length;
+    return `<div style="margin-top:8px">
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:.72rem">
+        <span style="color:#ef4444">⏰ ${delayed} atrasado${delayed!==1?'s':''}</span>
+        <span style="color:#22c55e">✅ ${passed_count} concluído${passed_count!==1?'s':''}</span>
+      </div>${rows}</div>`;
+  }
+
+  if (factorId === 'phishing') {
+    // Admin Local DEMO: dados reais
+    if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
+      const ph = DEMO_STATE.phishing;
+      const realRows = CAMPAIGNS.map((c, i) => {
+        const real = ph.find(p => p.campaignId === c.id || p.campaignName === c.name);
+        const seed = _hrmR(uid, i*11, 100);
+        // Simulate result: if real found use it, else derive from risk
+        let action = seed < 20 ? 'clicked' : seed < 50 ? 'reported' : 'ignored';
+        let st, detail;
+        if (real) {
+          action = real.action;
+          detail = real.date;
+        } else { detail = c.date; }
+        if (action === 'clicked')  st = `<span style="color:#ef4444;font-weight:700">🎣 Clicou</span>`;
+        else if (action === 'reported') st = `<span style="color:#22c55e;font-weight:700">🛡 Reportou</span>`;
+        else st = `<span style="color:#6b7280">— Ignorou</span>`;
+        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+          <div style="flex:1">
+            <div style="font-size:.80rem">${c.name}</div>
+            <div style="font-size:.68rem;color:var(--hrm-muted)">${c.type} • ${detail}</div>
+          </div>${st}
+        </div>`;
+      }).join('');
+      const clicked = ph.filter(p=>p.action==='clicked').length;
+      const reported = ph.filter(p=>p.action==='reported').length;
+      return `<div style="margin-top:8px">
+        <div style="display:flex;gap:12px;margin-bottom:10px;font-size:.72rem">
+          <span style="color:#ef4444">🎣 ${clicked} clique${clicked!==1?'s':''}</span>
+          <span style="color:#22c55e">🛡 ${reported} reporte${reported!==1?'s':''}</span>
+          <span style="color:#6b7280">📧 ${CAMPAIGNS.length} campanhas totais</span>
+        </div>${realRows}</div>`;
+    }
+    // Outros usuários
+    const totalClicks = u.cliques || 0;
+    const totalReported = u.reportou || 0;
+    let clicksLeft = totalClicks, reportsLeft = totalReported;
+    const rows = CAMPAIGNS.map((c, i) => {
+      const seed = _hrmR(uid, i*13+3, 10);
+      let action = 'ignored';
+      if (clicksLeft > 0 && seed < 3) { action = 'clicked'; clicksLeft--; }
+      else if (reportsLeft > 0 && seed < 6) { action = 'reported'; reportsLeft--; }
+      const st = action === 'clicked'
+        ? `<span style="color:#ef4444;font-weight:700">🎣 Clicou</span>`
+        : action === 'reported'
+          ? `<span style="color:#22c55e;font-weight:700">🛡 Reportou</span>`
+          : `<span style="color:#6b7280">— Ignorou</span>`;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <div style="flex:1">
+          <div style="font-size:.80rem">${c.name}</div>
+          <div style="font-size:.68rem;color:var(--hrm-muted)">${c.type} • ${c.date}</div>
+        </div>${st}
+      </div>`;
+    }).join('');
+    return `<div style="margin-top:8px">
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:.72rem">
+        <span style="color:#ef4444">🎣 ${totalClicks} clique${totalClicks!==1?'s':''}</span>
+        <span style="color:#22c55e">🛡 ${totalReported} reporte${totalReported!==1?'s':''}</span>
+        <span style="color:#6b7280">📧 ${u.campanhas||0} campanhas totais</span>
+      </div>${rows}</div>`;
+  }
+
+  if (factorId === 'password') {
+    const count = u.password > 60 ? 3 + _hrmR(uid, 7, 3) : u.password > 30 ? 1 + _hrmR(uid, 7, 2) : 1;
+    const selected = PWD_ISSUES.slice(0, count);
+    const SYSTEMS = ['Portal Corporativo','Office 365','ERP','VPN Corporativa','Azure AD','SharePoint'];
+    const lastChange = `${10 + _hrmR(uid, 3, 80)} dias atrás`;
+    const rows = selected.map((p, i) => {
+      const sys = SYSTEMS[_hrmR(uid, i*7+2, SYSTEMS.length)];
+      const sColor = p.sev==='high'?'#ef4444':p.sev==='med'?'#f59e0b':'#6b7280';
+      const sLabel = p.sev==='high'?'Alto':'Médio';
+      if (p.sev==='low') return '';
+      return `<div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.03);border-left:3px solid ${sColor};margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span>${p.icon}</span>
+          <span style="font-size:.82rem;font-weight:700">${p.label}</span>
+          <span style="font-size:.62rem;padding:1px 6px;border-radius:99px;background:${sColor}22;color:${sColor};margin-left:auto">${sLabel}</span>
+        </div>
+        <div style="font-size:.75rem;color:var(--hrm-text2)">${p.detail}</div>
+        <div style="font-size:.68rem;color:var(--hrm-muted);margin-top:3px">Sistema: ${sys}</div>
+      </div>`;
+    }).join('');
+    const okRow = u.password <= 30 ? `<div style="padding:10px;border-radius:8px;background:rgba(34,197,94,.06);border-left:3px solid #22c55e;font-size:.80rem;color:#22c55e">✅ Nenhuma vulnerabilidade crítica de senha detectada</div>` : '';
+    return `<div style="margin-top:8px">
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:.72rem;color:var(--hrm-muted)">
+        <span>🔄 Última troca: <b style="color:var(--hrm-text2)">${lastChange}</b></span>
+        <span>🔐 Força: <b style="color:${u.password>60?'#ef4444':u.password>30?'#f59e0b':'#22c55e'}">${u.password>60?'Fraca':u.password>30?'Regular':'Forte'}</b></span>
+      </div>
+      ${rows}${okRow}
+    </div>`;
+  }
+
+  if (factorId === 'access') {
+    const count = u.access > 60 ? 3 + _hrmR(uid, 9, 2) : u.access > 30 ? 1 + _hrmR(uid, 9, 2) : 0;
+    const selected = ACCESS_ISSUES.slice(0, count);
+    const rows = selected.map(a => {
+      const sColor = a.sev==='high'?'#ef4444':a.sev==='med'?'#f59e0b':'#6b7280';
+      const sLabel = a.sev==='high'?'Crítico':a.sev==='med'?'Médio':'Baixo';
+      return `<div style="padding:10px;border-radius:8px;background:rgba(255,255,255,.03);border-left:3px solid ${sColor};margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+          <span>${a.icon}</span>
+          <span style="font-size:.82rem;font-weight:700">${a.label}</span>
+          <span style="font-size:.62rem;padding:1px 6px;border-radius:99px;background:${sColor}22;color:${sColor};margin-left:auto">${sLabel}</span>
+        </div>
+        <div style="font-size:.75rem;color:var(--hrm-text2)">${a.detail}</div>
+        <div style="font-size:.68rem;color:var(--hrm-muted);margin-top:3px">📌 ${a.sys} • ${a.date}</div>
+      </div>`;
+    }).join('');
+    const ok = count === 0 ? `<div style="padding:10px;border-radius:8px;background:rgba(34,197,94,.06);border-left:3px solid #22c55e;font-size:.80rem;color:#22c55e">✅ Nenhuma violação de acesso detectada no período</div>` : '';
+    const totalViolations = count;
+    return `<div style="margin-top:8px">
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:.72rem;color:var(--hrm-muted)">
+        <span>🚨 <b style="color:${u.access>60?'#ef4444':u.access>30?'#f59e0b':'#22c55e'}">${totalViolations} violaç${totalViolations===1?'ão':'ões'}</b> nos últimos 90 dias</span>
+      </div>
+      ${rows}${ok}
+    </div>`;
+  }
+
+  if (factorId === 'inactivity') {
+    const days = u.lastSeen || 0;
+    const lastDate = days === 0 ? 'Hoje' : days === 1 ? 'Ontem' : `há ${days} dias`;
+    // Which modules are inactive
+    const inactiveModules = MODULES.filter((m, i) => {
+      if (days === 0) return false;
+      return _hrmR(uid, i*5+1, 10) < (days > 14 ? 7 : days > 7 ? 4 : 2);
+    });
+    const activeModules = MODULES.filter(m => !inactiveModules.includes(m));
+    const modRows = MODULES.map(m => {
+      const inactive = inactiveModules.includes(m);
+      const modDays = inactive ? days + _hrmR(uid, m.charCodeAt(0), 10) : _hrmR(uid, m.charCodeAt(0), 3);
+      const col = inactive ? '#ef4444' : '#22c55e';
+      const label = inactive ? `Inativo há ${modDays} dias` : modDays === 0 ? 'Acessado hoje' : `Acessado há ${modDays} dia${modDays!==1?'s':''}`;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <span style="font-size:.80rem">${m}</span>
+        <span style="font-size:.72rem;color:${col}">${label}</span>
+      </div>`;
+    }).join('');
+    const streak = days > 0 ? `<div style="padding:10px;border-radius:8px;background:rgba(239,68,68,.06);border-left:3px solid #ef4444;margin-bottom:12px">
+      <div style="font-size:.82rem;font-weight:700;color:#ef4444">⚠️ Inatividade prolongada detectada</div>
+      <div style="font-size:.75rem;color:var(--hrm-text2);margin-top:3px">Usuário sem acesso à plataforma há <b>${days} dias</b>. Política: máximo 7 dias sem login.</div>
+      <div style="font-size:.68rem;color:var(--hrm-muted);margin-top:3px">Último acesso: ${lastDate}</div>
+    </div>` : `<div style="padding:10px;border-radius:8px;background:rgba(34,197,94,.06);border-left:3px solid #22c55e;margin-bottom:12px;font-size:.80rem;color:#22c55e">✅ Usuário ativo — último acesso hoje</div>`;
+    return `<div style="margin-top:8px">
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:.72rem;color:var(--hrm-muted)">
+        <span>🕐 Último login: <b style="color:var(--hrm-text2)">${lastDate}</b></span>
+        <span>📊 ${inactiveModules.length} módulo${inactiveModules.length!==1?'s':''} sem uso recente</span>
+      </div>
+      ${streak}
+      <div style="font-size:.68rem;font-weight:700;color:var(--hrm-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Uso por módulo</div>
+      ${modRows}
+    </div>`;
+  }
+
+  if (factorId === 'certs') {
+    // Admin Local DEMO: dados reais
+    if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
+      const comps = DEMO_STATE.completions.filter(c => c.passed && c.certId);
+      const rows = CERT_NAMES.map((name, i) => {
+        const real = comps[i];
+        if (real) {
+          const issued = real.date;
+          const expiry = `${real.date.split('/')[0]}/${parseInt(real.date.split('/')[1])+6>12?(parseInt(real.date.split('/')[1])+6-12).toString().padStart(2,'0'):String(parseInt(real.date.split('/')[1])+6).padStart(2,'0')}/${real.date.split('/')[2]}`;
+          return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span style="font-size:1.1rem">📜</span>
+            <div style="flex:1">
+              <div style="font-size:.80rem;font-weight:600">${real.courseName}</div>
+              <div style="font-size:.68rem;color:var(--hrm-muted)">Emitido: ${issued} • ID: ${real.certId}</div>
+            </div>
+            <span style="font-size:.70rem;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,.15);color:#22c55e">✅ Válido</span>
+          </div>`;
+        }
+        return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+          <span style="font-size:1.1rem">📋</span>
+          <div style="flex:1">
+            <div style="font-size:.80rem;font-weight:600">${name}</div>
+            <div style="font-size:.68rem;color:var(--hrm-muted)">Treinamento não concluído</div>
+          </div>
+          <span style="font-size:.70rem;padding:2px 8px;border-radius:99px;background:rgba(239,68,68,.15);color:#ef4444">❌ Expirado</span>
+        </div>`;
+      }).join('');
+      const valid = comps.length;
+      const expired = CERT_NAMES.length - valid;
+      return `<div style="margin-top:8px">
+        <div style="display:flex;gap:12px;margin-bottom:10px;font-size:.72rem">
+          <span style="color:#22c55e">📜 ${valid} válido${valid!==1?'s':''}</span>
+          <span style="color:#ef4444">❌ ${expired} expirado${expired!==1?'s':''}</span>
+        </div>${rows}</div>`;
+    }
+    // Outros usuários
+    const certStatus = u.certs || 'expired';
+    const validCount = certStatus === 'valid' ? 3 + _hrmR(uid, 5, 3) : certStatus === 'expiring' ? 2 : 0 + _hrmR(uid, 5, 2);
+    const rows = CERT_NAMES.map((name, i) => {
+      const isValid = i < validCount;
+      const isExpiring = !isValid && certStatus === 'expiring' && i === validCount;
+      const issueYear = 2023 + _hrmR(uid, i*3, 2);
+      const issueMonth = String(1 + _hrmR(uid, i*7, 12)).padStart(2,'0');
+      const expiryYear = issueYear + 1;
+      const st = isValid
+        ? `<div>
+            <span style="font-size:.70rem;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,.15);color:#22c55e">✅ Válido</span>
+            <div style="font-size:.64rem;color:var(--hrm-muted);margin-top:2px">Vence: ${issueMonth}/${expiryYear}</div>
+           </div>`
+        : isExpiring
+          ? `<div>
+              <span style="font-size:.70rem;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">⏳ Vencendo</span>
+              <div style="font-size:.64rem;color:var(--hrm-muted);margin-top:2px">Expira em 15 dias</div>
+             </div>`
+          : `<div>
+              <span style="font-size:.70rem;padding:2px 8px;border-radius:99px;background:rgba(239,68,68,.15);color:#ef4444">❌ Expirado</span>
+              <div style="font-size:.64rem;color:var(--hrm-muted);margin-top:2px">Venceu: ${issueMonth}/${issueYear}</div>
+             </div>`;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+        <span style="font-size:1.1rem">${isValid?'📜':'📋'}</span>
+        <div style="flex:1">
+          <div style="font-size:.80rem;font-weight:600">${name}</div>
+          <div style="font-size:.68rem;color:var(--hrm-muted)">Emitido: ${issueMonth}/${issueYear}</div>
+        </div>${st}
+      </div>`;
+    }).join('');
+    const expired2 = CERT_NAMES.length - validCount - (certStatus === 'expiring' ? 1 : 0);
+    return `<div style="margin-top:8px">
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:.72rem">
+        <span style="color:#22c55e">📜 ${validCount} válido${validCount!==1?'s':''}</span>
+        ${certStatus==='expiring'?'<span style="color:#f59e0b">⏳ 1 vencendo</span>':''}
+        <span style="color:#ef4444">❌ ${expired2} expirado${expired2!==1?'s':''}</span>
+      </div>${rows}</div>`;
+  }
+
+  return `<div style="padding:8px;color:var(--hrm-muted);font-size:.80rem">Sem detalhes disponíveis para este factor.</div>`;
+}
+
 // ── Drilldown modal: dept × factor ──────────────────────────────
 window.hrmMatrizDrilldown = function(deptName, factorId) {
   const factors = HRM_DATA.factors;
@@ -1080,36 +1443,41 @@ window.hrmMatrizDrilldown = function(deptName, factorId) {
       ? (u.certs === 'valid' && factorId==='certs' ? 10 : u.certs === 'expiring' && factorId==='certs' ? 42 : typeof u[factorId]==='number' ? u[factorId] : 72)
       : u.score;
     const col = hc(userScore);
-    const detail  = meta ? meta.userDetail(u) : `Score geral: ${u.score}/100`;
-    const badge   = meta ? meta.badge(u) : '';
+    const badge = meta ? meta.badge(u) : '';
     const initials = (u.avatar || u.name.split(' ').map(w=>w[0]).join('').slice(0,2)).toUpperCase();
     const bg = u.isDemo
       ? 'linear-gradient(135deg,#00d4ff,#8b5cf6)'
       : `#${(((u.id||1)*2654435761)&0xFFFFFF).toString(16).padStart(6,'0').slice(0,2)}3${(u.id||1)*37%9}`;
-
     const demoTag = u.isDemo ? `<span style="font-size:.58rem;background:linear-gradient(90deg,#00d4ff22,#8b5cf622);border:1px solid #00d4ff44;color:#00d4ff;padding:1px 6px;border-radius:99px;margin-left:4px">DEMO</span>` : '';
 
-    // For "all factors" view show mini grid
-    const factorDetail = !factorId ? `
-      <div style="margin-top:8px;padding:8px;background:rgba(255,255,255,.03);border-radius:8px">
-        ${allFactorsRow(u)}
-      </div>` : '';
+    // Rich factor detail block
+    const richDetail = factorId
+      ? hrmFactorDetail(u, factorId)
+      : `<div style="margin-top:8px;padding:8px;background:rgba(255,255,255,.03);border-radius:8px">${allFactorsRow(u)}</div>`;
 
     return `
-    <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,.03);margin-bottom:8px;border:1px solid rgba(255,255,255,.06)">
-      <div style="width:38px;height:38px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;color:#fff;flex-shrink:0">${initials}</div>
-      <div style="flex:1;min-width:0">
-        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
-          <span style="font-size:.85rem;font-weight:700">${u.name}</span>${demoTag}
-          ${badge}
+    <div style="border-radius:12px;background:rgba(255,255,255,.03);margin-bottom:10px;border:1px solid rgba(255,255,255,.07);overflow:hidden">
+      <!-- User header row -->
+      <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer;background:rgba(255,255,255,.02)"
+        onclick="const b=this.nextElementSibling;b.style.display=b.style.display==='none'?'block':'none'">
+        <div style="width:40px;height:40px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:800;color:#fff;flex-shrink:0">${initials}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:.88rem;font-weight:700">${u.name}</span>${demoTag}${badge}
+          </div>
+          <div style="font-size:.70rem;color:var(--hrm-muted)">${u.email || ''} • ${u.dept}</div>
         </div>
-        <div style="font-size:.72rem;color:var(--hrm-text2)">${u.email || ''}</div>
-        <div style="font-size:.75rem;color:var(--hrm-muted);margin-top:3px">${detail}</div>
-        ${factorDetail}
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:1.2rem;font-weight:900;color:${col}">${userScore}</div>
+          <div style="font-size:.58rem;color:var(--hrm-muted)">/100</div>
+        </div>
+        <div style="color:var(--hrm-muted);font-size:.80rem;margin-left:4px">▼</div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
-        <div style="font-size:1.15rem;font-weight:900;color:${col}">${userScore}</div>
-        <div style="font-size:.60rem;color:var(--hrm-muted)">/100</div>
+      <!-- Detail block (collapsed by default for non-demo, expanded for demo) -->
+      <div style="padding:0 14px 14px;display:${u.isDemo?'block':'none'}">
+        <div style="border-top:1px solid rgba(255,255,255,.06);padding-top:10px">
+          ${richDetail}
+        </div>
       </div>
     </div>`;
   }).join('');
