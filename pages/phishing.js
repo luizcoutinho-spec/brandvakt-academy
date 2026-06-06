@@ -843,9 +843,14 @@ function renderPhCampanhas() {
       <div class="ph-section-title">📧 Campanhas de Phishing</div>
       <div style="font-size:0.82rem;color:var(--ph-muted);margin-top:3px">${PHISHING_MOCK.campanhas.length} campanhas · ${PHISHING_MOCK.campanhas.filter(c=>c.status==='Ativa').length} ativas</div>
     </div>
-    <button class="ph-btn ph-btn-primary" onclick="phOpenNewCampaign()">
-      🚀 Nova Campanha
-    </button>
+    <div style="display:flex;gap:10px;align-items:center;">
+      <button class="ph-btn ph-btn-ghost" style="border-color:rgba(139,92,246,0.4);color:#a78bfa;background:rgba(139,92,246,0.08);" onclick="phAiGenerateCampaign()">
+        🤖 Gerar com IA
+      </button>
+      <button class="ph-btn ph-btn-primary" onclick="phOpenNewCampaign()">
+        🚀 Nova Campanha
+      </button>
+    </div>
   </div>
 
   <!-- Filter chips -->
@@ -1792,6 +1797,445 @@ window.phShowAwareness = function(templateId) {
       </div>
     </div>`;
   document.body.appendChild(el);
+};
+
+// ══════════════════════════════════════════════════════════════
+//  🤖 AI CAMPAIGN GENERATOR
+// ══════════════════════════════════════════════════════════════
+
+let _phAiCampaign = null;
+
+// ── Step 1: Loading animation ─────────────────────────────────
+window.phAiGenerateCampaign = function() {
+  const steps = [
+    { pct: 15, msg: '🔍 Carregando perfil de Human Risk da empresa ativa...' },
+    { pct: 30, msg: '📊 Analisando scores de risco por usuário e departamento...' },
+    { pct: 48, msg: '🎯 Identificando comportamentos de risco predominantes...' },
+    { pct: 64, msg: '✉️ Selecionando template e público-alvo ideais...' },
+    { pct: 80, msg: '🧠 Gerando campanha personalizada com IA (Claude Sonnet)...' },
+    { pct: 95, msg: '📋 Definindo KPIs, cronograma e mensagens-chave...' },
+    { pct: 100, msg: '✅ Campanha gerada com sucesso!' },
+  ];
+
+  if (!document.getElementById('ph-ai-spin-css')) {
+    const s = document.createElement('style');
+    s.id = 'ph-ai-spin-css';
+    s.textContent = `
+      @keyframes phAiSpin  { to { transform:rotate(360deg); } }
+      @keyframes phAiPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.55;transform:scale(.88)} }
+      @keyframes phAiDot   { 0%,80%,100%{transform:scale(0);opacity:0} 40%{transform:scale(1);opacity:1} }
+      @keyframes phAiFade  { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+      .ph-ai-spinner{width:56px;height:56px;border-radius:50%;border:3px solid rgba(139,92,246,.18);border-top-color:#8b5cf6;animation:phAiSpin .9s linear infinite;}
+      .ph-ai-dot{width:7px;height:7px;border-radius:50%;background:#8b5cf6;display:inline-block;animation:phAiDot 1.4s ease-in-out infinite;}
+      .ph-ai-dot:nth-child(2){animation-delay:.16s}.ph-ai-dot:nth-child(3){animation-delay:.32s}
+      .ph-ai-log-row{animation:phAiFade .3s ease;}
+    `;
+    document.head.appendChild(s);
+  }
+
+  phShowModal(`
+    <div style="text-align:center;padding:14px 0 10px;">
+      <div style="position:relative;width:80px;height:80px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;">
+        <div class="ph-ai-spinner" style="position:absolute;inset:0;"></div>
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:1.5rem;animation:phAiPulse 2s ease-in-out infinite;">🤖</div>
+      </div>
+      <div style="font-weight:800;font-size:1.08rem;margin-bottom:6px;">Gerando sua campanha com IA</div>
+      <div style="font-size:0.80rem;color:#6b7280;margin-bottom:8px;">Isso pode levar alguns instantes.</div>
+      <div style="margin-bottom:20px;display:flex;justify-content:center;gap:6px;">
+        <div class="ph-ai-dot"></div><div class="ph-ai-dot"></div><div class="ph-ai-dot"></div>
+      </div>
+      <div style="background:rgba(255,255,255,0.06);border-radius:99px;height:6px;overflow:hidden;margin-bottom:6px;">
+        <div id="ph-ai-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#8b5cf6,#00d4ff);border-radius:99px;transition:width .55s ease;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:18px;">
+        <div id="ph-ai-msg" style="font-size:0.74rem;color:#94a3b8;text-align:left;flex:1;">Iniciando análise...</div>
+        <div id="ph-ai-pct" style="font-size:0.74rem;font-weight:700;color:#8b5cf6;margin-left:10px;">0%</div>
+      </div>
+      <div id="ph-ai-log" style="text-align:left;display:flex;flex-direction:column;gap:5px;max-height:150px;overflow:hidden;"></div>
+      <div style="margin-top:16px;padding:10px 14px;background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.15);border-radius:9px;font-size:0.72rem;color:#94a3b8;line-height:1.55;">
+        🧠 A IA analisa scores de risco, comportamentos, departamentos e histórico de incidentes para criar uma campanha de conscientização totalmente personalizada.
+      </div>
+    </div>
+  `);
+
+  let i = 0;
+  function tick() {
+    const bar = document.getElementById('ph-ai-bar');
+    const msg = document.getElementById('ph-ai-msg');
+    const pct = document.getElementById('ph-ai-pct');
+    const log = document.getElementById('ph-ai-log');
+    if (i > 0) {
+      const prev = steps[i-1];
+      const isFinal = i === steps.length;
+      if (log) {
+        const row = document.createElement('div');
+        row.className = 'ph-ai-log-row';
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:7px;background:rgba(255,255,255,.03);font-size:0.72rem;';
+        row.innerHTML = isFinal
+          ? `<span style="color:#22c55e;flex-shrink:0;">✅</span><span style="color:#22c55e;font-weight:600;">${prev.msg}</span>`
+          : `<span style="color:#8b5cf6;flex-shrink:0;">✓</span><span style="color:#94a3b8;">${prev.msg}</span>`;
+        log.appendChild(row);
+        log.scrollTop = log.scrollHeight;
+      }
+    }
+    if (i >= steps.length) { _phAiCampaign = phAiBuildCampaign(); phAiShowReview(); return; }
+    const s = steps[i++];
+    if (bar) bar.style.width = s.pct + '%';
+    if (pct) pct.textContent = s.pct + '%';
+    if (msg) msg.textContent = s.msg;
+    setTimeout(tick, 350);
+  }
+  setTimeout(tick, 200);
+};
+
+// ── Step 2: Build campaign data from live HRM + tenant ────────
+function phAiBuildCampaign() {
+  const tenantUsers = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
+  const tenant = (typeof APP !== 'undefined' && APP.tenants)
+    ? (APP.tenants.find(t => t.active) || {}).name || 'Empresa'
+    : 'Empresa';
+  const total = tenantUsers.length || 1;
+
+  // Enrich with HRM scores (tenant-validated by email)
+  const hrmByEmail = {};
+  if (typeof HRM_DATA !== 'undefined' && Array.isArray(HRM_DATA.users)) {
+    const emails = new Set(tenantUsers.map(u => (u.email||'').toLowerCase()));
+    HRM_DATA.users.forEach(h => { const e=(h.email||'').toLowerCase(); if(emails.has(e)) hrmByEmail[e]=h; });
+  }
+  const riskMap = { high:75, med:45, low:18 };
+  const enriched = tenantUsers.map(u => {
+    const h = hrmByEmail[(u.email||'').toLowerCase()];
+    const score = h ? (h.score ?? riskMap[u.risk] ?? 35) : (u.riskScore ?? u.score ?? riskMap[u.risk] ?? 35);
+    const phScore = h ? (h.phishing ?? 50) : (u.risk==='high'?72:u.risk==='med'?40:18);
+    return { ...u, score, phScore };
+  });
+
+  const highRisk   = enriched.filter(u => u.score > 60);
+  const medRisk    = enriched.filter(u => u.score > 30 && u.score <= 60);
+  const avgScore   = Math.round(enriched.reduce((s,u) => s+u.score, 0) / total);
+  const avgPhScore = Math.round(enriched.reduce((s,u) => s+u.phScore, 0) / total);
+
+  // Top risk depts
+  const deptMap = {};
+  enriched.forEach(u => {
+    const d = u.dept || u.department || 'Geral';
+    if (!deptMap[d]) deptMap[d] = { score:0, count:0 };
+    deptMap[d].score += u.score; deptMap[d].count++;
+  });
+  const topDepts = Object.entries(deptMap)
+    .map(([n,v]) => ({ name:n, avg: Math.round(v.score/v.count) }))
+    .sort((a,b) => b.avg-a.avg).slice(0,3);
+  const topDeptStr = topDepts.map(d=>d.name).join(' · ');
+
+  // Determine risk level and theme
+  const riskLevel = avgScore > 60 ? 'Crítico' : avgScore > 40 ? 'Elevado' : 'Moderado';
+  const riskColor = avgScore > 60 ? '#ef4444' : avgScore > 40 ? '#f59e0b' : '#22c55e';
+
+  // Date helpers
+  const today = new Date();
+  const fmt = (d) => d.toLocaleDateString('pt-BR');
+  const addDays = (n) => { const d=new Date(today); d.setDate(d.getDate()+n); return fmt(d); };
+
+  const campName = `${today.toLocaleDateString('pt-BR',{month:'long'}).replace(/^\w/,c=>c.toUpperCase())} — Conscientização ${riskLevel}`;
+  const template = avgScore > 60 ? 'Alerta de Segurança Crítica' : avgScore > 40 ? 'Redefinição de Senha Urgente' : 'Aviso de Política Corporativa';
+  const grupo = highRisk.length > 0 ? topDeptStr || 'Todos os Usuários' : 'Todos os Usuários';
+
+  return {
+    id: Date.now(),
+    tenant, generatedAt: fmt(today) + ' às ' + today.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    orgRisk: { avgScore, avgPhScore, highRisk: highRisk.length, medRisk: medRisk.length, total },
+    topDepts, topDeptStr, riskLevel, riskColor, enriched,
+    // Campaign fields
+    nome: campName,
+    objetivo: `Elevar a conscientização sobre ameaças de segurança nos ${highRisk.length} usuários de alto risco (score HRM médio: ${avgScore}/100) e reduzir a exposição da organização ${tenant} a incidentes de segurança humana.`,
+    template,
+    grupo,
+    status: 'Rascunho',
+    inicio: addDays(3),
+    fim: addDays(17),
+    enviados: 0, abertos: 0, cliques: 0, reportou: 0,
+    publicoAlvo: {
+      total,
+      highRisk: highRisk.length,
+      medRisk: medRisk.length,
+      depts: topDeptStr,
+      justificativa: `Score HRM médio de ${avgScore}/100 (nível ${riskLevel}). ${highRisk.length} usuário(s) acima de 60 pontos requerem atenção imediata. Departamentos prioritários: ${topDeptStr}.`,
+    },
+    mensagensChave: [
+      `Atenção redobrada com e-mails solicitando credenciais ou ações urgentes.`,
+      `Verificar sempre o remetente antes de clicar em links ou baixar anexos.`,
+      `Reportar imediatamente qualquer e-mail suspeito ao time de segurança.`,
+      `Nunca compartilhar senhas, tokens ou dados sensíveis por e-mail.`,
+    ],
+    conteudo: [
+      { tipo:'📧 E-mail Simulado', desc:`Template "${template}" enviado para ${grupo} — simula cenário de ${riskLevel.toLowerCase()} risco real.` },
+      { tipo:'📱 Notificação Push', desc:`Alerta de conscientização enviado após interação, explicando os sinais de alerta do e-mail simulado.` },
+      { tipo:'📚 Módulo de Aprendizagem', desc:`Acesso automático ao módulo "Reconhecimento de Ameaças" para quem interagir com o e-mail simulado.` },
+      { tipo:'📊 Relatório para Gestores', desc:`Resumo de resultados por departamento enviado ao término da campanha.` },
+    ],
+    acoes: [
+      `Monitorar em tempo real taxa de abertura e interação nos primeiros 48h.`,
+      `Acionar plano de reforço para usuários que clicarem no link simulado.`,
+      `Compartilhar resultados com lideranças de ${topDeptStr}.`,
+      `Repetir a campanha em 90 dias para medir evolução do comportamento.`,
+    ],
+    kpis: [
+      { label:'Taxa de abertura', meta:'>70%', baseline:'—' },
+      { label:'Taxa de clique (simulado)', meta:'<10%', baseline: avgPhScore+'%' },
+      { label:'Taxa de reporte', meta:'>40%', baseline:'—' },
+      { label:'Usuários treinados pós-interação', meta:'100%', baseline:'—' },
+      { label:'Redução de score HRM médio', meta:'< '+(Math.round(avgScore*0.75))+'/100', baseline: avgScore+'/100' },
+    ],
+    cronograma: [
+      { fase:'Preparação', periodo: fmt(today)+' – '+addDays(2), desc:'Configuração do template e segmentação dos destinatários.' },
+      { fase:'Envio da Campanha', periodo: addDays(3)+' – '+addDays(10), desc:'Disparo escalonado do e-mail simulado para os grupos-alvo.' },
+      { fase:'Monitoramento', periodo: addDays(3)+' – '+addDays(14), desc:'Acompanhamento em tempo real das métricas de engajamento.' },
+      { fase:'Reforço', periodo: addDays(10)+' – '+addDays(17), desc:'Módulo de aprendizagem ativado para usuários que interagiram.' },
+      { fase:'Relatório Final', periodo: addDays(17), desc:'Análise de resultados e recomendações para próxima campanha.' },
+    ],
+  };
+}
+
+// ── Step 3: Review modal ──────────────────────────────────────
+function phAiShowReview() {
+  const c = _phAiCampaign;
+  if (!c) return;
+
+  phShowModal(`
+    <div class="ph-modal-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">🤖</div>
+        <div>
+          <div style="font-size:1.0rem;font-weight:800;">${c.nome}</div>
+          <div style="font-size:0.72rem;color:#6b7280;">Gerado em ${c.generatedAt} · ${c.tenant} · Rascunho para revisão</div>
+        </div>
+      </div>
+      <button class="ph-modal-close" onclick="phCloseModal()">✕</button>
+    </div>
+
+    <!-- Risk Diagnostic -->
+    <div style="background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.18);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+      <div style="font-size:0.68rem;font-weight:800;color:#8b5cf6;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">📊 Diagnóstico Human Risk — Base da Análise IA</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center;margin-bottom:10px;">
+        ${[
+          ['Score HRM Médio', c.orgRisk.avgScore+'/100', c.riskColor],
+          ['Nível de Risco', c.riskLevel, c.riskColor],
+          ['Alto Risco', c.orgRisk.highRisk+' usuários', '#ef4444'],
+          ['Risco Moderado', c.orgRisk.medRisk+' usuários', '#f59e0b'],
+          ['Total Usuários', c.orgRisk.total, '#00d4ff'],
+        ].map(([l,v,col])=>`
+          <div style="padding:10px 6px;background:rgba(255,255,255,.03);border-radius:9px;">
+            <div style="font-size:1.0rem;font-weight:900;color:${col};">${v}</div>
+            <div style="font-size:0.60rem;color:#6b7280;margin-top:3px;">${l}</div>
+          </div>`).join('')}
+      </div>
+      <div style="font-size:0.72rem;color:#6b7280;">🎯 Departamentos prioritários: <strong style="color:#f1f5f9;">${c.topDeptStr}</strong></div>
+    </div>
+
+    <!-- Campaign Overview -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">✉️ Visão Geral da Campanha</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:0.78rem;">
+      <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;"><span style="color:#6b7280;">🏷 Template: </span><strong>${c.template}</strong></div>
+      <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;"><span style="color:#6b7280;">👥 Grupo-alvo: </span><strong>${c.grupo}</strong></div>
+      <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;"><span style="color:#6b7280;">📅 Início: </span><strong>${c.inicio}</strong></div>
+      <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;"><span style="color:#6b7280;">📅 Término: </span><strong>${c.fim}</strong></div>
+    </div>
+
+    <!-- Objective -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">🎯 Objetivo</div>
+    <div style="padding:10px 14px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.10);border-radius:9px;font-size:0.80rem;color:#94a3b8;line-height:1.6;margin-bottom:14px;">${c.objetivo}</div>
+
+    <!-- Público-alvo -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">👥 Público-Alvo e Justificativa</div>
+    <div style="padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:9px;font-size:0.78rem;color:#94a3b8;line-height:1.6;margin-bottom:14px;">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
+        <span>👤 <strong style="color:#f1f5f9;">${c.publicoAlvo.total}</strong> usuários total</span>
+        <span>🔴 <strong style="color:#ef4444;">${c.publicoAlvo.highRisk}</strong> alto risco</span>
+        <span>🟡 <strong style="color:#f59e0b;">${c.publicoAlvo.medRisk}</strong> risco moderado</span>
+      </div>
+      <div style="color:#8b5cf6;font-weight:700;font-size:0.70rem;margin-bottom:3px;">🧠 Justificativa IA:</div>
+      ${c.publicoAlvo.justificativa}
+    </div>
+
+    <!-- Mensagens-chave -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">💬 Mensagens-Chave</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      ${c.mensagensChave.map((m,i)=>`
+        <div style="display:flex;gap:10px;padding:8px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:8px;font-size:0.78rem;color:#94a3b8;">
+          <span style="color:#8b5cf6;font-weight:700;flex-shrink:0;">${i+1}.</span>${m}
+        </div>`).join('')}
+    </div>
+
+    <!-- Conteúdo -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">📦 Conteúdo da Campanha</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+      ${c.conteudo.map(ct=>`
+        <div style="padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:9px;">
+          <div style="font-weight:700;font-size:0.78rem;margin-bottom:4px;">${ct.tipo}</div>
+          <div style="font-size:0.72rem;color:#94a3b8;line-height:1.5;">${ct.desc}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Ações recomendadas -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">⚡ Recomendações de Ações</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
+      ${c.acoes.map((a,i)=>`
+        <div style="display:flex;gap:10px;padding:8px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:8px;font-size:0.78rem;color:#94a3b8;">
+          <span style="color:#22c55e;font-weight:700;flex-shrink:0;">→</span>${a}
+        </div>`).join('')}
+    </div>
+
+    <!-- KPIs -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">📈 Indicadores de Sucesso (KPIs)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:14px;">
+      ${c.kpis.map(k=>`
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;">
+          <div style="font-size:0.68rem;color:#6b7280;margin-bottom:5px;">${k.label}</div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            ${k.baseline!=='—'?`<span style="font-size:0.78rem;color:#6b7280;text-decoration:line-through;">${k.baseline}</span>`:''}
+            <span style="font-size:1.0rem;font-weight:800;color:#22c55e;">→ ${k.meta}</span>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Cronograma -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">🗓 Cronograma Sugerido</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;">
+      ${c.cronograma.map((fase,i)=>`
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:9px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:9px;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;margin-top:5px;flex-shrink:0;"></div>
+          <div style="flex:1;">
+            <div style="font-size:0.78rem;font-weight:700;">${fase.fase} <span style="font-weight:400;color:#6b7280;font-size:0.72rem;">· ${fase.periodo}</span></div>
+            <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">${fase.desc}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Warning -->
+    <div style="padding:10px 14px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:18px;">
+      ⚠️ Revise todas as informações antes de aprovar. Você poderá editar a campanha após a publicação.
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:10px;">
+      <button class="ph-btn ph-btn-ghost" style="flex:1;min-width:120px;" onclick="phCloseModal()">✕ Descartar</button>
+      <button class="ph-btn ph-btn-ghost" style="flex:1;min-width:120px;" onclick="phAiRegenerateCampaign()">🔄 Regerar</button>
+      <button class="ph-btn" style="flex:1;min-width:160px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;box-shadow:0 4px 16px rgba(139,92,246,.35);" onclick="phAiApproveCampaign()">✅ Aprovar</button>
+      <button class="ph-btn" style="flex:2;min-width:160px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.35);" onclick="phAiConfirmAssign()">📋 Atribuir</button>
+    </div>
+  `, 'ph-modal ph-modal-lg');
+}
+
+window.phAiRegenerateCampaign = function() {
+  phCloseModal();
+  setTimeout(() => phAiGenerateCampaign(), 100);
+};
+
+// ── Confirm assign modal ──────────────────────────────────────
+window.phAiConfirmAssign = function() {
+  const c = _phAiCampaign;
+  if (!c) return;
+
+  phShowModal(`
+    <div class="ph-modal-header">
+      <div style="font-weight:800;font-size:1.0rem;">📋 Confirmar Atribuição da Campanha</div>
+      <button class="ph-modal-close" onclick="phCloseModal();phAiShowReview()">✕</button>
+    </div>
+
+    <div style="padding:14px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.20);border-radius:12px;margin-bottom:16px;">
+      <div style="font-size:0.72rem;font-weight:800;color:#10b981;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">As seguintes ações serão executadas automaticamente:</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${[
+          ['✅ Aprovar', 'A campanha será aprovada e registrada no sistema.'],
+          ['🚀 Publicar', 'A campanha será publicada e marcada como Ativa.'],
+          ['👥 Atribuir ao Público-Alvo', `A campanha será enviada a <strong style="color:#f1f5f9;">${c.orgRisk.total} usuário(s)</strong> — ${c.grupo}.`],
+        ].map(([titulo,desc])=>`
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;">
+            <span style="font-size:0.82rem;flex-shrink:0;">${titulo.split(' ')[0]}</span>
+            <div><span style="font-weight:700;font-size:0.80rem;">${titulo.slice(titulo.indexOf(' ')+1)}</span> — <span style="font-size:0.78rem;color:#94a3b8;">${desc}</span></div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:0.78rem;">
+      <div style="font-weight:700;margin-bottom:6px;">📝 Resumo da Campanha</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;color:#94a3b8;">
+        <div><span style="color:#6b7280;">Nome: </span><strong style="color:#f1f5f9;">${c.nome}</strong></div>
+        <div><span style="color:#6b7280;">Template: </span><strong style="color:#f1f5f9;">${c.template}</strong></div>
+        <div><span style="color:#6b7280;">Público: </span><strong style="color:#f1f5f9;">${c.orgRisk.total} usuários</strong></div>
+        <div><span style="color:#6b7280;">Período: </span><strong style="color:#f1f5f9;">${c.inicio} – ${c.fim}</strong></div>
+      </div>
+    </div>
+
+    <div style="padding:8px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:16px;">
+      ⚠️ Ao confirmar, a campanha será ativada imediatamente e os destinatários receberão o e-mail simulado conforme o cronograma definido.
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button class="ph-btn ph-btn-ghost" style="flex:1;" onclick="phCloseModal();phAiShowReview()">← Voltar</button>
+      <button class="ph-btn" style="flex:2;background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.35);" onclick="phAiExecuteAssign()">📋 Confirmar e Atribuir Agora</button>
+    </div>
+  `);
+};
+
+// ── Execute assign: approve + publish (Ativa) + assign ────────
+window.phAiExecuteAssign = function() {
+  const c = _phAiCampaign;
+  if (!c) return;
+
+  // Validate
+  if (!c.nome || !c.template || !c.grupo) {
+    showToast && showToast('❌ Campanha incompleta. Regere e tente novamente.', 'error');
+    return;
+  }
+
+  // 1. Create campaign as Ativa (not Rascunho) + mark enviados
+  const newCamp = {
+    id: c.id, nome: c.nome, template: c.template, grupo: c.grupo,
+    status: 'Ativa', inicio: c.inicio,
+    enviados: c.orgRisk.total, abertos: 0, cliques: 0, reportou: 0,
+    aiGenerated: true,
+    assignedAt: new Date().toLocaleString('pt-BR'),
+  };
+  PHISHING_MOCK.campanhas.unshift(newCamp);
+
+  // 2. Audit log
+  if (!window._phAuditLog) window._phAuditLog = [];
+  window._phAuditLog.unshift({
+    ts: new Date().toLocaleString('pt-BR'),
+    action: 'CAMPAIGN_ASSIGN',
+    detail: `Campanha "${c.nome}" aprovada, publicada e atribuída a ${c.orgRisk.total} usuário(s) — ${c.grupo}.`,
+    user: (typeof DEMO_STATE !== 'undefined') ? (DEMO_STATE.name || 'Admin Local') : 'Admin Local',
+  });
+
+  // 3. Close + refresh
+  phCloseModal();
+  if (typeof phTab === 'function') phTab('campanhas');
+  _phAiCampaign = null;
+
+  // 4. Staged status toasts
+  showToast && showToast('✅ Campanha aprovada e publicada como Ativa!', 'success');
+  setTimeout(() => showToast && showToast(`📧 Campanha atribuída a ${newCamp.enviados} destinatário(s) — ${newCamp.grupo}!`, 'success'), 1000);
+  setTimeout(() => showToast && showToast('📋 Atribuição registrada no histórico do sistema.', 'info'), 2000);
+};
+
+window.phAiApproveCampaign = function() {
+  const c = _phAiCampaign;
+  if (!c) return;
+  // Add to campaign list
+  const newCamp = {
+    id: c.id, nome: c.nome, template: c.template, grupo: c.grupo,
+    status: 'Rascunho', inicio: c.inicio,
+    enviados: 0, abertos: 0, cliques: 0, reportou: 0,
+    aiGenerated: true,
+  };
+  PHISHING_MOCK.campanhas.unshift(newCamp);
+  phCloseModal();
+  // Re-render campaigns tab
+  if (typeof phTab === 'function') phTab('campanhas');
+  else if (typeof renderPage_phishing === 'function') renderPage_phishing();
+  showToast && showToast('✅ Campanha gerada pela IA adicionada como Rascunho!', 'success');
+  _phAiCampaign = null;
 };
 
 // ── MODAL HELPERS ─────────────────────────────────────────────

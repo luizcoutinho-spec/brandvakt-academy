@@ -1369,10 +1369,11 @@ function dpAiShowReview() {
     </div>
 
     <!-- Actions -->
-    <div style="display:flex;gap:10px;">
-      <button class="dp-btn dp-btn-ghost" style="flex:1;" onclick="dpCloseModal()">✕ Descartar</button>
-      <button class="dp-btn dp-btn-ghost" style="flex:1;" onclick="dpAiRegenerateTrail()">🔄 Regerar</button>
-      <button class="dp-btn dp-btn-primary" style="flex:2;background:linear-gradient(135deg,#8b5cf6,#6366f1);box-shadow:0 4px 16px rgba(139,92,246,0.35);" onclick="dpAiApproveTrail()">✅ Aprovar e Publicar Trilha</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="dp-btn dp-btn-ghost" style="flex:1;min-width:120px;" onclick="dpCloseModal()">✕ Descartar</button>
+      <button class="dp-btn dp-btn-ghost" style="flex:1;min-width:120px;" onclick="dpAiRegenerateTrail()">🔄 Regerar</button>
+      <button class="dp-btn dp-btn-primary" style="flex:1;min-width:160px;background:linear-gradient(135deg,#8b5cf6,#6366f1);box-shadow:0 4px 16px rgba(139,92,246,0.35);" onclick="dpAiApproveTrail()">✅ Aprovar e Publicar</button>
+      <button class="dp-btn dp-btn-primary" style="flex:2;min-width:180px;background:linear-gradient(135deg,#059669,#10b981);box-shadow:0 4px 16px rgba(16,185,129,0.35);" onclick="dpAiConfirmAssign()">📋 Atribuir</button>
     </div>
   `, 'dp-modal dp-modal-lg');
 }
@@ -1409,6 +1410,107 @@ window.dpAiApproveTrail = function() {
   dpTab('trails');
   showToast && showToast('✅ Trilha gerada pela IA publicada com sucesso!', 'success');
   _dpAiTrail = null;
+};
+
+// ── Audit log (in-memory) ─────────────────────────────────────
+if (!window._dpAuditLog) window._dpAuditLog = [];
+function dpAuditEntry(action, detail) {
+  const entry = {
+    ts: new Date().toLocaleString('pt-BR'),
+    action, detail,
+    user: (typeof DEMO_STATE !== 'undefined') ? (DEMO_STATE.name || 'Admin Local') : 'Admin Local',
+  };
+  window._dpAuditLog.unshift(entry);
+  return entry;
+}
+
+// ── Confirm assign modal ──────────────────────────────────────
+window.dpAiConfirmAssign = function() {
+  const t = _dpAiTrail;
+  if (!t) return;
+  const users = _dpAiEnrichedUsers;
+  const total = t.orgRisk.total;
+
+  dpShowModal(`
+    <div class="dp-modal-hdr">
+      <div style="font-weight:800;font-size:1.0rem;">📋 Confirmar Atribuição</div>
+      <button class="dp-modal-close" onclick="dpCloseModal();dpAiShowReview()">✕</button>
+    </div>
+
+    <div style="padding:14px;background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:12px;margin-bottom:16px;">
+      <div style="font-size:0.72rem;font-weight:800;color:#10b981;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">As seguintes ações serão executadas automaticamente:</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        ${[
+          ['✅ Aprovar', 'A trilha será aprovada e registrada no sistema.'],
+          ['🚀 Publicar', 'A trilha será publicada e ficará visível para gestores.'],
+          ['👥 Atribuir ao Público-Alvo', `A trilha será atribuída a <strong style="color:#f1f5f9;">${total} usuário(s)</strong> — ${t.target}.`],
+        ].map(([titulo,desc])=>`
+          <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;">
+            <span style="font-size:0.82rem;flex-shrink:0;">${titulo.split(' ')[0]}</span>
+            <div><span style="font-weight:700;font-size:0.80rem;">${titulo.slice(titulo.indexOf(' ')+1)}</span> — <span style="font-size:0.78rem;color:#94a3b8;">${desc}</span></div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:0.78rem;">
+      <div style="font-weight:700;margin-bottom:6px;">📝 Resumo da Trilha</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;color:#94a3b8;">
+        <div><span style="color:#6b7280;">Nome: </span><strong style="color:#f1f5f9;">${t.name}</strong></div>
+        <div><span style="color:#6b7280;">Módulos: </span><strong style="color:#f1f5f9;">${t.modules.length}</strong></div>
+        <div><span style="color:#6b7280;">Público: </span><strong style="color:#f1f5f9;">${total} usuários</strong></div>
+        <div><span style="color:#6b7280;">Obrigatória: </span><strong style="color:#f1f5f9;">${t.mandatory?'Sim':'Não'}</strong></div>
+      </div>
+    </div>
+
+    <div style="padding:8px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:16px;">
+      ⚠️ Esta ação não pode ser desfeita automaticamente. Os usuários receberão notificação de atribuição.
+    </div>
+
+    <div style="display:flex;gap:10px;">
+      <button class="dp-btn dp-btn-ghost" style="flex:1;" onclick="dpCloseModal();dpAiShowReview()">← Voltar</button>
+      <button class="dp-btn dp-btn-primary" style="flex:2;background:linear-gradient(135deg,#059669,#10b981);box-shadow:0 4px 16px rgba(16,185,129,0.35);" onclick="dpAiExecuteAssign()">📋 Confirmar e Atribuir Agora</button>
+    </div>
+  `);
+};
+
+// ── Execute assign: approve + publish + assign ────────────────
+window.dpAiExecuteAssign = function() {
+  const t = _dpAiTrail;
+  if (!t) return;
+
+  // Validate
+  if (!t.name || !t.modules.length) {
+    showToast && showToast('❌ Trilha inválida. Regere e tente novamente.', 'error');
+    return;
+  }
+
+  const modules_list = t.modules.map(m => ({
+    n: m.n, name: m.name, duration: m.duration, completion: 0, status: 'active',
+  }));
+
+  // 1. Approve + Publish (status active)
+  const trail = {
+    id: t.id, name: t.name, icon: t.icon, color: t.color,
+    mandatory: t.mandatory, modules: t.modules.length,
+    users: t.orgRisk.total, completion: 0,
+    target: t.target, description: t.description,
+    modules_list, aiGenerated: true, status: 'active',
+    assignedAt: new Date().toLocaleString('pt-BR'),
+  };
+  DEPT_DATA.trails.unshift(trail);
+
+  // 2. Audit log
+  dpAuditEntry('TRAIL_ASSIGN', `Trilha "${t.name}" aprovada, publicada e atribuída a ${t.orgRisk.total} usuário(s) — ${t.target}.`);
+
+  // 3. Close + refresh
+  dpCloseModal();
+  dpTab('trails');
+  _dpAiTrail = null;
+
+  // 4. Staged status toasts
+  showToast && showToast('✅ Trilha aprovada e publicada!', 'success');
+  setTimeout(() => showToast && showToast(`👥 Trilha atribuída a ${trail.users} usuário(s) com sucesso!`, 'success'), 1000);
+  setTimeout(() => showToast && showToast(`📋 Atribuição registrada no histórico do sistema.`, 'info'), 2000);
 };
 
 // ── Show users for a given AI module ─────────────────────────
