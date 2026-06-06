@@ -193,6 +193,51 @@ const asProgColor = (pct) => pct >= 80 ? '#22c55e' : pct >= 50 ? '#00d4ff' : '#e
 const asDaysLeft = (d) => { const r=Math.ceil((new Date(d)-new Date())/(864e5)); return r; };
 const asFmtDate = (d) => { try { return new Date(d).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}); } catch(e){return d;} };
 
+// ── Despachante global de ações ──
+window._AS = function(action, id) {
+  try {
+    switch (action) {
+      case 'view':       window.asOpenDetail(id);    break;
+      case 'edit':       window.asOpenEdit(id);      break;
+      case 'notify':     window.asNotifyGroup(id);   break;
+      case 'publish':    window.asPublish(id);       break;
+      case 'pause':      window.asPause(id);         break;
+      case 'reactivate': window.asReactivate(id);    break;
+      case 'delete':     window.asConfirmDelete(id); break;
+    }
+  } catch(err) { console.error('[AS] action='+action+' id='+id, err); }
+};
+
+// ── Bind action buttons via addEventListener (100% confiável) ──
+function asBindButtons() {
+  // ── Lista: rows e action buttons ──
+  var tbody = document.getElementById('as-tbody');
+  if (tbody) {
+    tbody.querySelectorAll('tr[data-as-id]').forEach(function(tr) {
+      tr.addEventListener('click', function(e) {
+        if (e.target.closest('.as-act-cell')) return;
+        window.asOpenDetail(tr.dataset.asId);
+      });
+    });
+    tbody.querySelectorAll('button[data-as-action]').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        window._AS(btn.dataset.asAction, btn.dataset.asId);
+      });
+    });
+  }
+  // ── Kanban + Calendário: divs com data-as-action ──
+  var body = document.getElementById('as-body');
+  if (body) {
+    body.querySelectorAll('[data-as-action]:not(button)').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        window._AS(el.dataset.asAction, el.dataset.asId);
+      });
+    });
+  }
+}
+
 function asFilterData() {
   let data = [...ASSIGN_DATA.assignments];
   if (AS.search)          data = data.filter(a => a.course.toLowerCase().includes(AS.search.toLowerCase()) || a.target.toLowerCase().includes(AS.search.toLowerCase()));
@@ -375,6 +420,7 @@ window.renderPage_assignments = function() {
 };
 
 window.initPage_assignments = function() {
+  asBindButtons();
   setTimeout(() => {
     document.querySelectorAll('.as-prog-fill').forEach(el => {
       const w = el.style.width; el.style.width = '0';
@@ -390,6 +436,7 @@ window.asTab = function(tab) {
   if (!body) return;
   body.style.opacity = '0';
   body.innerHTML = renderAsTab(tab);
+  asBindButtons();
   requestAnimationFrame(() => { body.style.transition='opacity 0.22s'; body.style.opacity='1'; });
   setTimeout(() => {
     document.querySelectorAll('.as-prog-fill').forEach(el => {
@@ -457,44 +504,34 @@ function renderAsLista() {
 
 function asRow(a) {
   const days = asDaysLeft(a.due);
-  const daysLabel = days < 0 ? `${Math.abs(days)}d atrasado` : days === 0 ? 'Hoje!' : days < 7 ? `${days}d restantes` : asFmtDate(a.due);
+  const daysLabel = days < 0 ? (Math.abs(days)+'d atrasado') : days === 0 ? 'Hoje!' : days < 7 ? (days+'d restantes') : asFmtDate(a.due);
   const daysColor = days < 0 ? '#ef4444' : days < 7 ? '#f59e0b' : '#6b7280';
-  const pc = asProgColor(a.completion);
-  return `<tr onclick="asOpenDetail('${a.id}')" style="cursor:pointer">
-    <td>
-      <div style="font-weight:700;font-size:0.85rem;margin-bottom:2px">${a.course}</div>
-      <div style="font-size:0.70rem;color:#6b7280">${a.category} · ${a.enviados} enviados</div>
-    </td>
-    <td style="font-size:0.80rem;color:#94a3b8">${a.target}${a.isDemo ? ' <span style="font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:99px;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(139,92,246,0.15));color:#00d4ff;border:1px solid rgba(0,212,255,0.3);">DEMO</span>' : ''}</td>
-    <td>
-      <div style="font-size:0.80rem;font-weight:600;color:${daysColor}">${daysLabel}</div>
-      ${days>=7?`<div style="font-size:0.68rem;color:#6b7280">${asFmtDate(a.due)}</div>`:''}
-    </td>
-    <td>
-      <div class="as-prog-wrap">
-        <div class="as-prog-bar"><div class="as-prog-fill" style="width:${a.completion}%;background:${pc}"></div></div>
-        <span style="font-size:0.80rem;font-weight:800;color:${pc};min-width:36px">${a.completion}%</span>
-      </div>
-      <div style="font-size:0.65rem;color:#6b7280;margin-top:3px">${a.concluidos}/${a.enviados} · ${a.atrasados>0?`<span style="color:#ef4444">${a.atrasados} em atraso</span>`:''}</div>
-    </td>
-    <td>${a.mandatory?'<span class="as-badge as-obrig">OBRIG.</span>':'<span class="as-badge as-opcional">Opcional</span>'}</td>
-    <td>
-      <span style="font-size:0.75rem;font-weight:700;color:${asPriorityColor[a.priority]}">${a.priority}</span>
-    </td>
-    <td>
-      <span class="as-badge as-${a.status}">${asStatusLabel[a.status]||a.status}</span>
-    </td>
-    <td onclick="event.stopPropagation()">
-      <div style="display:flex;gap:4px">
-        <button class="as-btn as-btn-ghost as-btn-icon" onclick="asOpenDetail(${a.id})" title="Ver detalhes">👁</button>
-        <button class="as-btn as-btn-ghost as-btn-icon" onclick="asOpenEdit(${a.id})"   title="Editar">✏️</button>
-        <button class="as-btn as-btn-ghost as-btn-icon" onclick="asNotifyGroup('${a.id}')"title="Notificar">🔔</button>
-        ${a.status==='rascunho'?`<button class="as-btn as-btn-ghost as-btn-icon" onclick="asPublish('${a.id}')" title="Publicar" style="color:#22c55e">▶</button>`:''}
-        ${a.status==='ativa'   ?`<button class="as-btn as-btn-ghost as-btn-icon" onclick="asPause('${a.id}')"   title="Pausar"   style="color:#f59e0b">⏸</button>`:''}
-        <button class="as-btn as-btn-ghost as-btn-icon" onclick="asConfirmDelete('${a.id}')" title="Excluir" style="color:#ef4444">🗑</button>
-      </div>
-    </td>
-  </tr>`;
+  const pc  = asProgColor(a.completion);
+  const sid = String(a.id);
+  const demoTag = a.isDemo ? '<span style="font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:99px;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(139,92,246,0.15));color:#00d4ff;border:1px solid rgba(0,212,255,0.3);">DEMO</span>' : '';
+  const lateTag = a.atrasados > 0 ? '<span style="color:#ef4444">'+a.atrasados+' em atraso</span>' : '';
+  const pub  = a.status==='rascunho' ? '<button type="button" class="as-btn as-btn-ghost as-btn-icon" data-as-action="publish"    data-as-id="'+sid+'" title="Publicar"  style="color:#22c55e">▶</button>' : '';
+  const pau  = a.status==='ativa'    ? '<button type="button" class="as-btn as-btn-ghost as-btn-icon" data-as-action="pause"      data-as-id="'+sid+'" title="Pausar"    style="color:#f59e0b">⏸</button>' : '';
+  const reac = a.status==='pausada'  ? '<button type="button" class="as-btn as-btn-ghost as-btn-icon" data-as-action="reactivate" data-as-id="'+sid+'" title="Reativar"  style="color:#22c55e">▶</button>' : '';
+  return '<tr data-as-id="'+sid+'" style="cursor:pointer">'
+    +'<td><div style="font-weight:700;font-size:0.85rem;margin-bottom:2px">'+a.course+'</div>'
+    +'<div style="font-size:0.70rem;color:#6b7280">'+a.category+' · '+a.enviados+' enviados</div></td>'
+    +'<td style="font-size:0.80rem;color:#94a3b8">'+a.target+' '+demoTag+'</td>'
+    +'<td><div style="font-size:0.80rem;font-weight:600;color:'+daysColor+'">'+daysLabel+'</div>'
+    +(days>=7?'<div style="font-size:0.68rem;color:#6b7280">'+asFmtDate(a.due)+'</div>':'')+'</td>'
+    +'<td><div class="as-prog-wrap"><div class="as-prog-bar"><div class="as-prog-fill" style="width:'+a.completion+'%;background:'+pc+'"></div></div>'
+    +'<span style="font-size:0.80rem;font-weight:800;color:'+pc+';min-width:36px">'+a.completion+'%</span></div>'
+    +'<div style="font-size:0.65rem;color:#6b7280;margin-top:3px">'+a.concluidos+'/'+a.enviados+' · '+lateTag+'</div></td>'
+    +'<td>'+(a.mandatory?'<span class="as-badge as-obrig">OBRIG.</span>':'<span class="as-badge as-opcional">Opcional</span>')+'</td>'
+    +'<td><span style="font-size:0.75rem;font-weight:700;color:'+asPriorityColor[a.priority]+'">'+a.priority+'</span></td>'
+    +'<td><span class="as-badge as-'+a.status+'">'+(asStatusLabel[a.status]||a.status)+'</span></td>'
+    +'<td class="as-act-cell"><div style="display:flex;gap:4px">'
+    +'<button type="button" class="as-btn as-btn-ghost as-btn-icon" data-as-action="view"   data-as-id="'+sid+'" title="Ver">👁</button>'
+    +'<button type="button" class="as-btn as-btn-ghost as-btn-icon" data-as-action="edit"   data-as-id="'+sid+'" title="Editar">✏️</button>'
+    +'<button type="button" class="as-btn as-btn-ghost as-btn-icon" data-as-action="notify" data-as-id="'+sid+'" title="Notificar">🔔</button>'
+    +pub+pau+reac
+    +'<button type="button" class="as-btn as-btn-ghost as-btn-icon" data-as-action="delete" data-as-id="'+sid+'" title="Excluir" style="color:#ef4444">🗑</button>'
+    +'</div></td></tr>';
 }
 
 window.asFilter = function() {
@@ -503,56 +540,56 @@ window.asFilter = function() {
   AS.filterCat       = document.getElementById('as-fcat')?.value     || '';
   AS.filterPriority  = document.getElementById('as-fpri')?.value     || '';
   const tbody = document.getElementById('as-tbody');
-  if (tbody) tbody.innerHTML = asFilterData().map(a=>asRow(a)).join('');
+  if (tbody) { tbody.innerHTML = asFilterData().map(a=>asRow(a)).join(''); asBindButtons(); }
 };
 
 window.asSort = function(col) {
   if (AS.sortCol===col) AS.sortDir=AS.sortDir==='asc'?'desc':'asc'; else{AS.sortCol=col;AS.sortDir='asc';}
   const tbody = document.getElementById('as-tbody');
-  if (tbody) tbody.innerHTML = asFilterData().map(a=>asRow(a)).join('');
+  if (tbody) { tbody.innerHTML = asFilterData().map(a=>asRow(a)).join(''); asBindButtons(); }
 };
 
 window.asPublish = function(id) {
-  const a = ASSIGN_DATA.assignments.find(x=>x.id===id);
+  const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id));
   if(a){ a.status='ativa'; a.enviados=asGroupSize(a.target||'Todos os usuários'); a.pendentes=a.enviados-a.concluidos; }
   asTab(AS.tab); showToast&&showToast('✅ Atribuição publicada e enviada!','success');
 };
 window.asPause = function(id) {
-  const a = ASSIGN_DATA.assignments.find(x=>x.id===id); if(a) a.status='pausada';
+  const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id)); if(a) a.status='pausada';
   asTab(AS.tab); showToast&&showToast('Atribuição pausada.','info');
 };
 
+window.asReactivate = function(id) {
+  const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id)); if(a) a.status='ativa';
+  asTab(AS.tab); showToast&&showToast('✅ Atribuição reativada!','success');
+};
+
 window.asConfirmDelete = function(id) {
-  const a = ASSIGN_DATA.assignments.find(x=>x.id===id); if(!a) return;
-  const m = document.getElementById('as-modals'); if(!m) return;
-  m.innerHTML = `
-    <div id="as-del-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.remove()">
-      <div style="background:#14141e;border:1px solid rgba(239,68,68,.25);border-radius:20px;padding:28px;width:100%;max-width:440px;animation:cpFd .2s ease">
-        <div style="font-size:2rem;margin-bottom:12px;text-align:center">🗑️</div>
-        <h3 style="font-size:1.05rem;font-weight:800;text-align:center;margin-bottom:8px">Excluir Atribuição?</h3>
-        <p style="font-size:0.84rem;color:#94a3b8;text-align:center;margin-bottom:6px;line-height:1.6">
-          <strong style="color:#f1f5f9">${a.course}</strong><br>
-          <span style="font-size:0.76rem">${a.target} · ${a.enviados} enviados</span>
-        </p>
-        <p style="font-size:0.76rem;color:#ef4444;text-align:center;margin-bottom:20px">Esta ação não pode ser desfeita.</p>
-        <div style="display:flex;gap:10px">
-          <button onclick="document.getElementById('as-del-ov').remove()"
-            style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
-            Cancelar
-          </button>
-          <button onclick="asDelete('${id}')"
-            style="flex:1;padding:10px;border-radius:10px;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;border:1px solid rgba(239,68,68,.30);font-family:inherit">
-            🗑 Excluir
-          </button>
-        </div>
+  const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id)); if(!a) return;
+  asShowModal(`
+    <div class="as-modal-hdr">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:1.4rem">🗑️</span>
+        <span style="font-size:1rem;font-weight:800">Excluir Atribuição?</span>
       </div>
-    </div>`;
+      <button class="as-modal-close" onclick="asCloseModal()">✕</button>
+    </div>
+    <p style="font-size:0.84rem;color:#94a3b8;text-align:center;margin-bottom:6px;line-height:1.6">
+      <strong style="color:#f1f5f9">${a.course}</strong><br>
+      <span style="font-size:0.76rem">${a.target} · ${a.enviados} enviados</span>
+    </p>
+    <p style="font-size:0.76rem;color:#ef4444;text-align:center;margin-bottom:24px">Esta ação não pode ser desfeita.</p>
+    <div style="display:flex;gap:10px">
+      <button class="as-btn as-btn-ghost" style="flex:1" onclick="asCloseModal()">Cancelar</button>
+      <button class="as-btn as-btn-danger" style="flex:1" onclick="asDelete('${id}')">🗑 Excluir</button>
+    </div>
+  `);
 };
 
 window.asDelete = function(id) {
-  const idx = ASSIGN_DATA.assignments.findIndex(x=>x.id===id);
+  const idx = ASSIGN_DATA.assignments.findIndex(x=>String(x.id)===String(id));
   if(idx !== -1) ASSIGN_DATA.assignments.splice(idx,1);
-  const ov = document.getElementById('as-del-ov'); if(ov) ov.remove();
+  asCloseModal();
   asTab(AS.tab);
   showToast&&showToast('Atribuição excluída.','info');
 };
@@ -579,7 +616,7 @@ function renderAsKanban() {
         </div>
         ${items.length===0?`<div style="text-align:center;padding:20px;color:#6b7280;font-size:0.78rem">Nenhuma</div>`:''}
         ${items.map(a=>`
-          <div onclick="asOpenDetail(${a.id})" style="background:var(--as-card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.2s"
+          <div data-as-action="view" data-as-id="${a.id}" style="background:var(--as-card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.2s"
             onmouseenter="this.style.borderColor='rgba(255,255,255,0.14)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.07)'">
             <div style="font-weight:700;font-size:0.83rem;margin-bottom:5px">${a.course}</div>
             <div style="font-size:0.70rem;color:#6b7280;margin-bottom:8px">${a.target}</div>
@@ -710,7 +747,7 @@ function renderAsCalendar() {
             <div style="font-size:0.72rem;font-weight:700;color:${isNow?'#00d4ff':'#6b7280'};margin-bottom:8px">${m}${isNow?' ← Atual':''}</div>
             ${monthItems.length===0?`<div style="font-size:0.66rem;color:#374151">—</div>`:''}
             ${monthItems.map(a=>`
-              <div style="font-size:0.68rem;font-weight:600;padding:4px 8px;border-radius:6px;margin-bottom:4px;background:${a.mandatory?'rgba(239,68,68,0.12)':'rgba(59,130,246,0.10)'};color:${a.mandatory?'#ef4444':'#60a5fa'};cursor:pointer;line-height:1.4" onclick="asOpenDetail(${a.id})">
+              <div style="font-size:0.68rem;font-weight:600;padding:4px 8px;border-radius:6px;margin-bottom:4px;background:${a.mandatory?'rgba(239,68,68,0.12)':'rgba(59,130,246,0.10)'};color:${a.mandatory?'#ef4444':'#60a5fa'};cursor:pointer;line-height:1.4" data-as-action="view" data-as-id="${a.id}">
                 ${a.course.substring(0,22)}${a.course.length>22?'...':''}
               </div>`).join('')}
           </div>`;
@@ -728,7 +765,7 @@ function renderAsCalendar() {
         const d = asDaysLeft(a.due);
         const col = d<7?'#ef4444':d<30?'#f59e0b':'#6b7280';
         return `
-          <div style="display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" onclick="asOpenDetail(${a.id})">
+          <div style="display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer" data-as-action="view" data-as-id="${a.id}">
             <div style="width:50px;height:50px;border-radius:10px;background:${col}18;border:1px solid ${col}30;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0">
               <div style="font-size:1rem;font-weight:900;color:${col};line-height:1">${d}</div>
               <div style="font-size:0.55rem;color:${col}">dias</div>
@@ -752,7 +789,7 @@ function renderAsCalendar() {
 //  DETAIL MODAL
 // ══════════════════════════════════════════════════════════════
 window.asOpenDetail = function(id) {
-  const a = ASSIGN_DATA.assignments.find(x=>x.id===id);
+  const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id));
   if (!a) return;
   const days = asDaysLeft(a.due);
   const pc   = asProgColor(a.completion);
@@ -805,6 +842,48 @@ window.asOpenDetail = function(id) {
     <div class="as-detail-row"><div class="as-detail-label">Criado em</div><div class="as-detail-value">${asFmtDate(a.created)}</div></div>
     <div class="as-detail-row"><div class="as-detail-label">Notificação</div><div class="as-detail-value">${a.notify?'<span style="color:#22c55e">✓ Ativa</span>':'<span style="color:#6b7280">Desativada</span>'}</div></div>
 
+    <!-- User list -->
+    ${(()=>{
+      const tenantUsers = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
+      // Filter by target group
+      let groupUsers = tenantUsers;
+      if (a.target && a.target !== 'Todos os usuários') {
+        groupUsers = tenantUsers.filter(u => u.dept === a.target || (a.target.includes('·') && a.target.split('·').map(s=>s.trim()).includes(u.dept)));
+      }
+      if (!groupUsers.length) return '';
+      // Deterministically assign status per user based on assignment completion rate
+      const compRate = a.completion / 100;
+      const atrasRate = a.atrasados / Math.max(a.enviados, 1);
+      return `
+      <div style="margin-top:20px">
+        <div style="font-size:0.70rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#6b7280;margin-bottom:12px">👥 Usuários (${groupUsers.length})</div>
+        <div style="max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding-right:4px">
+          ${groupUsers.map((u,i) => {
+            const seed = ((u.id||i) * 1664525 + a.id * 22695477 + 1013904223) & 0x7FFFFFFF;
+            const roll = (seed % 100) / 100;
+            let ustatus, ucolor, ulabel;
+            if (roll < compRate * 0.9) { ustatus='done'; ucolor='#22c55e'; ulabel='✅ Concluído'; }
+            else if (roll < compRate)  { ustatus='done'; ucolor='#22c55e'; ulabel='✅ Concluído'; }
+            else if (roll < compRate + atrasRate) { ustatus='late'; ucolor='#ef4444'; ulabel='🚨 Em atraso'; }
+            else { ustatus='pend'; ucolor='#f59e0b'; ulabel='⏳ Pendente'; }
+            // DEMO: check real completions
+            if (typeof DEMO_STATE !== 'undefined' && DEMO_STATE.completions && u.isDemo) {
+              ulabel = '✅ Concluído'; ucolor = '#22c55e';
+            }
+            const deptColor = {'Diretoria':'#8b5cf6','TI':'#00d4ff','RH':'#22c55e','Financeiro':'#f59e0b','Jurídico':'#f97316','Operações':'#06b6d4','Comercial':'#ec4899','Marketing':'#a78bfa'}[u.dept] || '#6b7280';
+            return `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.05);border-radius:10px">
+              <div style="width:32px;height:32px;border-radius:50%;background:${deptColor}22;border:1px solid ${deptColor}40;display:flex;align-items:center;justify-content:center;font-size:0.80rem;font-weight:700;color:${deptColor};flex-shrink:0">${(u.name||'?').charAt(0)}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${u.name||u.id}</div>
+                <div style="font-size:0.68rem;color:#6b7280">${u.dept||''}</div>
+              </div>
+              <div style="font-size:0.72rem;font-weight:700;color:${ucolor};white-space:nowrap">${ulabel}</div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+    })()}
+
     <!-- Actions -->
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">
       <button class="as-btn as-btn-ghost" style="flex:1" onclick="asCloseModal()">Fechar</button>
@@ -812,6 +891,7 @@ window.asOpenDetail = function(id) {
       <button class="as-btn as-btn-ghost" style="flex:1" onclick="asCloseModal();asOpenEdit('${a.id}')">✏️ Editar</button>
       ${a.status==='rascunho'?`<button class="as-btn as-btn-primary" style="flex:1" onclick="asPublish('${a.id}');asCloseModal()">▶ Publicar</button>`:''}
       ${a.status==='ativa'   ?`<button class="as-btn as-btn-danger"  style="flex:1" onclick="asPause('${a.id}');asCloseModal()">⏸ Pausar</button>`:''}
+      ${a.status==='pausada' ?`<button class="as-btn as-btn-primary" style="flex:1" onclick="asReactivate('${a.id}');asCloseModal()">▶ Reativar</button>`:''}
     </div>
   `, 'as-modal as-modal-lg');
 };
@@ -994,7 +1074,7 @@ window.asPublishNew = function() {
 
 // ── Edit Modal ────────────────────────────────────────────────
 window.asOpenEdit = function(id) {
-  const a = ASSIGN_DATA.assignments.find(x=>x.id===id);
+  const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id));
   if (!a) return;
   asShowModal(`
     <div class="as-modal-hdr">
@@ -1034,13 +1114,13 @@ window.asOpenEdit = function(id) {
     </div>
     <div style="display:flex;gap:10px;margin-top:18px">
       <button class="as-btn as-btn-ghost" style="flex:1" onclick="asCloseModal()">Cancelar</button>
-      <button class="as-btn as-btn-primary" style="flex:1" onclick="asSaveEdit(${a.id})">Salvar Alterações</button>
+      <button class="as-btn as-btn-primary" style="flex:1" onclick="asSaveEdit('${a.id}')">Salvar Alterações</button>
     </div>
   `);
 };
 
 window.asSaveEdit = function(id) {
-  const a = ASSIGN_DATA.assignments.find(x=>x.id===id);
+  const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id));
   if (a) {
     a.target    = document.getElementById('as-edit-target')?.value    || a.target;
     a.due       = document.getElementById('as-edit-due')?.value       || a.due;
@@ -1054,8 +1134,15 @@ window.asSaveEdit = function(id) {
 
 // ── Notify ────────────────────────────────────────────────────
 window.asNotifyGroup = function(id) {
-  const a = ASSIGN_DATA.assignments.find(x=>x.id===id);
+  const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id));
   if (!a) return;
+  // Compute real pending count from tenant users
+  const tenantUsers = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
+  let groupUsers = tenantUsers;
+  if (a.target && a.target !== 'Todos os usuários') {
+    groupUsers = tenantUsers.filter(u => u.dept === a.target || (a.target.includes('·') && a.target.split('·').map(s=>s.trim()).includes(u.dept)));
+  }
+  const realPending = Math.max(a.pendentes, groupUsers.length - a.concluidos);
   asShowModal(`
     <div class="as-modal-hdr">
       <span style="font-size:1rem;font-weight:800">🔔 Notificar Grupo</span>
@@ -1063,7 +1150,7 @@ window.asNotifyGroup = function(id) {
     </div>
     <div style="margin-bottom:16px">
       <div style="font-size:0.82rem;color:#94a3b8;margin-bottom:4px">Atribuição: <strong style="color:#f1f5f9">${a.course}</strong></div>
-      <div style="font-size:0.82rem;color:#94a3b8">Destinatários: <strong style="color:#00d4ff">${a.pendentes} usuários pendentes</strong></div>
+      <div style="font-size:0.82rem;color:#94a3b8">Destinatários: <strong style="color:#00d4ff">${realPending} usuários pendentes</strong></div>
     </div>
     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px">
       <div><label class="as-label">Canal</label>
@@ -1089,7 +1176,7 @@ Equipe de Treinamento</textarea>
     </div>
     <div style="display:flex;gap:10px">
       <button class="as-btn as-btn-ghost" style="flex:1" onclick="asCloseModal()">Cancelar</button>
-      <button class="as-btn as-btn-primary" style="flex:1" onclick="asCloseModal();showToast&&showToast('✉️ Notificação enviada para '+${a.pendentes}+' usuários!','success')">Enviar Notificação</button>
+      <button class="as-btn as-btn-primary" style="flex:1" onclick="asCloseModal();showToast&&showToast('✉️ Notificação enviada para ${realPending} usuários!','success')">Enviar Notificação</button>
     </div>
   `);
 };
@@ -1101,13 +1188,14 @@ window.asOpenNotifyAll = function() {
 };
 
 // ── Helpers / Modal ───────────────────────────────────────────
-function asShowModal(html, cls='as-modal') {
-  asCloseModal();
+window.asShowModal = function(html, cls='as-modal') {
+  window.asCloseModal();
   const ov=document.createElement('div'); ov.className='as-overlay'; ov.id='as-overlay';
-  ov.addEventListener('click', e=>{ if(e.target===ov) asCloseModal(); });
+  ov.addEventListener('click', e=>{ if(e.target===ov) window.asCloseModal(); });
   const m=document.createElement('div'); m.className=cls; m.innerHTML=html;
   ov.appendChild(m); document.body.appendChild(ov);
-}
+};
+function asShowModal(html, cls='as-modal') { window.asShowModal(html, cls); }
 window.asCloseModal = function() { const el=document.getElementById('as-overlay'); if(el) el.remove(); };
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') asCloseModal(); });
 

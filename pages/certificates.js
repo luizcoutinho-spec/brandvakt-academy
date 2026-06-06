@@ -247,8 +247,20 @@ function rebuildCertsFromTenant() {
   let seqNum = 1000 + (tenantUsers.length * 17);
 
   tenantUsers.forEach(u => {
-    const certCount = typeof u.certs === 'number' ? Math.min(u.certs, CERT_COURSES_POOL.length) : 0;
-    if (certCount === 0) return;
+    // certs pode ser número OU string 'valid'|'expiring'|'expired'
+    let certCount;
+    if (typeof u.certs === 'number') {
+      certCount = Math.min(u.certs, CERT_COURSES_POOL.length);
+    } else if (u.certs === 'valid') {
+      certCount = Math.min(2 + Math.floor(((u.completion||70) - 60) / 15), 5);
+    } else if (u.certs === 'expiring') {
+      certCount = 2;
+    } else if (u.certs === 'expired') {
+      certCount = 1;
+    } else {
+      certCount = 0;
+    }
+    if (certCount <= 0) return;
 
     const lang = CERT_LANG_MAP[u.country] || 'pt';
 
@@ -268,7 +280,10 @@ function rebuildCertsFromTenant() {
       expireDate.setFullYear(expireDate.getFullYear() + 1);
 
       const daysLeft = Math.ceil((expireDate - now) / (1000*60*60*24));
-      const status = daysLeft < 0 ? 'expired' : daysLeft < 90 ? 'expiring' : 'valid';
+      // Respeitar status original do usuário se for string
+      const status = typeof u.certs === 'string' && i === 0
+        ? u.certs  // primeiro cert segue o status real do usuário
+        : daysLeft < 0 ? 'expired' : daysLeft < 90 ? 'expiring' : 'valid';
 
       // Score based on completion and slight jitter (deterministic)
       const jitter = ((u.id * 11 + i * 7) % 10) - 5;
@@ -687,51 +702,118 @@ window.certShare      = function(id) { showToast&&showToast('Link copiado para a
 //  GALERIA VISUAL
 // ══════════════════════════════════════════════════════════════
 function renderCertGallery() {
-  const data = CERT_DATA.certificates.filter(c=>c.status==='valid').slice(0,9);
+  // Garantir dados da empresa ativa
+  rebuildCertsFromTenant();
+
+  const allCerts = CERT_DATA.certificates;
+  const tenantUsers = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
+
+  // Estado de filtro da galeria
+  if (!window._cgFilter) window._cgFilter = { status:'valid', dept:'' };
+  const f = window._cgFilter;
+
+  // Departamentos disponíveis nos certs
+  const depts = [...new Set(allCerts.map(c=>c.dept).filter(Boolean))].sort();
+
+  // Dados filtrados
+  let data = allCerts;
+  if (f.status) data = data.filter(c => c.status === f.status);
+  if (f.dept)   data = data.filter(c => c.dept === f.dept);
+
+  // KPIs rápidos da galeria
+  const total   = allCerts.length;
+  const validos = allCerts.filter(c=>c.status==='valid').length;
+  const expiring= allCerts.filter(c=>c.status==='expiring').length;
+  const expired = allCerts.filter(c=>c.status==='expired').length;
+
+  const deptColorMap = {'Diretoria':'#8b5cf6','TI':'#00d4ff','RH':'#22c55e','Financeiro':'#f59e0b','Jurídico':'#f97316','Operações':'#06b6d4','Comercial':'#ec4899','Marketing':'#a78bfa'};
+
   return `
-  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
-    ${data.map(c => `
-    <div class="cert-card-visual" style="cursor:pointer;transition:transform 0.22s" onclick="certOpenPreview('${c.id}')"
-      onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform=''">
-
-      <!-- Header bar -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;position:relative;z-index:1">
-        <div class="cert-seal">🏆</div>
+  <!-- Mini KPIs -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+    ${[
+      ['🏆','Total de Certificados', total, '#f59e0b'],
+      ['✅','Válidos',   validos,  '#22c55e'],
+      ['⚠️','A Vencer',  expiring, '#f59e0b'],
+      ['❌','Expirados', expired,  '#ef4444'],
+    ].map(([icon,label,val,col])=>`
+      <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 18px;display:flex;align-items:center;gap:10px;flex:1;min-width:130px">
+        <span style="font-size:1.3rem">${icon}</span>
         <div>
-          <div style="font-size:0.58rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#f59e0b;margin-bottom:3px">CERTIFICADO DE CONCLUSÃO</div>
-          <div style="font-size:0.68rem;color:rgba(255,255,255,0.45);font-family:monospace">${c.id}</div>
+          <div style="font-size:1.3rem;font-weight:800;color:${col};line-height:1">${val}</div>
+          <div style="font-size:0.65rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em">${label}</div>
         </div>
-        <div style="margin-left:auto">${cBadge(c.status)}</div>
-      </div>
+      </div>`).join('')}
+  </div>
 
-      <!-- Course name -->
-      <div style="font-size:0.68rem;color:rgba(255,255,255,0.45);margin-bottom:6px;position:relative;z-index:1">Certificamos que</div>
-      <div style="font-family:Georgia,serif;font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:5px;position:relative;z-index:1">${c.user}</div>
-      <div style="font-size:0.68rem;color:rgba(255,255,255,0.50);margin-bottom:12px;position:relative;z-index:1">concluiu com êxito o treinamento</div>
-      <div style="font-size:0.88rem;font-weight:700;color:#fbbf24;margin-bottom:16px;position:relative;z-index:1">«${c.course}»</div>
+  <!-- Filtros da galeria -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:18px">
+    <div style="display:flex;gap:4px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:4px">
+      ${['valid','expiring','expired',''].map((s,i)=>{
+        const labels = ['✅ Válidos','⚠️ A Vencer','❌ Expirados','🏆 Todos'];
+        return `<button onclick="window._cgFilter.status='${s}';certTab('gallery')"
+          style="padding:6px 14px;border-radius:7px;border:none;font-size:0.76rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;background:${f.status===s?'rgba(245,158,11,0.18)':'transparent'};color:${f.status===s?'#f59e0b':'#6b7280'}">${labels[i]}</button>`;
+      }).join('')}
+    </div>
+    <select onchange="window._cgFilter.dept=this.value;certTab('gallery')"
+      style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:9px;padding:7px 12px;color:#f1f5f9;font-size:0.82rem;font-family:inherit;outline:none">
+      <option value="">Todos os departamentos</option>
+      ${depts.map(d=>`<option value="${d}" ${f.dept===d?'selected':''}>${d}</option>`).join('')}
+    </select>
+    <span style="font-size:0.75rem;color:#6b7280;margin-left:auto">${data.length} certificado${data.length!==1?'s':''} · ${tenantUsers.length} usuário${tenantUsers.length!==1?'s':''}</span>
+  </div>
 
-      <!-- Divider -->
-      <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,0.35),transparent);margin-bottom:14px;position:relative;z-index:1"></div>
+  <!-- Cards da galeria -->
+  ${data.length === 0 ? `<div style="text-align:center;padding:60px;color:#6b7280;font-size:0.90rem">Nenhum certificado encontrado com os filtros selecionados.</div>` : ''}
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px">
+    ${data.map(c => {
+      const deptCol = deptColorMap[c.dept] || '#6b7280';
+      return `
+      <div class="cert-card-visual" style="cursor:pointer;transition:transform 0.22s" onclick="certOpenPreview('${c.id}')"
+        onmouseenter="this.style.transform='translateY(-4px)'" onmouseleave="this.style.transform=''">
 
-      <!-- Footer -->
-      <div style="display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1">
-        <div>
-          <div style="font-size:0.62rem;color:rgba(255,255,255,0.40)">Emitido em</div>
-          <div style="font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.70)">${fmtDate(c.date)}</div>
+        <!-- Dept badge top-left -->
+        <div style="position:absolute;top:12px;left:12px;font-size:0.60rem;font-weight:700;padding:2px 8px;border-radius:99px;background:${deptCol}22;color:${deptCol};border:1px solid ${deptCol}44;z-index:2">${c.dept||''}</div>
+
+        <!-- Language flag top-right -->
+        <div style="position:absolute;top:12px;right:12px;font-size:1rem;z-index:2">${cLangFlag[c.lang]||'🌐'}</div>
+
+        <!-- Header bar -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;margin-top:18px;position:relative;z-index:1">
+          <div class="cert-seal">🏆</div>
+          <div>
+            <div style="font-size:0.56rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#f59e0b;margin-bottom:3px">CERTIFICADO DE CONCLUSÃO</div>
+            <div style="font-size:0.64rem;color:rgba(255,255,255,0.45);font-family:monospace">${c.id}</div>
+          </div>
+          <div style="margin-left:auto">${cBadge(c.status)}</div>
         </div>
-        <div style="text-align:center">
-          <div style="font-size:1.2rem;font-weight:900;color:${c.score>=90?'#22c55e':c.score>=70?'#f59e0b':'#ef4444'}">${c.score}</div>
-          <div style="font-size:0.58rem;color:rgba(255,255,255,0.40)">NOTA</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-size:0.62rem;color:rgba(255,255,255,0.40)">Válido até</div>
-          <div style="font-size:0.72rem;font-weight:600;color:rgba(255,255,255,0.70)">${fmtDate(c.expires)}</div>
-        </div>
-      </div>
 
-      <!-- Language flag -->
-      <div style="position:absolute;top:12px;right:12px;font-size:1rem">${cLangFlag[c.lang]||'🌐'}</div>
-    </div>`).join('')}
+        <!-- User & Course -->
+        <div style="font-size:0.66rem;color:rgba(255,255,255,0.45);margin-bottom:5px;position:relative;z-index:1">Certificamos que</div>
+        <div style="font-family:Georgia,serif;font-size:1.02rem;font-weight:700;color:#fff;margin-bottom:4px;position:relative;z-index:1">${c.user}</div>
+        <div style="font-size:0.66rem;color:rgba(255,255,255,0.50);margin-bottom:10px;position:relative;z-index:1">concluiu com êxito o treinamento</div>
+        <div style="font-size:0.85rem;font-weight:700;color:#fbbf24;margin-bottom:14px;position:relative;z-index:1;line-height:1.3">«${c.course}»</div>
+
+        <!-- Divider -->
+        <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(245,158,11,0.35),transparent);margin-bottom:12px;position:relative;z-index:1"></div>
+
+        <!-- Footer -->
+        <div style="display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1">
+          <div>
+            <div style="font-size:0.60rem;color:rgba(255,255,255,0.40)">Emitido em</div>
+            <div style="font-size:0.70rem;font-weight:600;color:rgba(255,255,255,0.70)">${fmtDate(c.date)}</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:1.2rem;font-weight:900;color:${c.score>=90?'#22c55e':c.score>=70?'#f59e0b':'#ef4444'}">${c.score}</div>
+            <div style="font-size:0.56rem;color:rgba(255,255,255,0.40)">NOTA</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:0.60rem;color:rgba(255,255,255,0.40)">Válido até</div>
+            <div style="font-size:0.70rem;font-weight:600;color:${c.status==='expired'?'#ef4444':c.status==='expiring'?'#f59e0b':'rgba(255,255,255,0.70)'}">${fmtDate(c.expires)}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
   </div>`;
 }
 

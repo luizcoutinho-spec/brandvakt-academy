@@ -228,9 +228,59 @@ function dpAvatar(name, size=32) {
   return `<div class="dp-avatar" style="width:${size}px;height:${size}px;background:${bg};font-size:${size*0.28}px">${initials}</div>`;
 }
 
+// ── Rebuild departments from active tenant users ───────────────
+function rebuildDeptsFromTenant() {
+  if (typeof getActiveTenantUsers !== 'function') return;
+  const users = getActiveTenantUsers();
+  if (!users || !users.length) return;
+
+  // Group users by dept
+  const deptMap = {};
+  users.forEach(u => {
+    const key = u.dept || 'Outros';
+    if (!deptMap[key]) deptMap[key] = [];
+    deptMap[key].push(u);
+  });
+
+  const iconMap = { 'Diretoria':'🏛️','TI':'💻','RH':'👥','Financeiro':'💰','Jurídico':'⚖️','Operações':'⚙️','Comercial':'📞','Marketing':'📣','Segurança':'🛡','DevOps':'🔧' };
+  const colorMap = { 'Diretoria':'#8b5cf6','TI':'#00d4ff','RH':'#22c55e','Financeiro':'#f59e0b','Jurídico':'#a78bfa','Operações':'#06b6d4','Comercial':'#f97316','Marketing':'#ec4899' };
+
+  // Keep existing dept metadata (manager, city, etc.) for known depts
+  const existing = {};
+  DEPT_DATA.departments.forEach(d => { existing[d.name] = d; });
+
+  DEPT_DATA.departments = Object.keys(deptMap).map(deptName => {
+    const dus = deptMap[deptName];
+    const ex  = existing[deptName] || {};
+    const completion = Math.round(dus.reduce((s,u) => s + (u.completion||70), 0) / dus.length);
+    const highRisk = dus.filter(u => u.risk === 'high').length;
+    const risk = highRisk / dus.length > 0.4 ? 'high' : highRisk / dus.length > 0.15 ? 'med' : 'low';
+    const certs = dus.filter(u => u.certs === 'valid').length;
+    return {
+      id:   ex.id   || 'dept_' + deptName.toLowerCase().replace(/\s/g,'_'),
+      name: deptName,
+      icon: ex.icon || iconMap[deptName] || '🏢',
+      color: ex.color || colorMap[deptName] || '#6b7280',
+      users: dus.length,
+      completion,
+      avg: Math.round(completion / 10 * 10) / 10,
+      certs,
+      mandatory: ex.mandatory || 80,
+      risk,
+      trend: ex.trend || [50, 55, 60, 65, 68, completion],
+      manager: ex.manager || '—',
+      country: ex.country || '🇧🇷',
+      city:    ex.city    || '—',
+      created: ex.created || new Date().toISOString().split('T')[0],
+    };
+  });
+  DEPT_DATA.departments.sort((a,b) => b.completion - a.completion);
+}
+
 // ── Main Render ───────────────────────────────────────────────
 window.renderPage_departments = function() {
   injectDeptCSS();
+  rebuildDeptsFromTenant();
   const totalUsers = DEPT_DATA.departments.reduce((s,d)=>s+d.users,0);
   const avgComp    = Math.round(DEPT_DATA.departments.reduce((s,d)=>s+d.completion,0)/DEPT_DATA.departments.length);
   const atRisk     = DEPT_DATA.departments.filter(d=>d.risk==='high').length;
@@ -802,8 +852,12 @@ window.dpOpenNewTrail = function() {
       <div><label class="dp-label">Público-Alvo</label>
         <select class="dp-select" id="dp-nt-target">
           <option>Todos os Usuários</option>
-          ${DEPT_DATA.departments.map(d=>`<option>${d.name}</option>`).join('')}
-          <option>Lideranças</option><option>Gestores</option>
+          ${(()=>{
+            const depts = (typeof getActiveTenantUsers==='function')
+              ? [...new Set(getActiveTenantUsers().map(u=>u.dept).filter(Boolean))].sort()
+              : DEPT_DATA.departments.map(d=>d.name);
+            return depts.map(d=>`<option>${d}</option>`).join('');
+          })()}
         </select>
       </div>
     </div>
