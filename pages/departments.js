@@ -557,8 +557,9 @@ window.dpOpenTrailDetail = function(id) {
 
     <div style="display:flex;gap:10px;margin-top:20px">
       <button class="dp-btn dp-btn-ghost" style="flex:1" onclick="dpCloseModal()">Fechar</button>
-      <button class="dp-btn dp-btn-ghost" style="flex:1" onclick="dpCloseModal();dpOpenEditTrail('${t.id}')">✏️ Editar Trilha</button>
-      <button class="dp-btn dp-btn-primary" style="flex:1" onclick="dpCloseModal();navTo('assignments',document.querySelector('[data-page=assignments]'));setTimeout(()=>asOpenNewPrefilled&&asOpenNewPrefilled('${t.name}','${t.target}',${t.mandatory}),220)">📋 Atribuir Trilha</button>
+      <button class="dp-btn dp-btn-ghost" style="flex:1" onclick="dpCloseModal();dpOpenEditTrail('${t.id}')">✏️ Editar</button>
+      <button class="dp-btn dp-btn-primary" style="flex:1" onclick="dpCloseModal();navTo('assignments',document.querySelector('[data-page=assignments]'));setTimeout(()=>asOpenNewPrefilled&&asOpenNewPrefilled('${t.name}','${t.target}',${t.mandatory}),220)">📋 Atribuir</button>
+      <button class="dp-btn" style="flex:1;background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.25)" onclick="dpConfirmDeleteTrail('${t.id}','${t.name.replace(/'/g,"\'")}')">🗑 Excluir</button>
     </div>
   `, 'dp-modal dp-modal-lg');
 };
@@ -865,6 +866,33 @@ window.dpSaveEditTrail = function(id) {
   }
   dpCloseModal(); dpTab(DP.tab);
   showToast&&showToast('Trilha actualizada!','success');
+};
+
+window.dpConfirmDeleteTrail = function(id, name) {
+  dpCloseModal();
+  dpShowModal(`
+    <div class="dp-modal-hdr"><div style="font-size:1rem;font-weight:800">🗑️ Excluir Trilha?</div></div>
+    <div style="text-align:center;padding:10px 0 20px">
+      <div style="font-size:2rem;margin-bottom:12px">🗑️</div>
+      <p style="font-size:0.88rem;color:#94a3b8;line-height:1.6;margin-bottom:6px">
+        Tem a certeza que quer excluir a trilha<br>
+        <strong style="color:#f1f5f9">${name}</strong>?
+      </p>
+      <p style="font-size:0.76rem;color:#ef4444;margin-bottom:24px">Esta ação não pode ser desfeita.</p>
+      <div style="display:flex;gap:10px">
+        <button class="dp-btn dp-btn-ghost" style="flex:1" onclick="dpCloseModal()">Cancelar</button>
+        <button class="dp-btn" style="flex:1;background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.30)" onclick="dpDeleteTrail('${id}')">🗑 Confirmar Exclusão</button>
+      </div>
+    </div>
+  `);
+};
+
+window.dpDeleteTrail = function(id) {
+  const idx = DEPT_DATA.trails.findIndex(x=>x.id===id);
+  if(idx !== -1) DEPT_DATA.trails.splice(idx, 1);
+  dpCloseModal();
+  dpTab('trails');
+  showToast&&showToast('Trilha excluída.','info');
 };
 
 // ── Modal helpers ─────────────────────────────────────────────

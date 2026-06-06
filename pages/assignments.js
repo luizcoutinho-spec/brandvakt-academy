@@ -388,6 +388,7 @@ function asRow(a) {
         <button class="as-btn as-btn-ghost as-btn-icon" onclick="asNotifyGroup(${a.id})"title="Notificar">🔔</button>
         ${a.status==='rascunho'?`<button class="as-btn as-btn-ghost as-btn-icon" onclick="asPublish(${a.id})" title="Publicar" style="color:#22c55e">▶</button>`:''}
         ${a.status==='ativa'   ?`<button class="as-btn as-btn-ghost as-btn-icon" onclick="asPause(${a.id})"   title="Pausar"   style="color:#f59e0b">⏸</button>`:''}
+        <button class="as-btn as-btn-ghost as-btn-icon" onclick="asConfirmDelete(${a.id})" title="Excluir" style="color:#ef4444">🗑</button>
       </div>
     </td>
   </tr>`;
@@ -416,6 +417,41 @@ window.asPublish = function(id) {
 window.asPause = function(id) {
   const a = ASSIGN_DATA.assignments.find(x=>x.id===id); if(a) a.status='pausada';
   asTab(AS.tab); showToast&&showToast('Atribuição pausada.','info');
+};
+
+window.asConfirmDelete = function(id) {
+  const a = ASSIGN_DATA.assignments.find(x=>x.id===id); if(!a) return;
+  const m = document.getElementById('as-modals'); if(!m) return;
+  m.innerHTML = `
+    <div id="as-del-ov" style="position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)this.remove()">
+      <div style="background:#14141e;border:1px solid rgba(239,68,68,.25);border-radius:20px;padding:28px;width:100%;max-width:440px;animation:cpFd .2s ease">
+        <div style="font-size:2rem;margin-bottom:12px;text-align:center">🗑️</div>
+        <h3 style="font-size:1.05rem;font-weight:800;text-align:center;margin-bottom:8px">Excluir Atribuição?</h3>
+        <p style="font-size:0.84rem;color:#94a3b8;text-align:center;margin-bottom:6px;line-height:1.6">
+          <strong style="color:#f1f5f9">${a.course}</strong><br>
+          <span style="font-size:0.76rem">${a.target} · ${a.enviados} enviados</span>
+        </p>
+        <p style="font-size:0.76rem;color:#ef4444;text-align:center;margin-bottom:20px">Esta ação não pode ser desfeita.</p>
+        <div style="display:flex;gap:10px">
+          <button onclick="document.getElementById('as-del-ov').remove()"
+            style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
+            Cancelar
+          </button>
+          <button onclick="asDelete(${id})"
+            style="flex:1;padding:10px;border-radius:10px;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;border:1px solid rgba(239,68,68,.30);font-family:inherit">
+            🗑 Excluir
+          </button>
+        </div>
+      </div>
+    </div>`;
+};
+
+window.asDelete = function(id) {
+  const idx = ASSIGN_DATA.assignments.findIndex(x=>x.id===id);
+  if(idx !== -1) ASSIGN_DATA.assignments.splice(idx,1);
+  const ov = document.getElementById('as-del-ov'); if(ov) ov.remove();
+  asTab(AS.tab);
+  showToast&&showToast('Atribuição excluída.','info');
 };
 
 // ══════════════════════════════════════════════════════════════
