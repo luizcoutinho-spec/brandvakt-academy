@@ -605,6 +605,7 @@ function renderAsLista() {
       <thead><tr>
         <th onclick="asSort('course')">Treinamento ${asSortArrow('course')}</th>
         <th onclick="asSort('target')">Público-Alvo ${asSortArrow('target')}</th>
+        <th onclick="asSort('created')">Criação ${asSortArrow('created')}</th>
         <th onclick="asSort('due')">Prazo ${asSortArrow('due')}</th>
         <th onclick="asSort('completion')">Conclusão ${asSortArrow('completion')}</th>
         <th onclick="asSort('mandatory')">Tipo ${asSortArrow('mandatory')}</th>
@@ -635,6 +636,7 @@ function asRow(a) {
     +'<td><div style="font-weight:700;font-size:0.85rem;margin-bottom:2px">'+a.course+'</div>'
     +'<div style="font-size:0.70rem;color:#6b7280">'+a.category+' · '+a.enviados+' enviados</div></td>'
     +'<td style="font-size:0.80rem;color:#94a3b8">'+a.target+' '+demoTag+'</td>'
+    +'<td><div style="font-size:0.78rem;color:#94a3b8">'+(a.created ? asFmtDate(a.created) : '—')+'</div></td>'
     +'<td><div style="font-size:0.80rem;font-weight:600;color:'+daysColor+'">'+daysLabel+'</div>'
     +(days>=7?'<div style="font-size:0.68rem;color:#6b7280">'+asFmtDate(a.due)+'</div>':'')+'</td>'
     +'<td><div class="as-prog-wrap"><div class="as-prog-bar"><div class="as-prog-fill" style="width:'+a.completion+'%;background:'+pc+'"></div></div>'
