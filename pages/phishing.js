@@ -883,7 +883,8 @@ function renderCampaignCard(c) {
         <div style="display:flex;gap:6px">
           <button class="ph-btn ph-btn-ghost ph-btn-sm" onclick="phViewCampaign(${c.id})">📊 Detalhes</button>
           <button class="ph-btn ph-btn-ghost ph-btn-sm" onclick="phDuplicateCampaign(${c.id})">📋 Duplicar</button>
-          ${c.status!=='Ativa'?'':'<button class="ph-btn ph-btn-danger ph-btn-sm" onclick="phArchiveCampaign('+c.id+')">Arquivar</button>'}
+          ${c.status!=='Concluída'?`<button class="ph-btn ph-btn-ghost ph-btn-sm" style="color:#f59e0b;border-color:rgba(245,158,11,0.35);" onclick="phArchiveCampaign(${c.id})">📦 Arquivar</button>`:''}
+          <button class="ph-btn ph-btn-danger ph-btn-sm" onclick="phDeleteCampaign(${c.id})">🗑 Excluir</button>
         </div>
       </div>
     </div>
@@ -996,10 +997,21 @@ window.phDuplicateCampaign = function(id) {
 
 window.phArchiveCampaign = function(id) {
   const c = PHISHING_MOCK.campanhas.find(x=>x.id===id);
-  if (c) c.status = 'Concluída';
+  if (!c) return;
+  c.status = 'Concluída';
   phSaveTenantPool();
   if (PH.tab === 'campanhas') phTab('campanhas');
-  showToast && showToast('Campanha arquivada.','info');
+  showToast && showToast('📦 Campanha arquivada.','info');
+};
+
+window.phDeleteCampaign = function(id) {
+  const c = PHISHING_MOCK.campanhas.find(x=>x.id===id);
+  if (!c) return;
+  if (!confirm(`Excluir a campanha "${c.nome}"? Esta ação não pode ser desfeita.`)) return;
+  PHISHING_MOCK.campanhas = PHISHING_MOCK.campanhas.filter(x=>x.id!==id);
+  phSaveTenantPool();
+  if (PH.tab === 'campanhas') phTab('campanhas');
+  showToast && showToast('🗑 Campanha excluída.','info');
 };
 
 // ── NOVA CAMPANHA — 4 step modal ───────────────────────────────
@@ -2381,6 +2393,7 @@ window.phAiExecuteAssign = function() {
     aiGenerated: true, assignedAt: now.toLocaleString('pt-BR'),
   };
   PHISHING_MOCK.campanhas.unshift(newCamp);
+  phSaveTenantPool(); // persist immediately so campaign survives navigation
 
   // 2. Assignments from library (available trainings)
   let nLib = 0, nPending = 0;
@@ -2483,6 +2496,7 @@ window.phAiApproveCampaign = function() {
     aiGenerated: true,
   };
   PHISHING_MOCK.campanhas.unshift(newCamp);
+  phSaveTenantPool(); // persist so campaign survives navigation
   phCloseModal();
   // Re-render campaigns tab
   if (typeof phTab === 'function') phTab('campanhas');
