@@ -717,6 +717,10 @@ window.asDelete = function(id) {
 // ══════════════════════════════════════════════════════════════
 //  KANBAN
 // ══════════════════════════════════════════════════════════════
+//  KANBAN — drag-and-drop entre colunas atualiza status
+// ══════════════════════════════════════════════════════════════
+let _asDragId = null; // id da atribuição sendo arrastada
+
 function renderAsKanban() {
   const cols = [
     { id:'pendente',  label:'🔴 Aguardando', color:'#ef4444' },
@@ -726,11 +730,22 @@ function renderAsKanban() {
     { id:'concluida', label:'✅ Concluídas',  color:'#8b5cf6' },
   ];
   return `
+  <style>
+    .as-kanban-col         { background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px;min-height:80px;transition:background 0.18s,border-color 0.18s; }
+    .as-kanban-col.drag-over { background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.22); }
+    .as-kcard              { border-radius:10px;padding:14px;margin-bottom:8px;cursor:grab;transition:opacity 0.18s,transform 0.18s,box-shadow 0.18s; }
+    .as-kcard:active       { cursor:grabbing; }
+    .as-kcard.dragging     { opacity:0.35;transform:scale(0.97); }
+  </style>
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:start">
     ${cols.map(col=>{
       const items = ASSIGN_DATA.assignments.filter(a=>a.status===col.id);
       return `
-      <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px">
+      <div class="as-kanban-col"
+        data-col-status="${col.id}"
+        ondragover="event.preventDefault();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="asKanbanDrop(event,'${col.id}')">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
           <div style="font-size:0.80rem;font-weight:700;color:${col.color}">${col.label}</div>
           <div style="width:20px;height:20px;border-radius:50%;background:${col.color}22;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;color:${col.color}">${items.length}</div>
@@ -740,10 +755,14 @@ function renderAsKanban() {
           const isPending = !!a.pendingCreation;
           const cardBg    = isPending ? 'rgba(239,68,68,0.04)' : 'var(--as-card)';
           const cardBord  = isPending ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.07)';
-          const cardHover = isPending ? 'rgba(239,68,68,0.55)' : 'rgba(255,255,255,0.14)';
           return `
-          <div data-as-action="view" data-as-id="${a.id}" style="background:${cardBg};border:1px dashed ${cardBord};border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.2s"
-            onmouseenter="this.style.borderColor='${cardHover}'" onmouseleave="this.style.borderColor='${cardBord}'">
+          <div class="as-kcard"
+            draggable="true"
+            data-as-id="${a.id}"
+            style="background:${cardBg};border:1px dashed ${cardBord};"
+            ondragstart="asKanbanDragStart(event,'${a.id}')"
+            ondragend="asKanbanDragEnd(event)"
+            onclick="if(!_asDragMoved)asBindAndView('${a.id}')">
             ${isPending ? `<div style="font-size:0.60rem;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">⏳ Aguardando criação/publicação</div>` : ''}
             <div style="font-weight:700;font-size:0.83rem;margin-bottom:5px;color:${isPending?'#fca5a5':'inherit'}">${a.course}</div>
             <div style="font-size:0.70rem;color:#6b7280;margin-bottom:8px">${a.target}</div>
@@ -767,6 +786,56 @@ function renderAsKanban() {
     }).join('')}
   </div>`;
 }
+
+// ── Drag helpers ───────────────────────────────────────────────
+let _asDragMoved = false;
+
+window.asKanbanDragStart = function(ev, id) {
+  _asDragId    = String(id);
+  _asDragMoved = false;
+  ev.dataTransfer.effectAllowed = 'move';
+  ev.dataTransfer.setData('text/plain', _asDragId);
+  setTimeout(() => { const el = document.querySelector(`[data-as-id="${id}"].as-kcard`); if(el) el.classList.add('dragging'); }, 0);
+};
+
+window.asKanbanDragEnd = function(ev) {
+  document.querySelectorAll('.as-kcard.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.as-kanban-col.drag-over').forEach(el => el.classList.remove('drag-over'));
+};
+
+window.asKanbanDrop = function(ev, newStatus) {
+  ev.preventDefault();
+  _asDragMoved = true;
+  const id  = _asDragId || ev.dataTransfer.getData('text/plain');
+  const col = ev.currentTarget;
+  col.classList.remove('drag-over');
+  if (!id) return;
+
+  const a = ASSIGN_DATA.assignments.find(x => String(x.id) === String(id));
+  if (!a) return;
+  if (a.status === newStatus) return; // same column — no-op
+
+  const oldStatus = a.status;
+  a.status = newStatus;
+
+  // Remove pendingCreation flag when moved out of 'pendente'
+  if (newStatus !== 'pendente') delete a.pendingCreation;
+
+  asSaveTenantPool();
+
+  // Re-render kanban in-place (no full page reload)
+  const container = document.getElementById('as-body');
+  if (container) { container.innerHTML = renderAsKanban(); asBindButtons(); }
+
+  // Toast
+  const statusLabels = { pendente:'Aguardando', rascunho:'Rascunho', ativa:'Ativa', pausada:'Pausada', concluida:'Concluída' };
+  showToast && showToast(`✅ "${a.course}" movido para ${statusLabels[newStatus]||newStatus}.`, 'success');
+};
+
+window.asBindAndView = function(id) {
+  const a = ASSIGN_DATA.assignments.find(x => String(x.id) === String(id));
+  if (a) asShowDetail(a);
+};
 
 // ══════════════════════════════════════════════════════════════
 //  ANALYTICS
