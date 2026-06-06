@@ -1115,20 +1115,24 @@ window.dpAiGenerateTrail = function() {
 function dpAiBuildTrailData() {
   // Gather live data
   const users     = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
-  const total     = users.length || 11;
   const tenant    = (typeof APP !== 'undefined' && APP.tenants)
     ? (APP.tenants.find(t => t.active) || {}).name || 'Empresa'
     : 'Empresa';
 
-  // Pull from HRM_DATA if available, else use EX_CURRENT as fallback
-  const hrmUsers  = (typeof HRM_DATA !== 'undefined') ? HRM_DATA.users : [];
+  // Pull from HRM_DATA if available, else use tenant users as fallback
+  const hrmUsers  = (typeof HRM_DATA !== 'undefined' && HRM_DATA.users && HRM_DATA.users.length)
+    ? HRM_DATA.users
+    : users;
   const hrmDepts  = (typeof HRM_DATA !== 'undefined') ? HRM_DATA.depts : [];
 
-  const highRisk  = hrmUsers.filter(u => u.score > 60).length || 3;
-  const medRisk   = hrmUsers.filter(u => u.score > 30 && u.score <= 60).length || 5;
-  const expCerts  = hrmUsers.filter(u => u.certs === 'expired').length || 2;
-  const avgScore  = hrmUsers.length
-    ? Math.round(hrmUsers.reduce((s,u) => s+u.score, 0) / hrmUsers.length)
+  // Total must come from the same source as all other HRM metrics
+  const total     = hrmUsers.length || users.length || 11;
+
+  const highRisk  = hrmUsers.filter(u => u.score > 60).length;
+  const medRisk   = hrmUsers.filter(u => u.score > 30 && u.score <= 60).length;
+  const expCerts  = hrmUsers.filter(u => u.certs === 'expired').length;
+  const avgScore  = total
+    ? Math.round(hrmUsers.reduce((s,u) => s+(u.score||0), 0) / total)
     : 65;
 
   // Factor analysis
