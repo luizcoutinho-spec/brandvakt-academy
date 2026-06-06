@@ -843,9 +843,12 @@ function renderPhCampanhas() {
       <div class="ph-section-title">📧 Campanhas de Phishing</div>
       <div style="font-size:0.82rem;color:var(--ph-muted);margin-top:3px">${PHISHING_MOCK.campanhas.length} campanhas · ${PHISHING_MOCK.campanhas.filter(c=>c.status==='Ativa').length} ativas</div>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
       <button class="ph-btn ph-btn-ghost" style="border-color:rgba(139,92,246,0.4);color:#a78bfa;background:rgba(139,92,246,0.08);" onclick="phAiGenerateCampaign()">
-        🤖 Gerar com IA
+        🤖 Conscientização IA
+      </button>
+      <button class="ph-btn ph-btn-ghost" style="border-color:rgba(239,68,68,0.4);color:#f87171;background:rgba(239,68,68,0.07);" onclick="phAiSimulateGenerate()">
+        🎯 Simulação de Phishing IA
       </button>
       <button class="ph-btn ph-btn-primary" onclick="phOpenNewCampaign()">
         🚀 Nova Campanha
@@ -2236,6 +2239,514 @@ window.phAiApproveCampaign = function() {
   else if (typeof renderPage_phishing === 'function') renderPage_phishing();
   showToast && showToast('✅ Campanha gerada pela IA adicionada como Rascunho!', 'success');
   _phAiCampaign = null;
+};
+
+// ══════════════════════════════════════════════════════════════
+//  🎯 AI PHISHING SIMULATION GENERATOR
+// ══════════════════════════════════════════════════════════════
+
+let _phAiSim = null; // simulation data
+
+// ── Loading animation ──────────────────────────────────────────
+window.phAiSimulateGenerate = function() {
+  const steps = [
+    { pct:14, msg:'🔍 Carregando perfil de Human Risk da empresa ativa...' },
+    { pct:28, msg:'📊 Analisando scores por usuário, departamento e função...' },
+    { pct:42, msg:'🕵️ Avaliando histórico de incidentes e comportamentos de risco...' },
+    { pct:56, msg:'🎭 Selecionando temas de engenharia social por nível de maturidade...' },
+    { pct:70, msg:'✉️ Gerando variantes de campanha para cada grupo de risco...' },
+    { pct:85, msg:'🧠 Calibrando dificuldade e KPIs com IA (Claude Sonnet)...' },
+    { pct:100, msg:'✅ Simulação gerada com sucesso!' },
+  ];
+
+  // Reuse spinner CSS from phAiGenerateCampaign (already injected)
+  if (!document.getElementById('ph-ai-spin-css')) {
+    const s = document.createElement('style');
+    s.id = 'ph-ai-spin-css';
+    s.textContent = `
+      @keyframes phAiSpin  { to { transform:rotate(360deg); } }
+      @keyframes phAiPulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.55;transform:scale(.88)} }
+      @keyframes phAiDot   { 0%,80%,100%{transform:scale(0);opacity:0} 40%{transform:scale(1);opacity:1} }
+      @keyframes phAiFade  { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+      .ph-ai-spinner{width:56px;height:56px;border-radius:50%;border:3px solid rgba(239,68,68,.18);border-top-color:#ef4444;animation:phAiSpin .9s linear infinite;}
+      .ph-ai-dot{width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;animation:phAiDot 1.4s ease-in-out infinite;}
+      .ph-ai-dot:nth-child(2){animation-delay:.16s}.ph-ai-dot:nth-child(3){animation-delay:.32s}
+      .ph-ai-log-row{animation:phAiFade .3s ease;}
+    `;
+    document.head.appendChild(s);
+  }
+
+  phShowModal(`
+    <div style="text-align:center;padding:14px 0 10px;">
+      <div style="position:relative;width:80px;height:80px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;">
+        <div class="ph-ai-spinner" style="position:absolute;inset:0;border-top-color:#ef4444;border-color:rgba(239,68,68,.18);"></div>
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#dc2626,#ef4444);display:flex;align-items:center;justify-content:center;font-size:1.5rem;animation:phAiPulse 2s ease-in-out infinite;">🎯</div>
+      </div>
+      <div style="font-weight:800;font-size:1.08rem;margin-bottom:6px;">Gerando simulação de phishing com IA</div>
+      <div style="font-size:0.80rem;color:#6b7280;margin-bottom:8px;">Analisando perfis de risco e criando variantes personalizadas…</div>
+      <div style="margin-bottom:20px;display:flex;justify-content:center;gap:6px;">
+        <div class="ph-ai-dot" style="background:#ef4444;"></div>
+        <div class="ph-ai-dot" style="background:#ef4444;"></div>
+        <div class="ph-ai-dot" style="background:#ef4444;"></div>
+      </div>
+      <div style="background:rgba(255,255,255,0.06);border-radius:99px;height:6px;overflow:hidden;margin-bottom:6px;">
+        <div id="ph-sim-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#dc2626,#f59e0b);border-radius:99px;transition:width .55s ease;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:18px;">
+        <div id="ph-sim-msg" style="font-size:0.74rem;color:#94a3b8;text-align:left;flex:1;">Iniciando…</div>
+        <div id="ph-sim-pct" style="font-size:0.74rem;font-weight:700;color:#ef4444;margin-left:10px;">0%</div>
+      </div>
+      <div id="ph-sim-log" style="text-align:left;display:flex;flex-direction:column;gap:5px;max-height:150px;overflow:hidden;"></div>
+      <div style="margin-top:16px;padding:10px 14px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:9px;font-size:0.72rem;color:#94a3b8;line-height:1.55;">
+        🎭 A IA gera variantes adaptadas ao nível de maturidade de cada grupo — dificuldade crescente, temas reais de engenharia social e plano de treinamento pós-campanha.
+      </div>
+    </div>
+  `);
+
+  let i = 0;
+  function tick() {
+    const bar = document.getElementById('ph-sim-bar');
+    const msg = document.getElementById('ph-sim-msg');
+    const pct = document.getElementById('ph-sim-pct');
+    const log = document.getElementById('ph-sim-log');
+    if (i > 0) {
+      const prev = steps[i-1]; const isFinal = i === steps.length;
+      if (log) {
+        const row = document.createElement('div'); row.className = 'ph-ai-log-row';
+        row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:7px;background:rgba(255,255,255,.03);font-size:0.72rem;';
+        row.innerHTML = isFinal
+          ? `<span style="color:#22c55e;flex-shrink:0;">✅</span><span style="color:#22c55e;font-weight:600;">${prev.msg}</span>`
+          : `<span style="color:#ef4444;flex-shrink:0;">✓</span><span style="color:#94a3b8;">${prev.msg}</span>`;
+        log.appendChild(row); log.scrollTop = log.scrollHeight;
+      }
+    }
+    if (i >= steps.length) { _phAiSim = phAiSimBuild(); phAiSimReview(); return; }
+    const s = steps[i++];
+    if (bar) bar.style.width = s.pct+'%';
+    if (pct) pct.textContent = s.pct+'%';
+    if (msg) msg.textContent = s.msg;
+    setTimeout(tick, 380);
+  }
+  setTimeout(tick, 200);
+};
+
+// ── Build simulation data ──────────────────────────────────────
+function phAiSimBuild() {
+  // Active tenant users (single source of truth)
+  const tenantUsers = (typeof getActiveTenantUsers==='function') ? getActiveTenantUsers() : [];
+  const tenant = (typeof APP!=='undefined'&&APP.tenants) ? (APP.tenants.find(t=>t.active)||{}).name||'Empresa' : 'Empresa';
+  const total = tenantUsers.length || 1;
+
+  // Enrich with HRM (tenant-validated)
+  const hrmByEmail = {};
+  if (typeof HRM_DATA!=='undefined' && Array.isArray(HRM_DATA.users)) {
+    const emails = new Set(tenantUsers.map(u=>(u.email||'').toLowerCase()));
+    HRM_DATA.users.forEach(h=>{ const e=(h.email||'').toLowerCase(); if(emails.has(e)) hrmByEmail[e]=h; });
+  }
+  const rMap={high:75,med:45,low:18};
+  const enriched = tenantUsers.map(u=>{
+    const h=hrmByEmail[(u.email||'').toLowerCase()];
+    const score = h?(h.score??rMap[u.risk]??35):(u.riskScore??u.score??rMap[u.risk]??35);
+    const phPrev = h?(h.phishing??50):(u.risk==='high'?72:u.risk==='med'?40:18);
+    const dept = u.dept||u.department||'Geral';
+    return {...u, score, phPrev, dept};
+  });
+
+  const highGroup = enriched.filter(u=>u.score>60);
+  const medGroup  = enriched.filter(u=>u.score>30&&u.score<=60);
+  const lowGroup  = enriched.filter(u=>u.score<=30);
+  const avgScore  = Math.round(enriched.reduce((s,u)=>s+u.score,0)/total);
+
+  // Dept risk map
+  const deptMap={};
+  enriched.forEach(u=>{
+    if(!deptMap[u.dept]) deptMap[u.dept]={score:0,n:0};
+    deptMap[u.dept].score+=u.score; deptMap[u.dept].n++;
+  });
+  const topDepts = Object.entries(deptMap).map(([d,v])=>({name:d,avg:Math.round(v.score/v.n)})).sort((a,b)=>b.avg-a.avg).slice(0,3);
+
+  // Previous campaigns stats
+  const prevCamps = (typeof PHISHING_MOCK!=='undefined' && PHISHING_MOCK.campanhas) ? PHISHING_MOCK.campanhas.filter(c=>c.status==='Concluída') : [];
+  const prevClickAvg = prevCamps.length ? Math.round(prevCamps.reduce((s,c)=>s+(c.enviados>0?c.cliques/c.enviados*100:0),0)/prevCamps.length) : 25;
+
+  const today = new Date();
+  const fmt = d=>d.toLocaleDateString('pt-BR');
+  const addD = n=>{const d=new Date(today);d.setDate(d.getDate()+n);return fmt(d);};
+
+  // Social engineering themes by difficulty
+  const themes = {
+    critico: {
+      nome:'Spear Phishing — Alerta de Segurança Executivo',
+      assunto:`[URGENTE] Atividade suspeita detectada na sua conta — Ação requerida`,
+      remetente:`seguranca-ti@${tenant.toLowerCase().replace(/\s/g,'-')}-alerts.com`,
+      preview:`Detectamos um acesso não autorizado à sua conta corporativa a partir de um IP desconhecido (Rússia). Clique aqui para verificar e bloquear o acesso imediatamente.`,
+      iocs:['Domínio diferente do corporativo oficial','Urgência artificial para induzir clique rápido','Link com redirecionamento encurtado','Solicitação de verificação de credenciais'],
+      landing:'Página falsa de login corporativo com captura de credenciais',
+      dificuldade:'🔴 CRÍTICA',
+      corDif:'#ef4444',
+      tema:'CEO Fraud / Credential Harvesting',
+    },
+    alto: {
+      nome:'BEC — Solicitação Financeira Urgente',
+      assunto:`Aprovação de transferência necessária — ${today.toLocaleDateString('pt-BR')}`,
+      remetente:`ceo@${tenant.toLowerCase().replace(/\s/g,'-')}-group.com`,
+      preview:`Preciso que você processe uma transferência confidencial com urgência. Entre em contato pelo meu número particular pois estou em reunião e não posso atender pelo corporativo.`,
+      iocs:['Domínio externo simulando executivo','Pedido de sigilo e urgência','Desvio do canal oficial de comunicação','Ausência de assinatura corporativa padrão'],
+      landing:'Formulário de coleta de dados bancários',
+      dificuldade:'🟠 ALTA',
+      corDif:'#f97316',
+      tema:'Business Email Compromise (BEC)',
+    },
+    medio: {
+      nome:'Atualização de Benefícios de RH',
+      assunto:`Ação necessária: Atualize seus dados para receber os benefícios de ${today.toLocaleDateString('pt-BR',{month:'long'})}`,
+      remetente:`rh-beneficios@empresa-portal.net`,
+      preview:`O prazo para atualização dos seus dados de benefícios encerra hoje. Acesse o portal e confirme suas informações para evitar a suspensão dos benefícios.`,
+      iocs:['Domínio não corporativo (.net genérico)','Prazo artificial e ameaça de perda de benefício','Link para portal externo desconhecido','Ausência de contato telefônico para dúvidas'],
+      landing:'Portal falso de RH com coleta de dados pessoais',
+      dificuldade:'🟡 MÉDIA',
+      corDif:'#f59e0b',
+      tema:'HR Benefits Fraud',
+    },
+    basico: {
+      nome:'Verificação de Senha — Expiração em 24h',
+      assunto:`⚠️ Sua senha expira em 24 horas — Renovar agora`,
+      remetente:`ti-suporte@helpdesk-empresa.com`,
+      preview:`Sua senha corporativa expirará em 24 horas. Para evitar o bloqueio da sua conta, clique no botão abaixo e crie uma nova senha agora.`,
+      iocs:['Domínio diferente do suporte de TI oficial','Botão "Renovar Senha" com URL suspeita','Ausência de número de ticket de suporte','Não menciona o nome do usuário'],
+      landing:'Formulário falso de redefinição de senha',
+      dificuldade:'🟢 BÁSICA',
+      corDif:'#22c55e',
+      tema:'Password Phishing',
+    },
+  };
+
+  // Assign themes based on risk level
+  const v1theme = avgScore>60 ? themes.critico : themes.alto;
+  const v2theme = themes.medio;
+  const v3theme = themes.basico;
+
+  // Expected click rates based on previous history + risk level
+  const v1ClickExp = Math.min(55, Math.round(prevClickAvg * 1.3 + (highGroup.length/total)*20));
+  const v2ClickExp = Math.min(40, Math.round(prevClickAvg * 0.9));
+  const v3ClickExp = Math.min(25, Math.round(prevClickAvg * 0.5));
+
+  return {
+    id: Date.now(), tenant, total, avgScore, prevClickAvg,
+    topDepts, highGroup, medGroup, lowGroup,
+    generatedAt: fmt(today)+' às '+today.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    nome: `Simulação IA — ${today.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})}`,
+    objetivo: `Avaliar a maturidade de segurança de ${total} colaboradores de ${tenant} através de simulações graduadas por nível de risco, identificar vulnerabilidades comportamentais e acionar planos de treinamento personalizados para cada grupo.`,
+    periodo: { inicio: addD(3), fim: addD(21) },
+    variantes: [
+      {
+        n:1, nome: 'Variante A — Alto Risco',
+        grupo: highGroup.length>0 ? topDepts.map(d=>d.name).join(' · ') : 'Usuários de Alto Risco',
+        usuarios: highGroup.length || Math.max(1, Math.round(total*0.27)),
+        ...v1theme,
+        clickExpected: v1ClickExp,
+        reportExpected: Math.max(5, Math.round(v1ClickExp*0.2)),
+        treinamento:'Módulo avançado: Spear Phishing & CEO Fraud — duração 6h — obrigatório em 7 dias',
+      },
+      {
+        n:2, nome: 'Variante B — Risco Moderado',
+        grupo: medGroup.length>0 ? 'Usuários de Risco Moderado' : 'Grupo Intermediário',
+        usuarios: medGroup.length || Math.max(1, Math.round(total*0.36)),
+        ...v2theme,
+        clickExpected: v2ClickExp,
+        reportExpected: Math.max(10, Math.round(v2ClickExp*0.35)),
+        treinamento:'Módulo intermediário: Reconhecimento de Phishing — duração 4h — recomendado em 14 dias',
+      },
+      {
+        n:3, nome: 'Variante C — Baixo Risco',
+        grupo: lowGroup.length>0 ? 'Usuários de Baixo Risco' : 'Grupo Avançado',
+        usuarios: lowGroup.length || Math.max(1, Math.round(total*0.37)),
+        ...v3theme,
+        clickExpected: v3ClickExp,
+        reportExpected: Math.max(20, Math.round((100-v3ClickExp)*0.6)),
+        treinamento:'Módulo de reforço: Boas Práticas — duração 2h — opcional em 30 dias',
+      },
+    ],
+    kpis: [
+      { label:'Taxa de clique geral', meta:'<15%', baseline: prevClickAvg+'%', icon:'🎯' },
+      { label:'Taxa de reporte', meta:'>40%', baseline:'—', icon:'📢' },
+      { label:'Usuários que completaram treinamento pós-sim.', meta:'100%', baseline:'—', icon:'📚' },
+      { label:'Redução do score HRM médio', meta:'<'+(Math.round(avgScore*0.7))+'/100', baseline:avgScore+'/100', icon:'📉' },
+      { label:'Maturidade de segurança (próx. simulação)', meta:'▲ +15pts', baseline:'—', icon:'📈' },
+    ],
+    treinamentoPoscamp: [
+      { gatilho:'Clicou no link simulado', acao:`Acesso imediato ao módulo "${v1theme.tema}" com conteúdo contextualizado ao e-mail recebido.`, prioridade:'🔴 Obrigatório — 48h' },
+      { gatilho:'Abriu o e-mail mas não clicou', acao:'Módulo de reforço sobre identificação de IoCs — reconhecimento de sinais de alerta no corpo do e-mail.', prioridade:'🟡 Recomendado — 7 dias' },
+      { gatilho:'Reportou o e-mail', acao:'Reconhecimento positivo + pontos no ranking de segurança + badge "Sentinela de Segurança".', prioridade:'🟢 Positivo — imediato' },
+      { gatilho:'Não abriu o e-mail', acao:'Nenhuma ação obrigatória — manutenção no próximo ciclo de simulação em 90 dias.', prioridade:'⚪ Neutro' },
+    ],
+    cronograma: [
+      { fase:'Configuração', periodo: fmt(today)+' – '+addD(2), desc:'Segmentação de grupos, personalização de templates e validação de conteúdo.' },
+      { fase:'Variante A (Alto Risco)', periodo: addD(3)+' – '+addD(7), desc:`Disparo para ${(highGroup.length||Math.round(total*0.27))} usuários de alto risco — tema: ${v1theme.tema}.` },
+      { fase:'Variante B (Moderado)', periodo: addD(7)+' – '+addD(14), desc:`Disparo para ${(medGroup.length||Math.round(total*0.36))} usuários de risco moderado — tema: ${v2theme.tema}.` },
+      { fase:'Variante C (Baixo Risco)', periodo: addD(14)+' – '+addD(18), desc:`Disparo para ${(lowGroup.length||Math.round(total*0.37))} usuários de baixo risco — tema: ${v3theme.tema}.` },
+      { fase:'Treinamento Pós-Simulação', periodo: addD(3)+' – '+addD(21), desc:'Módulos acionados automaticamente conforme resultado de cada usuário.' },
+      { fase:'Relatório Final', periodo: addD(21), desc:'Análise consolidada por variante, departamento e evolução HRM.' },
+    ],
+    temas: [
+      { icon:'🎭', nome:'Spear Phishing', desc:'Ataque direcionado com dados pessoais do alvo para aumentar credibilidade.' },
+      { icon:'💼', nome:'Business Email Compromise', desc:'Falsificação de executivos para solicitar transferências ou dados confidenciais.' },
+      { icon:'🔑', nome:'Credential Harvesting', desc:'Páginas falsas de login para captura de usuário e senha corporativa.' },
+      { icon:'📦', nome:'Malware via Anexo', desc:'E-mails com anexos maliciosos disfarçados de documentos legítimos.' },
+      { icon:'☁️', nome:'Cloud Account Takeover', desc:'Simulação de notificações de OneDrive/Google Drive para captura de credenciais.' },
+      { icon:'💰', nome:'Invoice Fraud', desc:'Faturas falsas urgentes direcionadas ao time financeiro.' },
+    ],
+  };
+}
+
+// ── Review modal ───────────────────────────────────────────────
+function phAiSimReview() {
+  const s = _phAiSim;
+  if (!s) return;
+  const riskColor = s.avgScore>60?'#ef4444':s.avgScore>40?'#f59e0b':'#22c55e';
+  const riskLabel = s.avgScore>60?'Crítico':s.avgScore>40?'Elevado':'Moderado';
+
+  phShowModal(`
+    <div class="ph-modal-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#dc2626,#ef4444);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">🎯</div>
+        <div>
+          <div style="font-size:1.0rem;font-weight:800;">${s.nome}</div>
+          <div style="font-size:0.72rem;color:#6b7280;">Gerado em ${s.generatedAt} · ${s.tenant} · ${s.variantes.length} variantes · Fins de treinamento</div>
+        </div>
+      </div>
+      <button class="ph-modal-close" onclick="phCloseModal()">✕</button>
+    </div>
+
+    <!-- HRM Diagnostic -->
+    <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+      <div style="font-size:0.68rem;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">📊 Diagnóstico Human Risk — Base da Análise IA</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center;margin-bottom:10px;">
+        ${[
+          ['Score HRM Médio', s.avgScore+'/100', riskColor],
+          ['Nível', riskLabel, riskColor],
+          ['Alto Risco', s.highGroup.length+' usuários', '#ef4444'],
+          ['Moderado', s.medGroup.length+' usuários', '#f59e0b'],
+          ['Baixo Risco', s.lowGroup.length+' usuários', '#22c55e'],
+        ].map(([l,v,c])=>`
+          <div style="padding:10px 4px;background:rgba(255,255,255,.03);border-radius:9px;">
+            <div style="font-size:1.0rem;font-weight:900;color:${c};">${v}</div>
+            <div style="font-size:0.60rem;color:#6b7280;margin-top:3px;">${l}</div>
+          </div>`).join('')}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.72rem;">
+        <div style="padding:7px 10px;background:rgba(255,255,255,.03);border-radius:8px;"><span style="color:#6b7280;">Campanhas anteriores: </span><strong>${(typeof PHISHING_MOCK!=='undefined'?PHISHING_MOCK.campanhas.filter(c=>c.status==='Concluída').length:0)} concluídas</strong></div>
+        <div style="padding:7px 10px;background:rgba(255,255,255,.03);border-radius:8px;"><span style="color:#6b7280;">Taxa clique histórica: </span><strong style="color:#f59e0b;">${s.prevClickAvg}%</strong></div>
+        <div style="padding:7px 10px;background:rgba(255,255,255,.03);border-radius:8px;"><span style="color:#6b7280;">Total usuários: </span><strong>${s.total}</strong></div>
+        <div style="padding:7px 10px;background:rgba(255,255,255,.03);border-radius:8px;"><span style="color:#6b7280;">Depts prioritários: </span><strong>${s.topDepts.map(d=>d.name).join(' · ')||'—'}</strong></div>
+      </div>
+    </div>
+
+    <!-- Objective -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">🎯 Objetivo da Simulação</div>
+    <div style="padding:10px 14px;background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.10);border-radius:9px;font-size:0.80rem;color:#94a3b8;line-height:1.6;margin-bottom:16px;">${s.objetivo}</div>
+
+    <!-- 3 Variants -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">📧 Variantes da Campanha — Por Nível de Risco</div>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:16px;">
+      ${s.variantes.map(v=>`
+        <div style="border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;">
+          <!-- Variant header -->
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(${v.corDif==='#ef4444'?'239,68,68':v.corDif==='#f97316'?'249,115,22':v.corDif==='#f59e0b'?'245,158,11':'34,197,94'},.08);border-bottom:1px solid rgba(255,255,255,.06);">
+            <span style="padding:3px 10px;border-radius:99px;background:${v.corDif}18;color:${v.corDif};font-size:0.72rem;font-weight:800;">${v.dificuldade}</span>
+            <span style="font-weight:800;font-size:0.90rem;flex:1;">${v.nome}</span>
+            <span style="font-size:0.70rem;color:#6b7280;">👥 ${v.usuarios} usuários · ${v.grupo}</span>
+          </div>
+          <div style="padding:12px 14px;">
+            <!-- Theme + Email preview -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;font-size:0.74rem;">
+              <div style="padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;">
+                <div style="font-size:0.64rem;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">🎭 Tema</div>
+                <div style="font-weight:700;">${v.tema}</div>
+              </div>
+              <div style="padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;">
+                <div style="font-size:0.64rem;color:#6b7280;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">🌐 Landing Page</div>
+                <div style="color:#94a3b8;">${v.landing}</div>
+              </div>
+            </div>
+            <!-- Simulated email -->
+            <div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:10px 12px;margin-bottom:10px;font-size:0.74rem;">
+              <div style="display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap;">
+                <span style="color:#6b7280;">De: </span><span style="color:#f59e0b;font-family:monospace;">${v.remetente}</span>
+              </div>
+              <div style="display:flex;gap:6px;margin-bottom:8px;">
+                <span style="color:#6b7280;">Assunto: </span><strong>${v.assunto}</strong>
+              </div>
+              <div style="color:#94a3b8;line-height:1.55;border-top:1px solid rgba(255,255,255,.05);padding-top:8px;">${v.preview}</div>
+            </div>
+            <!-- IoCs -->
+            <div style="margin-bottom:10px;">
+              <div style="font-size:0.66rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">⚠️ Indicadores de Comprometimento (IoCs)</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+                ${v.iocs.map(ioc=>`<div style="display:flex;gap:6px;padding:5px 8px;background:rgba(245,158,11,.05);border-radius:7px;font-size:0.71rem;color:#94a3b8;"><span style="color:#f59e0b;flex-shrink:0;">⚠</span>${ioc}</div>`).join('')}
+              </div>
+            </div>
+            <!-- Expected metrics -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px;text-align:center;">
+              <div style="padding:8px;background:rgba(255,255,255,.03);border-radius:8px;">
+                <div style="font-size:1.0rem;font-weight:800;color:${v.corDif};">${v.clickExpected}%</div>
+                <div style="font-size:0.62rem;color:#6b7280;margin-top:2px;">Clique esperado</div>
+              </div>
+              <div style="padding:8px;background:rgba(255,255,255,.03);border-radius:8px;">
+                <div style="font-size:1.0rem;font-weight:800;color:#22c55e;">${v.reportExpected}%</div>
+                <div style="font-size:0.62rem;color:#6b7280;margin-top:2px;">Reporte esperado</div>
+              </div>
+              <div style="padding:8px;background:rgba(255,255,255,.03);border-radius:8px;">
+                <div style="font-size:1.0rem;font-weight:800;color:#00d4ff;">${v.usuarios}</div>
+                <div style="font-size:0.62rem;color:#6b7280;margin-top:2px;">Destinatários</div>
+              </div>
+            </div>
+            <!-- Post-campaign training -->
+            <div style="padding:7px 10px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.10);border-radius:8px;font-size:0.71rem;color:#94a3b8;">
+              <span style="color:#00d4ff;font-weight:700;">📚 Treinamento pós-simulação: </span>${v.treinamento}
+            </div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Social Engineering Themes -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">🎭 Temas de Engenharia Social Identificados</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+      ${s.temas.map(t=>`
+        <div style="padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:9px;">
+          <div style="font-size:1.1rem;margin-bottom:5px;">${t.icon}</div>
+          <div style="font-weight:700;font-size:0.78rem;margin-bottom:3px;">${t.nome}</div>
+          <div style="font-size:0.70rem;color:#94a3b8;line-height:1.4;">${t.desc}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- KPIs -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">📈 Indicadores de Desempenho (KPIs)</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:16px;">
+      ${s.kpis.map(k=>`
+        <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;">
+          <div style="font-size:0.68rem;color:#6b7280;margin-bottom:5px;">${k.icon} ${k.label}</div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            ${k.baseline!=='—'?`<span style="font-size:0.76rem;color:#6b7280;text-decoration:line-through;">${k.baseline}</span>`:''}
+            <span style="font-size:0.95rem;font-weight:800;color:#22c55e;">→ ${k.meta}</span>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Post-campaign training plan -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">📚 Plano de Treinamento Pós-Campanha</div>
+    <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:16px;">
+      ${s.treinamentoPoscamp.map(tp=>`
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:start;padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:9px;font-size:0.76rem;">
+          <div style="color:#6b7280;white-space:nowrap;">Se: <strong style="color:#f1f5f9;">${tp.gatilho}</strong></div>
+          <div style="color:#94a3b8;">${tp.acao}</div>
+          <div style="white-space:nowrap;font-size:0.70rem;">${tp.prioridade}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Timeline -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">🗓 Cronograma da Simulação</div>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;">
+      ${s.cronograma.map(f=>`
+        <div style="display:flex;gap:12px;align-items:flex-start;padding:9px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:9px;">
+          <div style="width:6px;height:6px;border-radius:50%;background:#ef4444;margin-top:5px;flex-shrink:0;"></div>
+          <div>
+            <div style="font-size:0.78rem;font-weight:700;">${f.fase} <span style="font-weight:400;color:#6b7280;font-size:0.72rem;">· ${f.periodo}</span></div>
+            <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">${f.desc}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Disclaimer -->
+    <div style="padding:10px 14px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:18px;">
+      ⚠️ Esta simulação é exclusivamente para fins de treinamento e conscientização em segurança. Nenhum dado real é coletado. Revise antes de publicar.
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="ph-btn ph-btn-ghost" style="flex:1;min-width:120px;" onclick="phCloseModal()">✕ Descartar</button>
+      <button class="ph-btn ph-btn-ghost" style="flex:1;min-width:120px;" onclick="phAiSimRegenerate()">🔄 Regerar</button>
+      <button class="ph-btn" style="flex:1;min-width:160px;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;box-shadow:0 4px 16px rgba(139,92,246,.35);" onclick="phAiSimApprove()">✅ Aprovar</button>
+      <button class="ph-btn" style="flex:2;min-width:180px;background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.35);" onclick="phAiSimConfirmAssign()">📋 Atribuir Simulação</button>
+    </div>
+  `, 'ph-modal ph-modal-xl');
+}
+
+window.phAiSimRegenerate = function() { phCloseModal(); setTimeout(()=>phAiSimulateGenerate(), 100); };
+
+window.phAiSimApprove = function() {
+  const s = _phAiSim; if(!s) return;
+  s.variantes.forEach((v,i)=>{
+    PHISHING_MOCK.campanhas.unshift({
+      id: s.id+i, nome: `${s.nome} — ${v.nome}`,
+      template: v.tema, grupo: v.grupo,
+      status:'Rascunho', inicio: s.periodo.inicio,
+      enviados:0, abertos:0, cliques:0, reportou:0, aiGenerated:true,
+    });
+  });
+  phCloseModal();
+  if(typeof phTab==='function') phTab('campanhas');
+  showToast&&showToast(`✅ ${s.variantes.length} variantes aprovadas como Rascunho!`,'success');
+  _phAiSim=null;
+};
+
+window.phAiSimConfirmAssign = function() {
+  const s = _phAiSim; if(!s) return;
+  phShowModal(`
+    <div class="ph-modal-header">
+      <div style="font-weight:800;font-size:1.0rem;">📋 Confirmar Atribuição da Simulação</div>
+      <button class="ph-modal-close" onclick="phCloseModal();phAiSimReview()">✕</button>
+    </div>
+    <div style="padding:14px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.20);border-radius:12px;margin-bottom:16px;">
+      <div style="font-size:0.72rem;font-weight:800;color:#10b981;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Ações automáticas:</div>
+      ${[
+        ['✅','Aprovar','As 3 variantes serão aprovadas e registradas.'],
+        ['🚀','Publicar','Todas as variantes serão marcadas como Ativas.'],
+        ['👥','Atribuir por Grupo','Cada variante será enviada ao seu grupo de risco correspondente.'],
+      ].map(([ic,t,d])=>`
+        <div style="display:flex;gap:10px;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:6px;font-size:0.78rem;">
+          <span>${ic}</span><div><strong>${t}</strong> — <span style="color:#94a3b8;">${d}</span></div>
+        </div>`).join('')}
+    </div>
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.78rem;">
+      ${s.variantes.map(v=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);"><span style="color:#94a3b8;">${v.nome}</span><strong>${v.usuarios} usuários — ${v.grupo}</strong></div>`).join('')}
+      <div style="display:flex;justify-content:space-between;padding:6px 0 0;font-weight:700;"><span>Total</span><span style="color:#00d4ff;">${s.total} usuários</span></div>
+    </div>
+    <div style="padding:8px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:16px;">
+      ⚠️ Os usuários receberão os e-mails de simulação conforme o cronograma definido. Fins exclusivamente educacionais.
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="ph-btn ph-btn-ghost" style="flex:1;" onclick="phCloseModal();phAiSimReview()">← Voltar</button>
+      <button class="ph-btn" style="flex:2;background:linear-gradient(135deg,#059669,#10b981);color:#fff;" onclick="phAiSimExecuteAssign()">📋 Confirmar e Atribuir</button>
+    </div>
+  `);
+};
+
+window.phAiSimExecuteAssign = function() {
+  const s = _phAiSim; if(!s) return;
+  // Create all 3 variants as Ativa
+  s.variantes.forEach((v,i)=>{
+    PHISHING_MOCK.campanhas.unshift({
+      id: s.id+i, nome: `${s.nome} — ${v.nome}`,
+      template: v.tema, grupo: v.grupo,
+      status:'Ativa', inicio: s.periodo.inicio,
+      enviados: v.usuarios, abertos:0, cliques:0, reportou:0, aiGenerated:true,
+      assignedAt: new Date().toLocaleString('pt-BR'),
+    });
+  });
+  // Audit log
+  if(!window._phAuditLog) window._phAuditLog=[];
+  window._phAuditLog.unshift({
+    ts: new Date().toLocaleString('pt-BR'), action:'SIM_ASSIGN',
+    detail:`Simulação "${s.nome}" — ${s.variantes.length} variantes aprovadas, publicadas e atribuídas a ${s.total} usuário(s).`,
+    user:(typeof DEMO_STATE!=='undefined')?(DEMO_STATE.name||'Admin Local'):'Admin Local',
+  });
+  phCloseModal();
+  if(typeof phTab==='function') phTab('campanhas');
+  _phAiSim=null;
+  showToast&&showToast('✅ Simulação aprovada e publicada!','success');
+  setTimeout(()=>showToast&&showToast(`🎯 ${s.variantes.length} variantes atribuídas a ${s.total} usuário(s)!`,'success'),900);
+  setTimeout(()=>showToast&&showToast('📋 Atribuição registrada no histórico do sistema.','info'),1800);
 };
 
 // ── MODAL HELPERS ─────────────────────────────────────────────
