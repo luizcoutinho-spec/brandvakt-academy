@@ -224,14 +224,50 @@ function rpDemoActivitySection() {
 window.renderPage_reports = function() {
   injectReportsCSS();
 
-  // ── Rebuild report KPIs from active tenant ────────────────
+  // ── Rebuild all analytics from active tenant ─────────────────
   if (typeof getActiveTenantUsers === 'function') {
     const users = getActiveTenantUsers();
     if (users.length) {
-      const totalCerts = users.reduce((s,u)=>s+(typeof u.certs==='number'?u.certs:0),0);
-      const activeCount = users.filter(u=>u.status==='active'||!u.status).length;
-      REPORTS_DATA.kpis[0] = { ...REPORTS_DATA.kpis[0], val: String(activeCount * 3 + 12), lbl: 'Relatórios Gerados' };
-      REPORTS_DATA.kpis[1] = { ...REPORTS_DATA.kpis[1], val: String(totalCerts + activeCount), lbl: 'Exportações PDF' };
+      const total      = users.length;
+      const active     = users.filter(u => u.status === 'active' || !u.status).length;
+      const certsValid = users.filter(u => u.certs === 'valid' || (typeof u.certs === 'number' && u.certs > 0)).length;
+      const highRisk   = users.filter(u => u.risk === 'high').length;
+      const avgCompl   = Math.round(users.reduce((s,u) => s + (u.completion||0), 0) / total);
+      const clickRate  = Math.round((highRisk / total) * 100 * 0.8 + 8);
+
+      REPORTS_DATA.kpis[0] = { ...REPORTS_DATA.kpis[0], val: String(active * 3 + 12), lbl: 'Relatórios Gerados' };
+      REPORTS_DATA.kpis[1] = { ...REPORTS_DATA.kpis[1], val: String(certsValid + active), lbl: 'Exportações PDF' };
+
+      // Rebuild dept_perf from real users
+      const deptMap = {};
+      users.forEach(u => {
+        const d = u.dept || 'Outros';
+        if (!deptMap[d]) deptMap[d] = { total:0, high:0, certsValid:0, completion:0 };
+        deptMap[d].total++;
+        if (u.risk === 'high') deptMap[d].high++;
+        if (u.certs === 'valid') deptMap[d].certsValid++;
+        deptMap[d].completion += (u.completion || 0);
+      });
+      REPORTS_DATA.dept_perf = Object.entries(deptMap).map(([name, d]) => {
+        const compliancePct = Math.round(d.completion / d.total);
+        const riskPct       = Math.round((d.high / d.total) * 100);
+        const col = compliancePct >= 90 ? '#22c55e' : compliancePct >= 75 ? '#f59e0b' : '#ef4444';
+        return { name, compliance: compliancePct, risk: riskPct, certs: d.certsValid, training: compliancePct, color: col };
+      }).sort((a,b) => b.compliance - a.compliance);
+
+      // Rebuild trends based on real current values
+      const baseCompl = Math.max(40, avgCompl - 29);
+      REPORTS_DATA.trends.compliance = [baseCompl, baseCompl+4, baseCompl+8, baseCompl+12, baseCompl+17, Math.min(99, baseCompl+21)];
+      REPORTS_DATA.trends.training   = [Math.max(35, avgCompl-29), Math.max(42, avgCompl-22), Math.max(50, avgCompl-14), Math.max(56, avgCompl-8), Math.max(63, avgCompl-2), avgCompl];
+      REPORTS_DATA.trends.certs      = [Math.round(certsValid*0.43), Math.round(certsValid*0.52), Math.round(certsValid*0.67), Math.round(certsValid*0.74), Math.round(certsValid*0.88), certsValid];
+
+      // Rebuild insights
+      REPORTS_DATA.insights = [
+        { type:'success', color:'#22c55e', bg:'rgba(34,197,94,0.08)', icon:'✅', title:'Taxa de conclusão', text:`${avgCompl}% de conclusão de treinamentos — ${avgCompl >= 80 ? 'acima da meta de 80%' : 'abaixo da meta de 80%'}. ${REPORTS_DATA.dept_perf[0] ? REPORTS_DATA.dept_perf[0].name + ' lidera com ' + REPORTS_DATA.dept_perf[0].compliance + '%.' : ''}` },
+        { type:'warning', color:'#f59e0b', bg:'rgba(245,158,11,0.08)', icon:'⚠️', title:'Risco Humano', text:`${highRisk} usuário${highRisk!==1?'s':''} em alto risco (${Math.round(highRisk/total*100)}% do total). ${REPORTS_DATA.dept_perf[REPORTS_DATA.dept_perf.length-1] ? REPORTS_DATA.dept_perf[REPORTS_DATA.dept_perf.length-1].name + ' precisa de atenção.' : ''}` },
+        { type:'info', color:'#00d4ff', bg:'rgba(0,212,255,0.08)', icon:'💡', title:'Certificados digitais', text:`${certsValid} certificado${certsValid!==1?'s':''} válido${certsValid!==1?'s':''} de ${total} usuário${total!==1?'s':''}. Taxa de certificação: ${Math.round(certsValid/total*100)}%.` },
+        { type:'error', color:'#ef4444', bg:'rgba(239,68,68,0.08)', icon:'🔴', title:'Phishing: ' + clickRate + '% de cliques', text:`Taxa de cliques estimada em ${clickRate}% com base no perfil de risco dos usuários. ${clickRate > 20 ? 'Recomendado reforço imediato.' : 'Dentro do limite aceitável.'}` },
+      ];
     }
   }
 

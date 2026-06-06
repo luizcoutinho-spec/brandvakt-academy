@@ -92,13 +92,7 @@ const EX_CURRENT = {
   ],
 };
 
-const EX_NARRATIVE = `No período de Maio de 2025, a Empresa Demo S.A. registrou progresso significativo em sua postura de segurança humana, atingindo um Índice de Maturidade de 74,2 pontos — uma melhora de 3,1 pontos em relação ao mês anterior. Este resultado reflete o esforço contínuo em conscientização e treinamento de colaboradores, colocando a organização na trajetória de superar a meta de 80 pontos até o final do exercício.
-
-Entre os destaques positivos do período, destacam-se a taxa de conclusão de treinamentos de 84%, a emissão de 420 novos certificados digitais e a redução de 4 pontos percentuais na taxa de cliques em simulações de phishing. O departamento de RH, com 96% de conclusão, e o Jurídico, com 94%, mantiveram desempenho exemplar e servem como referência interna.
-
-No entanto, três pontos merecem atenção imediata da liderança: (1) 47 colaboradores estão com treinamentos obrigatórios vencidos, gerando exposição regulatória direta; (2) o departamento de Operações apresentou taxa de cliques em phishing de 18%, significativamente acima da média organizacional; (3) a cobertura ISO 27001 permanece em 68%, com 28 controles ainda descobertos.
-
-Para o próximo período, recomenda-se priorizar: a regularização imediata dos treinamentos vencidos, a expansão das simulações de phishing para áreas de maior risco, e o mapeamento de trilhas de Cloud Security e Resposta a Incidentes aos controles ISO descobertos. A adoção dessas medidas pode elevar o Índice de Maturidade para a faixa de 77-80 pontos em junho.`;
+let EX_NARRATIVE = '';
 
 const EX_CONFIG = {
   enabled: true, sendDay: 1,
@@ -112,12 +106,110 @@ const EX_CONFIG = {
   customIntro: '',
 };
 
+// ── Rebuild EX_CURRENT from active tenant ─────────────────────
+function exRebuildFromTenant() {
+  if (typeof getActiveTenantUsers !== 'function') return;
+  const users = getActiveTenantUsers();
+  if (!users || !users.length) return;
+
+  // Active tenant name
+  const tenantName = (typeof APP !== 'undefined' && APP.tenants)
+    ? (APP.tenants.find(t => t.active) || {}).name || 'Empresa'
+    : 'Empresa';
+
+  const total   = users.length;
+  const active  = users.filter(u => u.status === 'active' || !u.status).length;
+  const highRisk = users.filter(u => u.risk === 'high').length;
+  const medRisk  = users.filter(u => u.risk === 'med').length;
+  const lowRisk  = users.filter(u => u.risk === 'low').length;
+
+  // Training metrics
+  const avgCompletion = Math.round(users.reduce((s, u) => s + (u.completion || 0), 0) / total);
+  const completions   = Math.round(avgCompletion / 100 * total * 8); // estimated events
+  const certsValid    = users.filter(u => u.certs === 'valid' || (typeof u.certs === 'number' && u.certs > 0)).length;
+  const overdueCount  = users.filter(u => u.completion < 60 && u.risk !== 'low').length;
+
+  // Human risk average (high=80, med=50, low=20 approx)
+  const riskAvg = Math.round(users.reduce((s, u) => s + (u.risk === 'high' ? 78 : u.risk === 'med' ? 48 : 18), 0) / total);
+
+  // Phishing metrics from user risk distribution
+  const clickRate   = Math.round((highRisk / total) * 100 * 0.8 + 8);
+  const reportRate  = Math.round((lowRisk  / total) * 100 * 0.9 + 20);
+
+  // Maturity score: weighted average of completion + risk
+  const maturity = Math.min(99, Math.round(avgCompletion * 0.6 + (100 - riskAvg) * 0.4));
+
+  // Dept breakdown for recommendations
+  const deptMap = {};
+  users.forEach(u => {
+    if (!deptMap[u.dept]) deptMap[u.dept] = { total: 0, high: 0, completion: 0 };
+    deptMap[u.dept].total++;
+    if (u.risk === 'high') deptMap[u.dept].high++;
+    deptMap[u.dept].completion += (u.completion || 0);
+  });
+  const deptList = Object.entries(deptMap).map(([name, d]) => ({
+    name, total: d.total,
+    highPct: Math.round(d.high / d.total * 100),
+    completionAvg: Math.round(d.completion / d.total),
+  })).sort((a, b) => b.highPct - a.highPct);
+
+  const worstDept   = deptList[0]  || { name: 'Operações', highPct: 18, completionAvg: 60 };
+  const bestDept    = deptList[deptList.length - 1] || { name: 'RH', completionAvg: 96 };
+
+  // Populate EX_CURRENT
+  EX_CURRENT.company     = tenantName;
+  EX_CURRENT.totalUsers  = total;
+  EX_CURRENT.activeUsers = active;
+  EX_CURRENT.maturity    = maturity;
+  EX_CURRENT.training    = { completions, rate: avgCompletion, avgScore: 7.8, certs: certsValid, deltaRate: +Math.max(0, avgCompletion - 78) };
+  EX_CURRENT.phishing    = { sent: total, clickRate, reportRate, deltaClick: -Math.max(0, clickRate - 12) };
+  EX_CURRENT.humanRisk   = { avg: riskAvg, delta: -4, high: highRisk, low: lowRisk, medium: medRisk };
+
+  // Dynamic recommendations
+  EX_CURRENT.recs = [];
+  if (overdueCount > 0) {
+    EX_CURRENT.recs.push({ priority:1, icon:'🔴', text:`Iniciar campanha de reforço para os ${overdueCount} usuário${overdueCount!==1?'s':''} com treinamentos vencidos — prazo recomendado: 7 dias.` });
+  }
+  if (highRisk > 0) {
+    EX_CURRENT.recs.push({ priority:2, icon:'🟡', text:`${worstDept.name} apresenta ${worstDept.highPct}% de usuários em alto risco. Recomendado simulação de phishing direcionada.` });
+  }
+  if (avgCompletion < 85) {
+    EX_CURRENT.recs.push({ priority:3, icon:'🟢', text:`Taxa de conclusão atual (${avgCompletion}%) abaixo da meta de 85%. Recomendado envio de lembretes automáticos.` });
+  }
+  if (!EX_CURRENT.recs.length) {
+    EX_CURRENT.recs.push({ priority:1, icon:'🟢', text:`Excelente postura de segurança! Mantenha os programas de conscientização e expanda para novos controles ISO.` });
+  }
+
+  // Update EX_CONFIG recipients domain from company name
+  const domain = tenantName.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') + '.com';
+  EX_CONFIG.recipients = [
+    { name:'CEO ' + tenantName, email:'ceo@' + domain, role:'CEO' },
+    { name:'CISO ' + tenantName, email:'ciso@' + domain, role:'CISO' },
+    { name:'CFO ' + tenantName, email:'cfo@' + domain, role:'CFO' },
+  ];
+
+  // Dynamic narrative
+  const now = new Date();
+  const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const period = monthNames[now.getMonth()] + ' ' + now.getFullYear();
+  EX_CURRENT.period = period;
+
+  EX_NARRATIVE = `No período de ${period}, a ${tenantName} registrou ${maturity >= 70 ? 'progresso significativo' : 'resultados que requerem atenção'} em sua postura de segurança humana, atingindo um Índice de Maturidade de ${maturity} pontos. A organização conta com ${total} colaborador${total!==1?'es':''}, dos quais ${active} estão ativos na plataforma.
+
+Entre os destaques do período: taxa de conclusão de treinamentos de ${avgCompletion}%, ${certsValid} certificado${certsValid!==1?'s':''} digitais válido${certsValid!==1?'s':''} e taxa de cliques em phishing de ${clickRate}%. ${bestDept.name} registrou desempenho exemplar com ${bestDept.completionAvg}% de conclusão.
+
+${highRisk > 0 ? `Pontos que merecem atenção da liderança: ${highRisk} usuário${highRisk!==1?'s':''} em alto risco de segurança humana; ${worstDept.name} apresenta os maiores índices de risco da organização (${worstDept.highPct}% dos colaboradores).` : `A organização apresenta boa distribuição de risco, com ${lowRisk} colaboradores em baixo risco.`}
+
+Para o próximo período, recomenda-se ${overdueCount > 0 ? `a regularização imediata dos treinamentos vencidos (${overdueCount} usuários), ` : ''}a expansão das simulações de phishing para áreas de maior risco e o fortalecimento contínuo da cultura de segurança.`;
+}
+
 const EX_HISTORY_LABELS = EX_REPORTS.filter(r=>r.maturity).map(r=>r.period).reverse();
 const EX_HISTORY_SCORES  = EX_REPORTS.filter(r=>r.maturity).map(r=>r.maturity).reverse();
 
 // ── Main Render ───────────────────────────────────────────────
 window.renderPage_executive = function() {
   injectExecCSS();
+  exRebuildFromTenant();
   return `
 <div id="exec-module">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;">
