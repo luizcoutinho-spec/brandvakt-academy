@@ -2296,128 +2296,161 @@ window.phAiRegenerateCampaign = function() {
 window.phAiConfirmAssign = function() {
   const c = _phAiCampaign;
   if (!c) return;
+  const nLib  = c.treinamentosRecomendados?.length || 0;
+  const nGaps = c.lacunas?.length || 0;
 
   phShowModal(`
     <div class="ph-modal-header">
-      <div style="font-weight:800;font-size:1.0rem;">📋 Confirmar Atribuição da Campanha</div>
+      <div style="font-weight:800;font-size:1.0rem;">📋 Confirmar Atribuição do Plano de Treinamento</div>
       <button class="ph-modal-close" onclick="phCloseModal();phAiShowReview()">✕</button>
     </div>
 
-    <div style="padding:14px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.20);border-radius:12px;margin-bottom:16px;">
-      <div style="font-size:0.72rem;font-weight:800;color:#10b981;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">As seguintes ações serão executadas automaticamente:</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
+    <!-- Actions -->
+    <div style="padding:14px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.20);border-radius:12px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;font-weight:800;color:#10b981;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Ações executadas automaticamente:</div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
         ${[
-          ['✅ Aprovar', 'A campanha será aprovada e registrada no sistema.'],
-          ['🚀 Publicar', 'A campanha será publicada e marcada como Ativa.'],
-          ['👥 Atribuir ao Público-Alvo', `A campanha será enviada a <strong style="color:#f1f5f9;">${c.orgRisk.total} usuário(s)</strong> — ${c.grupo}.`],
-          ['📚 Criar Atribuições', `<strong style="color:#00d4ff;">${c.treinamentosRecomendados?.length||0} treinamento(s)</strong> da biblioteca serão automaticamente adicionados à lista de <strong>Atribuições</strong>.`],
-        ].map(([titulo,desc])=>`
+          ['✅','Aprovar','Plano de treinamento aprovado e registrado no sistema.'],
+          ['🚀','Publicar','Plano publicado e marcado como Ativo.'],
+          ['👥','Atribuir Usuários',`Plano atribuído a <strong style="color:#f1f5f9;">${c.orgRisk.total} usuário(s)</strong> — ${c.grupo}.`],
+          ['📚','Criar Atribuições (Biblioteca)',`<strong style="color:#00d4ff;">${nLib} treinamento(s)</strong> disponíveis na biblioteca adicionados às <strong>Atribuições</strong> com prazos definidos.`],
+          ['🔴','Criar Atribuições (Pendentes)',`<strong style="color:#ef4444;">${nGaps} treinamento(s)</strong> ainda não disponíveis criados como <strong style="color:#ef4444;">Aguardando criação/publicação</strong> com prazo estendido.`],
+        ].map(([ic,t,d])=>`
           <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;">
-            <span style="font-size:0.82rem;flex-shrink:0;">${titulo.split(' ')[0]}</span>
-            <div><span style="font-weight:700;font-size:0.80rem;">${titulo.slice(titulo.indexOf(' ')+1)}</span> — <span style="font-size:0.78rem;color:#94a3b8;">${desc}</span></div>
+            <span style="font-size:0.9rem;flex-shrink:0;">${ic}</span>
+            <div style="font-size:0.78rem;"><strong>${t}</strong> — <span style="color:#94a3b8;">${d}</span></div>
           </div>`).join('')}
       </div>
     </div>
 
-    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:0.78rem;">
-      <div style="font-weight:700;margin-bottom:6px;">📝 Resumo da Campanha</div>
+    <!-- Summary -->
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px 14px;margin-bottom:12px;font-size:0.78rem;">
+      <div style="font-weight:700;margin-bottom:8px;">📝 Resumo</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;color:#94a3b8;">
         <div><span style="color:#6b7280;">Nome: </span><strong style="color:#f1f5f9;">${c.nome}</strong></div>
-        <div><span style="color:#6b7280;">Template: </span><strong style="color:#f1f5f9;">${c.template}</strong></div>
-        <div><span style="color:#6b7280;">Público: </span><strong style="color:#f1f5f9;">${c.orgRisk.total} usuários</strong></div>
+        <div><span style="color:#6b7280;">Grupo-alvo: </span><strong style="color:#f1f5f9;">${c.grupo}</strong></div>
+        <div><span style="color:#6b7280;">Usuários: </span><strong style="color:#f1f5f9;">${c.orgRisk.total}</strong></div>
         <div><span style="color:#6b7280;">Período: </span><strong style="color:#f1f5f9;">${c.inicio} – ${c.fim}</strong></div>
       </div>
+      ${nGaps > 0 ? `
+      <div style="margin-top:10px;padding:8px 10px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);border-radius:8px;">
+        <div style="font-size:0.68rem;font-weight:800;color:#ef4444;margin-bottom:5px;">🔴 Cursos pendentes de criação na biblioteca:</div>
+        ${c.lacunas.map(g=>`<div style="font-size:0.72rem;color:#94a3b8;padding:2px 0;">• ${g.titulo} <span style="color:#ef4444;">[Aguardando criação/publicação]</span></div>`).join('')}
+      </div>` : ''}
     </div>
 
-    <div style="padding:8px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:16px;">
-      ⚠️ Ao confirmar, a campanha será ativada imediatamente e os destinatários receberão o e-mail simulado conforme o cronograma definido.
+    <div style="padding:8px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.18);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:16px;">
+      ⚠️ Os cursos marcados como <strong>Aguardando criação/publicação</strong> serão visíveis nas Atribuições com cartão vermelho e prazo estendido de 90 dias. Eles passarão automaticamente para ativo assim que forem cadastrados na biblioteca.
     </div>
 
     <div style="display:flex;gap:10px;">
       <button class="ph-btn ph-btn-ghost" style="flex:1;" onclick="phCloseModal();phAiShowReview()">← Voltar</button>
-      <button class="ph-btn" style="flex:2;background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.35);" onclick="phAiExecuteAssign()">📋 Confirmar e Atribuir Agora</button>
+      <button class="ph-btn" style="flex:2;background:linear-gradient(135deg,#059669,#10b981);color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.35);" onclick="phAiExecuteAssign()">📋 Confirmar e Publicar Agora</button>
     </div>
   `);
 };
 
-// ── Execute assign: approve + publish (Ativa) + assign + ASSIGN_DATA ────
+// ── Execute assign: approve + publish + ASSIGN_DATA (lib + pending gaps) ──
 window.phAiExecuteAssign = function() {
   const c = _phAiCampaign;
   if (!c) return;
 
-  // Validate
-  if (!c.nome || !c.template || !c.grupo) {
-    showToast && showToast('❌ Campanha incompleta. Regere e tente novamente.', 'error');
+  // Soft validation — only need name and group
+  if (!c.nome || !c.grupo) {
+    showToast && showToast('❌ Dados insuficientes. Regere e tente novamente.', 'error');
     return;
   }
 
   const now = new Date();
   const adminName = (typeof DEMO_STATE !== 'undefined') ? (DEMO_STATE.name || 'Admin Local') : 'Admin Local';
 
-  // 1. Create phishing campaign as Ativa
+  // Helper: dd/mm/yyyy → yyyy-mm-dd
+  const parseDate = prazo => {
+    if (!prazo) return '';
+    const p = prazo.split('/');
+    return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : prazo;
+  };
+  // Extended due date for pending courses (90 days from now)
+  const addDaysIso = n => { const d=new Date(now); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+
+  // 1. Publish as Ativa
   const newCamp = {
-    id: c.id, nome: c.nome, template: c.template, grupo: c.grupo,
+    id: c.id, nome: c.nome, template: c.nome, grupo: c.grupo,
     status: 'Ativa', inicio: c.inicio,
     enviados: c.orgRisk.total, abertos: 0, cliques: 0, reportou: 0,
-    aiGenerated: true,
-    assignedAt: now.toLocaleString('pt-BR'),
+    aiGenerated: true, assignedAt: now.toLocaleString('pt-BR'),
   };
   PHISHING_MOCK.campanhas.unshift(newCamp);
 
-  // 2. Create assignments in ASSIGN_DATA for each recommended library training
-  if (typeof ASSIGN_DATA !== 'undefined' && Array.isArray(c.treinamentosRecomendados)) {
-    const maxId = ASSIGN_DATA.assignments.reduce((m,a)=>Math.max(m,+a.id||0), 0);
-    c.treinamentosRecomendados.forEach((t, i) => {
-      // Parse due date (dd/mm/yyyy) → yyyy-mm-dd
-      let dueStr = '';
-      if (t.prazo) {
-        const parts = t.prazo.split('/');
-        dueStr = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : t.prazo;
-      }
-      const priority = t.prioridade.includes('Obrig') ? 'Alta' : 'Média';
-      const newAssign = {
-        id: maxId + i + 1,
+  // 2. Assignments from library (available trainings)
+  let nLib = 0, nPending = 0;
+  if (typeof ASSIGN_DATA !== 'undefined') {
+    let maxId = ASSIGN_DATA.assignments.reduce((m,a)=>Math.max(m,+a.id||0), 0);
+
+    (c.treinamentosRecomendados || []).forEach((t, i) => {
+      maxId++;
+      ASSIGN_DATA.assignments.unshift({
+        id: maxId,
         course: t.title,
         target: t.grupo || c.grupo,
         targetType: t.grupo === 'Todos os usuários' ? 'global' : 'group',
-        due: dueStr,
+        due: parseDate(t.prazo),
         completion: 0,
         status: 'ativa',
-        mandatory: t.mandatory || t.prioridade.includes('Obrig'),
+        mandatory: !!(t.mandatory || t.prioridade?.includes('Obrig')),
         enviados: c.orgRisk.total,
-        concluidos: 0,
-        pendentes: c.orgRisk.total,
-        atrasados: 0,
+        concluidos: 0, pendentes: c.orgRisk.total, atrasados: 0,
         created: now.toISOString().slice(0,10),
-        priority,
+        priority: t.prioridade?.includes('Obrig') ? 'Alta' : 'Média',
         category: t.category || 'Cybersecurity',
-        notify: true,
-        aiGenerated: true,
-        campanha: c.nome,
-      };
-      ASSIGN_DATA.assignments.unshift(newAssign);
+        notify: true, aiGenerated: true, campanha: c.nome,
+      });
+      nLib++;
+    });
+
+    // 3. Assignments from gaps (pending creation — red cards, extended deadline)
+    (c.lacunas || []).forEach((g, i) => {
+      maxId++;
+      ASSIGN_DATA.assignments.unshift({
+        id: maxId,
+        course: g.titulo,
+        target: c.grupo,
+        targetType: 'global',
+        due: addDaysIso(90),
+        completion: 0,
+        status: 'pendente',          // ← new status: red card
+        mandatory: false,
+        enviados: 0,
+        concluidos: 0, pendentes: c.orgRisk.total, atrasados: 0,
+        created: now.toISOString().slice(0,10),
+        priority: g.urgencia?.includes('Alta') ? 'Alta' : 'Média',
+        category: g.categoria || 'Cybersecurity',
+        notify: false, aiGenerated: true, campanha: c.nome,
+        pendingCreation: true,       // ← flag for red card rendering
+        pendingNote: 'Aguardando criação/publicação na Biblioteca',
+      });
+      nPending++;
     });
   }
 
-  // 3. Audit log
+  // 4. Audit log
   if (!window._phAuditLog) window._phAuditLog = [];
   window._phAuditLog.unshift({
-    ts: now.toLocaleString('pt-BR'),
-    action: 'CAMPAIGN_ASSIGN',
-    detail: `Campanha "${c.nome}" aprovada, publicada e atribuída a ${c.orgRisk.total} usuário(s) — ${c.grupo}. ${c.treinamentosRecomendados?.length||0} treinamento(s) adicionados às Atribuições.`,
+    ts: now.toLocaleString('pt-BR'), action: 'CAMPAIGN_ASSIGN',
+    detail: `Plano "${c.nome}" publicado. ${nLib} treinamento(s) atribuídos. ${nPending} curso(s) pendentes criados nas Atribuições.`,
     user: adminName,
   });
 
-  // 4. Close + refresh
+  // 5. Close + redirect
   phCloseModal();
   if (typeof phTab === 'function') phTab('campanhas');
   _phAiCampaign = null;
 
-  // 5. Staged toasts
-  const nAssign = c.treinamentosRecomendados?.length || 0;
-  showToast && showToast('✅ Campanha aprovada e publicada como Ativa!', 'success');
-  setTimeout(() => showToast && showToast(`📧 Atribuída a ${newCamp.enviados} destinatário(s) — ${newCamp.grupo}!`, 'success'), 900);
-  setTimeout(() => showToast && showToast(`📚 ${nAssign} treinamento(s) adicionados às Atribuições automaticamente.`, 'info'), 1800);
+  // 6. Staged toasts
+  showToast && showToast('✅ Plano de treinamento publicado como Ativo!', 'success');
+  setTimeout(() => showToast && showToast(`📚 ${nLib} treinamento(s) atribuídos aos usuários.`, 'success'), 900);
+  if (nPending > 0)
+    setTimeout(() => showToast && showToast(`🔴 ${nPending} curso(s) pendentes visíveis nas Atribuições.`, 'info'), 1800);
 };
 
 window.phAiApproveCampaign = function() {

@@ -274,7 +274,7 @@ let AS = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────
-const asStatusLabel = { ativa:'Ativa', rascunho:'Rascunho', concluida:'Concluída', pausada:'Pausada' };
+const asStatusLabel = { ativa:'Ativa', rascunho:'Rascunho', concluida:'Concluída', pausada:'Pausada', pendente:'Aguardando' };
 const asPriorityColor = { Alta:'#ef4444', Média:'#f59e0b', Baixa:'#22c55e' };
 const asProgColor = (pct) => pct >= 80 ? '#22c55e' : pct >= 50 ? '#00d4ff' : '#ef4444';
 const asDaysLeft = (d) => { const r=Math.ceil((new Date(d)-new Date())/(864e5)); return r; };
@@ -578,6 +578,7 @@ function renderAsLista() {
     <input class="as-input" id="as-search" placeholder="🔍 Buscar atribuição..." style="width:220px" oninput="asFilter()" value="${AS.search}">
     <select class="as-select" id="as-fstatus" style="width:auto" onchange="asFilter()">
       <option value="">Todos os status</option>
+      <option value="pendente"  ${AS.filterStatus==='pendente' ?'selected':''}>⏳ Aguardando criação</option>
       <option value="ativa"    ${AS.filterStatus==='ativa'    ?'selected':''}>Ativa</option>
       <option value="rascunho" ${AS.filterStatus==='rascunho' ?'selected':''}>Rascunho</option>
       <option value="pausada"  ${AS.filterStatus==='pausada'  ?'selected':''}>Pausada</option>
@@ -637,7 +638,7 @@ function asRow(a) {
     +'<div style="font-size:0.65rem;color:#6b7280;margin-top:3px">'+a.concluidos+'/'+a.enviados+' · '+lateTag+'</div></td>'
     +'<td>'+(a.mandatory?'<span class="as-badge as-obrig">OBRIG.</span>':'<span class="as-badge as-opcional">Opcional</span>')+'</td>'
     +'<td><span style="font-size:0.75rem;font-weight:700;color:'+asPriorityColor[a.priority]+'">'+a.priority+'</span></td>'
-    +'<td><span class="as-badge as-'+a.status+'">'+(asStatusLabel[a.status]||a.status)+'</span></td>'
+    +'<td>'+(a.pendingCreation?'<span class="as-badge" style="background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.30);font-size:0.60rem">⏳ Aguardando</span>':'<span class="as-badge as-'+a.status+'">'+(asStatusLabel[a.status]||a.status)+'</span>')+'</td>'
     +'<td class="as-act-cell"><div style="display:flex;gap:4px">'
     +'<button type="button" class="as-btn as-btn-ghost as-btn-icon" data-as-action="view"   data-as-id="'+sid+'" title="Ver">👁</button>'
     +'<button type="button" class="as-btn as-btn-ghost as-btn-icon" data-as-action="edit"   data-as-id="'+sid+'" title="Editar">✏️</button>'
@@ -712,13 +713,14 @@ window.asDelete = function(id) {
 // ══════════════════════════════════════════════════════════════
 function renderAsKanban() {
   const cols = [
-    { id:'rascunho', label:'📝 Rascunho',  color:'#6b7280' },
-    { id:'ativa',    label:'🟢 Ativas',     color:'#22c55e' },
-    { id:'pausada',  label:'⏸ Pausadas',   color:'#f59e0b' },
-    { id:'concluida',label:'✅ Concluídas', color:'#8b5cf6' },
+    { id:'pendente',  label:'🔴 Aguardando', color:'#ef4444' },
+    { id:'rascunho',  label:'📝 Rascunho',   color:'#6b7280' },
+    { id:'ativa',     label:'🟢 Ativas',      color:'#22c55e' },
+    { id:'pausada',   label:'⏸ Pausadas',    color:'#f59e0b' },
+    { id:'concluida', label:'✅ Concluídas',  color:'#8b5cf6' },
   ];
   return `
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start">
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px;align-items:start">
     ${cols.map(col=>{
       const items = ASSIGN_DATA.assignments.filter(a=>a.status===col.id);
       return `
@@ -728,11 +730,23 @@ function renderAsKanban() {
           <div style="width:20px;height:20px;border-radius:50%;background:${col.color}22;display:flex;align-items:center;justify-content:center;font-size:0.72rem;font-weight:800;color:${col.color}">${items.length}</div>
         </div>
         ${items.length===0?`<div style="text-align:center;padding:20px;color:#6b7280;font-size:0.78rem">Nenhuma</div>`:''}
-        ${items.map(a=>`
-          <div data-as-action="view" data-as-id="${a.id}" style="background:var(--as-card);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.2s"
-            onmouseenter="this.style.borderColor='rgba(255,255,255,0.14)'" onmouseleave="this.style.borderColor='rgba(255,255,255,0.07)'">
-            <div style="font-weight:700;font-size:0.83rem;margin-bottom:5px">${a.course}</div>
+        ${items.map(a=>{
+          const isPending = !!a.pendingCreation;
+          const cardBg    = isPending ? 'rgba(239,68,68,0.04)' : 'var(--as-card)';
+          const cardBord  = isPending ? 'rgba(239,68,68,0.35)' : 'rgba(255,255,255,0.07)';
+          const cardHover = isPending ? 'rgba(239,68,68,0.55)' : 'rgba(255,255,255,0.14)';
+          return `
+          <div data-as-action="view" data-as-id="${a.id}" style="background:${cardBg};border:1px dashed ${cardBord};border-radius:10px;padding:14px;margin-bottom:8px;cursor:pointer;transition:all 0.2s"
+            onmouseenter="this.style.borderColor='${cardHover}'" onmouseleave="this.style.borderColor='${cardBord}'">
+            ${isPending ? `<div style="font-size:0.60rem;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">⏳ Aguardando criação/publicação</div>` : ''}
+            <div style="font-weight:700;font-size:0.83rem;margin-bottom:5px;color:${isPending?'#fca5a5':'inherit'}">${a.course}</div>
             <div style="font-size:0.70rem;color:#6b7280;margin-bottom:8px">${a.target}</div>
+            ${isPending ? `
+            <div style="font-size:0.70rem;color:#ef4444;margin-bottom:6px">${a.pendingNote||'Curso não disponível na biblioteca'}</div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:4px">
+              <span style="font-size:0.68rem;color:#6b7280">Prazo: ${asFmtDate(a.due)}</span>
+              <span class="as-badge" style="background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.25);font-size:0.60rem">Pendente</span>
+            </div>` : `
             <div class="as-prog-wrap">
               <div class="as-prog-bar"><div class="as-prog-fill" style="width:${a.completion}%;background:${asProgColor(a.completion)}"></div></div>
               <span style="font-size:0.72rem;font-weight:700;color:${asProgColor(a.completion)}">${a.completion}%</span>
@@ -740,8 +754,9 @@ function renderAsKanban() {
             <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">
               <span style="font-size:0.68rem;color:${asDaysLeft(a.due)<0?'#ef4444':asDaysLeft(a.due)<7?'#f59e0b':'#6b7280'}">${asFmtDate(a.due)}</span>
               ${a.mandatory?'<span class="as-badge as-obrig" style="font-size:0.60rem">OBRIG.</span>':'<span class="as-badge as-opcional" style="font-size:0.60rem">Opcional</span>'}
-            </div>
-          </div>`).join('')}
+            </div>`}
+          </div>`;
+        }).join('')}
       </div>`;
     }).join('')}
   </div>`;
