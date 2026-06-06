@@ -62,6 +62,9 @@ function injectCertCSS() {
     .cert-input::placeholder { color:#6b7280; }
     .cert-select option { background:#1a1a26; }
 
+    /* ── Filter chips ── */
+    .cert-chip { display:inline-flex; align-items:center; gap:3px; padding:3px 10px; border-radius:99px; font-size:0.70rem; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.25); color:#f59e0b; }
+
     /* ── Certificate Card (Visual) ── */
     .cert-card-visual {
       background: linear-gradient(135deg, #0d1117 0%, #1a1f2e 40%, #0d1117 100%);
@@ -460,13 +463,20 @@ function renderCertLista() {
     </select>
     <select class="cert-select" id="cert-fcat" onchange="certFilter()">
       <option value="">Todas as categorias</option>
-      ${CERT_DATA.categories.filter(c=>c!=='Todos').map(c=>`<option value="${c}"${CERT_STATE.filterCategory===c?' selected':''}>${c}</option>`).join('')}
+      ${[...new Set(CERT_DATA.certificates.map(c=>c.category))].sort().map(c=>`<option value="${c}"${CERT_STATE.filterCategory===c?' selected':''}>${c}</option>`).join('')}
     </select>
     <select class="cert-select" id="cert-fdept" onchange="certFilter()">
       <option value="">Todos os dept.</option>
       ${depts.map(d=>`<option value="${d}"${CERT_STATE.filterDept===d?' selected':''}>${d}</option>`).join('')}
     </select>
-    <span style="font-size:0.78rem;color:#6b7280;white-space:nowrap">${data.length} certificados</span>
+    <span id="cert-count" style="font-size:0.78rem;color:#6b7280;white-space:nowrap;min-width:90px">${data.length} certificado${data.length!==1?'s':''}</span>
+  </div>
+  <!-- Active filter chips -->
+  <div id="cert-filter-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${(CERT_STATE.filterDept||CERT_STATE.filterStatus||CERT_STATE.filterCategory||CERT_STATE.search)?'10px':'0'}">
+    ${CERT_STATE.filterDept     ? `<span class="cert-chip">Dept: <b>${CERT_STATE.filterDept}</b> <a onclick="document.getElementById('cert-fdept').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
+    ${CERT_STATE.filterStatus   ? `<span class="cert-chip">Status: <b>${{valid:'Válido',expiring:'Vencendo',expired:'Expirado'}[CERT_STATE.filterStatus]}</b> <a onclick="document.getElementById('cert-fstatus').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
+    ${CERT_STATE.filterCategory ? `<span class="cert-chip">Cat: <b>${CERT_STATE.filterCategory}</b> <a onclick="document.getElementById('cert-fcat').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
+    ${CERT_STATE.search         ? `<span class="cert-chip">Busca: <b>"${CERT_STATE.search}"</b> <a onclick="document.getElementById('cert-search').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
   </div>
 
   <!-- Bulk actions -->
@@ -545,12 +555,59 @@ function certRow(c) {
 }
 
 window.certFilter = function() {
-  CERT_STATE.search         = document.getElementById('cert-search')?.value  || '';
+  // Read all filter values from DOM
+  CERT_STATE.search         = document.getElementById('cert-search')?.value?.trim()  || '';
   CERT_STATE.filterStatus   = document.getElementById('cert-fstatus')?.value || '';
   CERT_STATE.filterCategory = document.getElementById('cert-fcat')?.value    || '';
   CERT_STATE.filterDept     = document.getElementById('cert-fdept')?.value   || '';
-  const tbody = document.getElementById('cert-tbody');
-  if (tbody) tbody.innerHTML = getFilteredCerts().map(c=>certRow(c)).join('');
+
+  try {
+    const filtered = getFilteredCerts();
+
+    // ── Update table body ──────────────────────────────────
+    const tbody = document.getElementById('cert-tbody');
+    if (tbody) {
+      tbody.innerHTML = filtered.length
+        ? filtered.map(c => certRow(c)).join('')
+        : `<tr><td colspan="10" style="text-align:center;padding:32px;color:#6b7280">
+            Nenhum certificado encontrado para os filtros selecionados.
+            <br><button class="cert-btn cert-btn-ghost" style="margin-top:10px;font-size:.78rem" onclick="certClearFilters()">✕ Limpar filtros</button>
+           </td></tr>`;
+    }
+
+    // ── Update counter ─────────────────────────────────────
+    const countEl = document.getElementById('cert-count');
+    if (countEl) {
+      const total = CERT_DATA.certificates.length;
+      const n     = filtered.length;
+      const isFiltered = CERT_STATE.search || CERT_STATE.filterStatus || CERT_STATE.filterCategory || CERT_STATE.filterDept;
+      countEl.innerHTML = isFiltered
+        ? `<span style="color:#00d4ff;font-weight:700">${n}</span> de ${total} certificado${total!==1?'s':''}`
+        : `${n} certificado${n!==1?'s':''}`;
+    }
+
+    // ── Active filter chips ────────────────────────────────
+    const chipsEl = document.getElementById('cert-filter-chips');
+    if (chipsEl) {
+      const chips = [];
+      if (CERT_STATE.filterDept)     chips.push(`<span class="cert-chip">Dept: <b>${CERT_STATE.filterDept}</b> <a onclick="document.getElementById('cert-fdept').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
+      if (CERT_STATE.filterStatus)   chips.push(`<span class="cert-chip">Status: <b>${{valid:'Válido',expiring:'Vencendo',expired:'Expirado'}[CERT_STATE.filterStatus]}</b> <a onclick="document.getElementById('cert-fstatus').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
+      if (CERT_STATE.filterCategory) chips.push(`<span class="cert-chip">Cat: <b>${CERT_STATE.filterCategory}</b> <a onclick="document.getElementById('cert-fcat').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
+      if (CERT_STATE.search)         chips.push(`<span class="cert-chip">Busca: <b>"${CERT_STATE.search}"</b> <a onclick="document.getElementById('cert-search').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
+      chipsEl.innerHTML = chips.length ? chips.join('') + `<a onclick="certClearFilters()" style="font-size:.70rem;color:var(--cert-gold);cursor:pointer;margin-left:6px">Limpar tudo</a>` : '';
+    }
+  } catch(e) {
+    console.error('certFilter error:', e);
+  }
+};
+
+window.certClearFilters = function() {
+  CERT_STATE.search = ''; CERT_STATE.filterStatus = ''; CERT_STATE.filterCategory = ''; CERT_STATE.filterDept = '';
+  const s = document.getElementById('cert-search');   if(s) s.value = '';
+  const d = document.getElementById('cert-fdept');    if(d) d.value = '';
+  const st= document.getElementById('cert-fstatus');  if(st) st.value = '';
+  const ct= document.getElementById('cert-fcat');     if(ct) ct.value = '';
+  certFilter();
 };
 
 window.certSort = function(col) {
