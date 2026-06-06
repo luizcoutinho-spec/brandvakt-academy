@@ -440,21 +440,55 @@ function companyRisk() {
   return Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
 }
 
-// ── Inject Admin Local into PHISHING_MOCK on every render ─────
+// ── Rebuild PHISHING_MOCK.usuarios from active tenant users ───────
 function phInjectDemoUser() {
-  if (typeof DEMO_STATE === 'undefined') return;
-  const ds = DEMO_STATE;
-  const riskScore = ds.getRiskScore();
-  const cliques   = ds.phishing.filter(p => p.action === 'clicked').length;
-  const reportou  = ds.phishing.filter(p => p.action === 'reported').length;
-  const entry = {
-    id: 999, nome: ds.user.name, email: ds.user.email,
-    dept:'TI', cargo:'Super Admin', riskScore, campanhas: ds.phishing.length,
-    cliques, reportou, grupo:'ti', isDemo: true,
-  };
-  const idx = PHISHING_MOCK.usuarios.findIndex(u => u.id === 999);
-  if (idx >= 0) PHISHING_MOCK.usuarios[idx] = entry;
-  else PHISHING_MOCK.usuarios.push(entry);
+  // Rebuild full user list from active tenant
+  if (typeof getActiveTenantUsers === 'function') {
+    const tenantUsers = getActiveTenantUsers();
+    PHISHING_MOCK.usuarios = tenantUsers.map((u, i) => {
+      if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
+        const ds = DEMO_STATE;
+        return {
+          id: 999, nome: ds.user.name, email: ds.user.email,
+          dept: ds.user.dept, cargo: ds.user.role,
+          riskScore: ds.getRiskScore(),
+          campanhas: ds.phishing.length,
+          cliques: ds.phishing.filter(p=>p.action==='clicked').length,
+          reportou: ds.phishing.filter(p=>p.action==='reported').length,
+          grupo: ds.user.deptId, isDemo: true,
+        };
+      }
+      const deptMap = { Diretoria:'dir', RH:'rh', TI:'ti', Jurídico:'jur', Financeiro:'fin', Comercial:'com', Operações:'ops', Marketing:'mkt' };
+      const riskBase = u.risk === 'high' ? 75 : u.risk === 'med' ? 45 : 15;
+      return {
+        id: u.id,
+        nome: u.name,
+        email: u.email,
+        dept: u.dept,
+        cargo: u.role,
+        riskScore: Math.min(99, riskBase + Math.round((100 - u.completion) * 0.15)),
+        campanhas: 3 + (i % 2),
+        cliques: u.risk === 'high' ? 3 : u.risk === 'med' ? 1 : 0,
+        reportou: u.risk === 'low' ? 2 : u.risk === 'med' ? 1 : 0,
+        grupo: deptMap[u.dept] || 'ops',
+      };
+    });
+  } else if (typeof DEMO_STATE !== 'undefined') {
+    // Fallback: só o demo
+    const ds = DEMO_STATE;
+    const entry = {
+      id: 999, nome: ds.user.name, email: ds.user.email,
+      dept: ds.user.dept, cargo: ds.user.role,
+      riskScore: ds.getRiskScore(),
+      campanhas: ds.phishing.length,
+      cliques: ds.phishing.filter(p=>p.action==='clicked').length,
+      reportou: ds.phishing.filter(p=>p.action==='reported').length,
+      grupo: ds.user.deptId, isDemo: true,
+    };
+    const idx = PHISHING_MOCK.usuarios.findIndex(u => u.id === 999);
+    if (idx >= 0) PHISHING_MOCK.usuarios[idx] = entry;
+    else PHISHING_MOCK.usuarios.push(entry);
+  }
 }
 
 // ── Main Render ────────────────────────────────────────────────

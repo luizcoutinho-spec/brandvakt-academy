@@ -331,9 +331,15 @@ window.renderPage_risk = function() {
   injectHRMCSS && injectHRMCSS();
 
   // ── Substituir HRM_DATA.users pelos usuários reais da empresa ativa ──
-  if (typeof _usersAll !== 'undefined' && _usersAll.length > 0) {
+  // Garante dados frescos mesmo se users.js não foi renderizado ainda
+  const _hrmSource = (typeof getActiveTenantUsers === 'function')
+    ? getActiveTenantUsers()
+    : (typeof _usersAll !== 'undefined' && _usersAll.length > 0 ? _usersAll : []);
+  if (typeof _usersAll !== 'undefined') _usersAll = _hrmSource; // sincroniza cache
+
+  if (_hrmSource.length > 0) {
     // Reconstrói a lista a partir dos usuários reais
-    HRM_DATA.users = _usersAll.map((u, i) => {
+    HRM_DATA.users = _hrmSource.map((u, i) => {
       // Admin Local DEMO: usa DEMO_STATE para dados precisos
       if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
         return DEMO_STATE.asHRMUser();
@@ -343,7 +349,7 @@ window.renderPage_risk = function() {
 
     // Recalcular contagem de membros por dept
     const deptCount = {};
-    _usersAll.forEach(u => { deptCount[u.dept] = (deptCount[u.dept] || 0) + 1; });
+    _hrmSource.forEach(u => { deptCount[u.dept] = (deptCount[u.dept] || 0) + 1; });
     HRM_DATA.depts.forEach(d => {
       if (deptCount[d.name] !== undefined) d.members = deptCount[d.name];
     });

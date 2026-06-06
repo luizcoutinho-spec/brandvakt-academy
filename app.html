@@ -347,12 +347,86 @@ const APP = {
   user:{name:'Admin Local',role:'Super Admin',initials:'AL'},
   tenant:{name:'Empresa Demo S.A.',plan:'Enterprise'},
   tenants:[
-    {id:1,name:'Empresa Demo S.A.',plan:'Enterprise',active:true,users:340},
-    {id:2,name:'Grupo Veritaz',plan:'Enterprise',active:false,users:1240},
-    {id:3,name:'TechCorp Brasil',plan:'Business',active:false,users:87},
+    {
+      id:1, name:'Empresa Demo S.A.', plan:'Enterprise', active:true, users:11,
+      userData:[
+        // Injetado dinamicamente pelo DEMO_STATE (Admin Local DEMO)
+        { id:1,  name:'Ana Oliveira',    email:'ana.oliveira@demo-sa.com',    dept:'RH',        role:'Admin',      status:'active',   risk:'low',  completion:98, certs:8,  lastLogin:'Hoje',    avatar:'AO', country:'🇧🇷' },
+        { id:2,  name:'Carlos Mendes',   email:'carlos.mendes@demo-sa.com',   dept:'TI',        role:'Manager',    status:'active',   risk:'low',  completion:92, certs:6,  lastLogin:'Ontem',   avatar:'CM', country:'🇧🇷' },
+        { id:3,  name:'Sarah Johnson',   email:'sarah.j@demo-sa.com',         dept:'Jurídico',  role:'User',       status:'active',   risk:'low',  completion:100,certs:9,  lastLogin:'Hoje',    avatar:'SJ', country:'🇺🇸' },
+        { id:4,  name:'Lucas Ferrari',   email:'lucas.f@demo-sa.com',         dept:'Financeiro',role:'User',       status:'active',   risk:'med',  completion:74, certs:4,  lastLogin:'3 dias',  avatar:'LF', country:'🇧🇷' },
+        { id:5,  name:'Marie Dupont',    email:'marie.d@demo-sa.com',         dept:'Comercial', role:'User',       status:'active',   risk:'low',  completion:87, certs:5,  lastLogin:'Hoje',    avatar:'MD', country:'🇫🇷' },
+        { id:6,  name:'Ahmed Al-Rashid', email:'ahmed.a@demo-sa.com',         dept:'Operações', role:'User',       status:'active',   risk:'high', completion:42, certs:1,  lastLogin:'7 dias',  avatar:'AA', country:'🇸🇦' },
+        { id:7,  name:'João Silva',      email:'joao.s@demo-sa.com',          dept:'TI',        role:'User',       status:'inactive', risk:'med',  completion:58, certs:2,  lastLogin:'30 dias', avatar:'JS', country:'🇧🇷' },
+        { id:8,  name:'Catalina Ruiz',   email:'catalina.r@demo-sa.com',      dept:'RH',        role:'Manager',    status:'active',   risk:'low',  completion:95, certs:7,  lastLogin:'Hoje',    avatar:'CR', country:'🇪🇸' },
+        { id:9,  name:'Pedro Almeida',   email:'pedro.a@demo-sa.com',         dept:'Financeiro',role:'User',       status:'active',   risk:'high', completion:38, certs:1,  lastLogin:'14 dias', avatar:'PA', country:'🇧🇷' },
+        { id:10, name:'Claire Martin',   email:'claire.m@demo-sa.com',        dept:'Jurídico',  role:'Compliance', status:'active',   risk:'low',  completion:99, certs:10, lastLogin:'Hoje',    avatar:'CM', country:'🇫🇷' },
+      ]
+    },
+    {
+      id:2, name:'Grupo Veritaz', plan:'Enterprise', active:false, users:14,
+      userData:[
+        { id:1,  name:'Roberto Assis',     email:'r.assis@veritaz.com',     dept:'Diretoria', role:'Admin',      status:'active',   risk:'low',  completion:96, certs:11, lastLogin:'Hoje',    avatar:'RA', country:'🇧🇷' },
+        { id:2,  name:'Simone Torres',     email:'s.torres@veritaz.com',    dept:'RH',        role:'Manager',    status:'active',   risk:'low',  completion:91, certs:7,  lastLogin:'Hoje',    avatar:'ST', country:'🇧🇷' },
+        { id:3,  name:'Andrei Popescu',    email:'a.popescu@veritaz.com',   dept:'TI',        role:'Manager',    status:'active',   risk:'low',  completion:88, certs:6,  lastLogin:'Ontem',   avatar:'AP', country:'🇷🇴' },
+        { id:4,  name:'Fatima Al-Zahra',   email:'f.alzahra@veritaz.com',   dept:'Jurídico',  role:'Compliance', status:'active',   risk:'low',  completion:97, certs:9,  lastLogin:'Hoje',    avatar:'FA', country:'🇦🇪' },
+        { id:5,  name:'Marcus Schulz',     email:'m.schulz@veritaz.com',    dept:'Financeiro',role:'User',       status:'active',   risk:'med',  completion:71, certs:4,  lastLogin:'2 dias',  avatar:'MS', country:'🇩🇪' },
+        { id:6,  name:'Isabella Greco',    email:'i.greco@veritaz.com',     dept:'Comercial', role:'User',       status:'active',   risk:'med',  completion:65, certs:3,  lastLogin:'1 dia',   avatar:'IG', country:'🇮🇹' },
+        { id:7,  name:'Chen Wei',          email:'chen.w@veritaz.com',      dept:'TI',        role:'User',       status:'active',   risk:'low',  completion:94, certs:8,  lastLogin:'Hoje',    avatar:'CW', country:'🇨🇳' },
+        { id:8,  name:'Priya Sharma',      email:'p.sharma@veritaz.com',    dept:'RH',        role:'User',       status:'active',   risk:'low',  completion:89, certs:6,  lastLogin:'Hoje',    avatar:'PS', country:'🇮🇳' },
+        { id:9,  name:'Omar Khalil',       email:'o.khalil@veritaz.com',    dept:'Operações', role:'User',       status:'inactive', risk:'high', completion:31, certs:0,  lastLogin:'45 dias', avatar:'OK', country:'🇪🇬' },
+        { id:10, name:'Natalia Sousa',     email:'n.sousa@veritaz.com',     dept:'Comercial', role:'User',       status:'active',   risk:'med',  completion:68, certs:3,  lastLogin:'3 dias',  avatar:'NS', country:'🇧🇷' },
+        { id:11, name:'Kevin O\'Brien',    email:'k.obrien@veritaz.com',    dept:'Jurídico',  role:'User',       status:'active',   risk:'low',  completion:92, certs:7,  lastLogin:'Ontem',   avatar:'KO', country:'🇮🇪' },
+        { id:12, name:'Yuki Tanaka',       email:'y.tanaka@veritaz.com',    dept:'TI',        role:'User',       status:'active',   risk:'low',  completion:99, certs:10, lastLogin:'Hoje',    avatar:'YT', country:'🇯🇵' },
+        { id:13, name:'Bruno Cavalcanti',  email:'b.cavalcanti@veritaz.com',dept:'Financeiro',role:'User',       status:'active',   risk:'high', completion:44, certs:1,  lastLogin:'10 dias', avatar:'BC', country:'🇧🇷' },
+        { id:14, name:'Elena Volkov',      email:'e.volkov@veritaz.com',    dept:'Operações', role:'User',       status:'active',   risk:'med',  completion:72, certs:4,  lastLogin:'2 dias',  avatar:'EV', country:'🇷🇺' },
+      ]
+    },
+    {
+      id:3, name:'TechCorp Brasil', plan:'Business', active:false, users:8,
+      userData:[
+        { id:1,  name:'Rodrigo Pinto',     email:'r.pinto@techcorp.com.br',  dept:'TI',        role:'Admin',      status:'active',   risk:'low',  completion:99, certs:12, lastLogin:'Hoje',    avatar:'RP', country:'🇧🇷' },
+        { id:2,  name:'Amanda Figueiredo', email:'a.figueiredo@techcorp.com.br',dept:'RH',     role:'Manager',    status:'active',   risk:'low',  completion:93, certs:7,  lastLogin:'Hoje',    avatar:'AF', country:'🇧🇷' },
+        { id:3,  name:'Thiago Borges',     email:'t.borges@techcorp.com.br', dept:'TI',        role:'User',       status:'active',   risk:'low',  completion:85, certs:5,  lastLogin:'Ontem',   avatar:'TB', country:'🇧🇷' },
+        { id:4,  name:'Vanessa Correia',   email:'v.correia@techcorp.com.br',dept:'Financeiro',role:'User',       status:'active',   risk:'med',  completion:67, certs:3,  lastLogin:'4 dias',  avatar:'VC', country:'🇧🇷' },
+        { id:5,  name:'Felipe Cunha',      email:'f.cunha@techcorp.com.br',  dept:'Comercial', role:'User',       status:'active',   risk:'med',  completion:72, certs:4,  lastLogin:'2 dias',  avatar:'FC', country:'🇧🇷' },
+        { id:6,  name:'Renata Monteiro',   email:'r.monteiro@techcorp.com.br',dept:'Jurídico', role:'Compliance', status:'active',   risk:'low',  completion:96, certs:8,  lastLogin:'Hoje',    avatar:'RM', country:'🇧🇷' },
+        { id:7,  name:'Diego Barcelos',    email:'d.barcelos@techcorp.com.br',dept:'TI',       role:'User',       status:'inactive', risk:'high', completion:28, certs:0,  lastLogin:'60 dias', avatar:'DB', country:'🇧🇷' },
+        { id:8,  name:'Juliana Campos',    email:'j.campos@techcorp.com.br', dept:'RH',        role:'User',       status:'active',   risk:'low',  completion:88, certs:6,  lastLogin:'Hoje',    avatar:'JC', country:'🇧🇷' },
+      ]
+    },
   ]
 };
 window.APP = APP;
+
+// ── Retorna usuários da empresa ativa (usado por todos os módulos) ──
+window.getActiveTenantUsers = function() {
+  const t = APP.tenants.find(t => t.active);
+  if (!t) return [];
+  const base = (t.userData || []).slice();
+  // Injetar Admin Local DEMO apenas na empresa Demo SA (id:1)
+  if (t.id === 1 && typeof DEMO_STATE !== 'undefined') {
+    const rm = DEMO_STATE.getRiskMeta();
+    const demoUser = {
+      id: 999,
+      name: DEMO_STATE.user.name,
+      email: DEMO_STATE.user.email,
+      dept: DEMO_STATE.user.dept,
+      company: DEMO_STATE.user.company,
+      role: DEMO_STATE.user.role,
+      status: 'active',
+      risk: rm.cls === 'low' ? 'low' : rm.cls === 'med' ? 'med' : 'high',
+      completion: DEMO_STATE.getCompletionPct(),
+      certs: DEMO_STATE.getCertCount(),
+      lastLogin: 'Agora',
+      avatar: DEMO_STATE.user.avatar,
+      country: DEMO_STATE.user.country,
+      isDemo: true,
+    };
+    base.unshift(demoUser);
+  }
+  return base;
+};
 
 // ── Nav labels per lang ──
 const NAV_LABELS = {
@@ -492,6 +566,8 @@ function switchTenant(id){
   const tenant=APP.tenants.find(t=>t.id===id);
   APP.tenant=tenant;
   document.getElementById('tenant-name').textContent=tenant.name;
+  // Resetar cache de usuários para forçar reload com dados da nova empresa
+  if(typeof _usersAll !== 'undefined') { _usersAll = getActiveTenantUsers(); }
   hideModal('modal-tenant');
   showToast('Empresa: '+tenant.name,'success');
   renderPage(APP.currentPage);

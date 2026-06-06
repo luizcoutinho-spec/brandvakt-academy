@@ -12,40 +12,10 @@ window.renderPage_users = function () {
   const L = usersL[APP.lang] || usersL.pt;
   _usersL = L;
 
-  const users = [
-    // ── Admin Local DEMO (injected from DEMO_STATE) ──────────────
-    (function() {
-      if (typeof DEMO_STATE === 'undefined') return null;
-      const u = DEMO_STATE;
-      const rm = u.getRiskMeta();
-      return {
-        id: 999,
-        name: u.user.name,
-        email: u.user.email,
-        dept: u.user.dept,
-        company: u.user.company,
-        role: u.user.role,
-        status: 'active',
-        risk: rm.cls === 'low' ? 'low' : rm.cls === 'med' ? 'med' : 'high',
-        completion: u.getCompletionPct(),
-        certs: u.getCertCount(),
-        lastLogin: 'Agora',
-        avatar: u.user.avatar,
-        country: u.user.country,
-        isDemo: true,
-      };
-    })(),
-    { id:1, name:'Ana Oliveira',    email:'ana.oliveira@empresa.com',    dept:'RH',         role:'Admin',       status:'active', risk:'low',  completion:98, certs:8, lastLogin:'Hoje',        avatar:'AO', country:'🇧🇷' },
-    { id:2, name:'Carlos Mendes',   email:'carlos.mendes@empresa.com',   dept:'TI',         role:'Manager',     status:'active', risk:'low',  completion:92, certs:6, lastLogin:'Ontem',       avatar:'CM', country:'🇧🇷' },
-    { id:3, name:'Sarah Johnson',   email:'sarah.johnson@empresa.com',   dept:'Jurídico',   role:'User',        status:'active', risk:'low',  completion:100,certs:9, lastLogin:'Hoje',        avatar:'SJ', country:'🇺🇸' },
-    { id:4, name:'Lucas Ferrari',   email:'lucas.ferrari@empresa.com',   dept:'Financeiro', role:'User',        status:'active', risk:'med',  completion:74, certs:4, lastLogin:'3 dias',      avatar:'LF', country:'🇧🇷' },
-    { id:5, name:'Marie Dupont',    email:'marie.dupont@empresa.com',    dept:'Comercial',  role:'User',        status:'active', risk:'low',  completion:87, certs:5, lastLogin:'Hoje',        avatar:'MD', country:'🇫🇷' },
-    { id:6, name:'Ahmed Al-Rashid', email:'ahmed.alrashid@empresa.com',  dept:'Operações',  role:'User',        status:'active', risk:'high', completion:42, certs:1, lastLogin:'7 dias',      avatar:'AA', country:'🇸🇦' },
-    { id:7, name:'João Silva',      email:'joao.silva@empresa.com',      dept:'TI',         role:'User',        status:'inactive',risk:'med', completion:58, certs:2, lastLogin:'30 dias',     avatar:'JS', country:'🇧🇷' },
-    { id:8, name:'Catalina Ruiz',   email:'catalina.ruiz@empresa.com',   dept:'RH',         role:'Manager',     status:'active', risk:'low',  completion:95, certs:7, lastLogin:'Hoje',        avatar:'CR', country:'🇪🇸' },
-    { id:9, name:'Pedro Almeida',   email:'pedro.almeida@empresa.com',   dept:'Financeiro', role:'User',        status:'active', risk:'high', completion:38, certs:1, lastLogin:'14 dias',     avatar:'PA', country:'🇧🇷' },
-    { id:10,name:'Claire Martin',   email:'claire.martin@empresa.com',   dept:'Jurídico',   role:'Compliance',  status:'active', risk:'low',  completion:99, certs:10,lastLogin:'Hoje',       avatar:'CM', country:'🇫🇷' },
-  ];
+  // ── Carregar usuários da empresa ativa ────────────────────────
+  const users = (typeof getActiveTenantUsers === 'function')
+    ? getActiveTenantUsers()
+    : [];
 
   const riskColors = { low: 'var(--brand-success)', med: 'var(--brand-warning)', high: 'var(--brand-danger)' };
   const riskLabels = { low: L.risk_low, med: L.risk_med, high: L.risk_high };
