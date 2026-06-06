@@ -47,8 +47,10 @@ window.renderPage_users = function () {
     { id:10,name:'Claire Martin',   email:'claire.martin@empresa.com',   dept:'Jurídico',   role:'Compliance',  status:'active', risk:'low',  completion:99, certs:10,lastLogin:'Hoje',       avatar:'CM', country:'🇫🇷' },
   ];
 
+  // Totais por departamento — soma exata: 340 usuários
+  // Diretoria(12) + TI(68) + Comercial(85) + Operações(80) + Financeiro(42) + RH(35) + Jurídico(18) = 340
   const deptStats = {
-    'Diretoria': 12, 'RH': 46, 'TI': 68, 'Jurídico': 22, 'Financeiro': 38, 'Comercial': 55, 'Operações': 31,
+    'Diretoria': 12, 'TI': 68, 'Comercial': 85, 'Operações': 80, 'Financeiro': 42, 'RH': 35, 'Jurídico': 18,
   };
 
   const riskColors = { low: 'var(--brand-success)', med: 'var(--brand-warning)', high: 'var(--brand-danger)' };
