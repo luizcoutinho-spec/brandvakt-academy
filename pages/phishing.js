@@ -1996,6 +1996,73 @@ function phAiBuildCampaign() {
       { fase:'Reforço', periodo: addDays(10)+' – '+addDays(17), desc:'Módulo de aprendizagem ativado para usuários que interagiram.' },
       { fase:'Relatório Final', periodo: addDays(17), desc:'Análise de resultados e recomendações para próxima campanha.' },
     ],
+
+    // ── Library trainings recommended by AI ──────────────────
+    treinamentosRecomendados: (function() {
+      // All available library courses
+      const catalog = (typeof window !== 'undefined' && window.LIBRARY_COURSES)
+        ? window.LIBRARY_COURSES
+        : [
+          { id:1,  title:'Phishing & Engenharia Social',  category:'Cybersecurity', duration:'45 min', level:'Essencial', icon:'🎣',  status:'published', mandatory:true  },
+          { id:2,  title:'Senhas Seguras e MFA',           category:'Cybersecurity', duration:'30 min', level:'Essencial', icon:'🔑',  status:'published', mandatory:true  },
+          { id:3,  title:'Home Office Seguro',             category:'Cybersecurity', duration:'40 min', level:'Intermediário', icon:'🏠', status:'published', mandatory:false },
+          { id:4,  title:'Uso Seguro de IA Generativa',   category:'IA',            duration:'35 min', level:'Intermediário', icon:'🤖', status:'published', mandatory:false },
+          { id:5,  title:'Cloud Security Awareness',      category:'Cybersecurity', duration:'50 min', level:'Avançado',      icon:'☁️', status:'published', mandatory:false },
+          { id:6,  title:'Resposta a Incidentes',         category:'Cybersecurity', duration:'60 min', level:'Avançado',      icon:'🚨', status:'draft',     mandatory:false },
+          { id:7,  title:'LGPD na Prática',               category:'Privacidade',   duration:'60 min', level:'Essencial',     icon:'🔒', status:'published', mandatory:true  },
+          { id:9,  title:'Código de Ética Empresarial',   category:'Ética',         duration:'45 min', level:'Essencial',     icon:'⚖️', status:'published', mandatory:true  },
+          { id:10, title:'Anticorrupção e Antissuborno',  category:'Compliance',    duration:'50 min', level:'Essencial',     icon:'🚫', status:'published', mandatory:true  },
+          { id:11, title:'Canal de Denúncias',            category:'Compliance',    duration:'25 min', level:'Essencial',     icon:'📢', status:'published', mandatory:true  },
+          { id:12, title:'Assédio Moral e Sexual',        category:'Compliance',    duration:'40 min', level:'Essencial',     icon:'🤝', status:'published', mandatory:true  },
+        ];
+
+      // Score-based selection logic
+      const rec = [];
+
+      // Always recommend phishing training for a phishing awareness campaign
+      const phTrain = catalog.find(c=>c.id===1);
+      if(phTrain) rec.push({ ...phTrain, motivo:'Treinamento principal da campanha — reconhecimento de phishing e engenharia social.', prioridade:'🔴 Obrigatório', grupo:'Todos os usuários', prazo: addDays(17) });
+
+      // Passwords/MFA if avg score > 40
+      if(avgScore > 40) {
+        const pw = catalog.find(c=>c.id===2);
+        if(pw) rec.push({ ...pw, motivo:`Score HRM médio de ${avgScore}/100 indica exposição a ataques de credenciais. MFA reduz risco em +99%.`, prioridade:'🔴 Obrigatório', grupo:'Todos os usuários', prazo: addDays(21) });
+      }
+
+      // Home Office if remote users exist
+      const hasRemote = enriched.some(u=>(u.dept||'').toLowerCase().includes('remot')||(u.role||'').toLowerCase().includes('remot'));
+      if(hasRemote || enriched.length > 0) {
+        const ho = catalog.find(c=>c.id===3);
+        if(ho) rec.push({ ...ho, motivo:'Usuários com acesso remoto representam superfície de ataque ampliada. Boas práticas de Wi-Fi e VPN são essenciais.', prioridade:'🟡 Recomendado', grupo:'Trabalho Remoto', prazo: addDays(30) });
+      }
+
+      // Incident response if high risk group > 20% of total
+      if(highRisk.length / total > 0.2) {
+        const ir = catalog.find(c=>c.id===6);
+        if(ir) rec.push({ ...ir, motivo:`${highRisk.length} usuários de alto risco (${Math.round(highRisk.length/total*100)}% do total). Resposta rápida a incidentes é crítica.`, prioridade:'🟡 Recomendado', grupo: topDeptStr || 'Alto Risco', prazo: addDays(45) });
+      }
+
+      // LGPD if RH/Jurídico are in top depts
+      if(topDepts.some(d=>/(rh|jur|legal|human)/i.test(d.name))) {
+        const lgpd = catalog.find(c=>c.id===7);
+        if(lgpd) rec.push({ ...lgpd, motivo:`Departamentos ${topDeptStr} lidam com dados sensíveis — conformidade com LGPD é obrigatória.`, prioridade:'🟡 Recomendado', grupo: topDeptStr, prazo: addDays(60) });
+      }
+
+      return rec;
+    })(),
+
+    // ── Content gap analysis ──────────────────────────────────
+    lacunas: (function() {
+      const gaps = [];
+      if(avgScore > 55)
+        gaps.push({ icon:'🎭', titulo:'CEO Fraud & BEC Awareness', categoria:'Cybersecurity', nivel:'Avançado', duracao:'40 min', motivo:`Score médio crítico (${avgScore}/100) — Business Email Compromise é o vetor de maior prejuízo financeiro. Não há treinamento específico na biblioteca.`, urgencia:'🔴 Alta' });
+      if(avgScore > 35)
+        gaps.push({ icon:'📱', titulo:'Segurança em Dispositivos Móveis', categoria:'Cybersecurity', nivel:'Intermediário', duracao:'30 min', motivo:'Colaboradores acessam sistemas corporativos por smartphones sem política formal de MDM documentada em treinamento.', urgencia:'🟡 Média' });
+      if(topDepts.some(d=>/(ti|dev|tech|infra)/i.test(d.name)))
+        gaps.push({ icon:'💻', titulo:'Segurança no Desenvolvimento (DevSecOps)', categoria:'Cybersecurity', nivel:'Avançado', duracao:'90 min', motivo:`Departamento de TI identificado como prioridade (score: ${topDepts.find(d=>/(ti|dev)/i.test(d.name))?.avg||'—'}/100). Ausência de treinamento técnico de segurança.`, urgencia:'🟡 Média' });
+      gaps.push({ icon:'🧠', titulo:'Psicologia da Segurança — Vieses Cognitivos', categoria:'Behavioral Security', nivel:'Intermediário', duracao:'35 min', motivo:'Engenharia social explora vieses cognitivos (urgência, autoridade, medo). Treinamento comportamental não existe na biblioteca atual.', urgencia:'🟢 Baixa' });
+      return gaps;
+    })(),
   };
 }
 
@@ -2114,9 +2181,48 @@ function phAiShowReview() {
         </div>`).join('')}
     </div>
 
+    <!-- Library Trainings -->
+    <div style="font-size:0.68rem;font-weight:800;color:#00d4ff;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">📚 Treinamentos da Biblioteca Recomendados pela IA</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+      ${c.treinamentosRecomendados.map(t=>`
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:11px 14px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.14);border-radius:11px;">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(0,212,255,.10);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">${t.icon}</div>
+          <div>
+            <div style="font-weight:700;font-size:0.82rem;">${t.title} <span style="font-size:0.68rem;color:#6b7280;font-weight:400;">· ${t.category} · ${t.duration}</span></div>
+            <div style="font-size:0.71rem;color:#94a3b8;margin-top:2px;line-height:1.45;">🧠 ${t.motivo}</div>
+            <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">
+              <span style="padding:2px 8px;border-radius:99px;background:rgba(0,212,255,.10);color:#00d4ff;font-size:0.63rem;font-weight:700;">📅 Prazo: ${t.prazo}</span>
+              <span style="padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06);color:#94a3b8;font-size:0.63rem;">👥 ${t.grupo}</span>
+              <span style="padding:2px 8px;border-radius:99px;font-size:0.63rem;font-weight:700;${t.prioridade.includes('Obrig')?'background:rgba(239,68,68,.12);color:#ef4444;':'background:rgba(245,158,11,.12);color:#f59e0b;'}">${t.prioridade}</span>
+            </div>
+          </div>
+          <span style="padding:3px 10px;border-radius:99px;background:rgba(34,197,94,.12);color:#22c55e;font-size:0.70rem;font-weight:700;white-space:nowrap;">✅ Disponível</span>
+        </div>`).join('')}
+    </div>
+
+    <!-- Content Gaps -->
+    <div style="font-size:0.68rem;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">⚠️ Lacunas de Conteúdo — Novos Treinamentos Sugeridos para a Biblioteca</div>
+    <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:18px;">
+      ${c.lacunas.map(g=>`
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:11px 14px;background:rgba(245,158,11,.04);border:1px dashed rgba(245,158,11,.25);border-radius:11px;">
+          <div style="width:38px;height:38px;border-radius:10px;background:rgba(245,158,11,.10);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">${g.icon}</div>
+          <div>
+            <div style="font-weight:700;font-size:0.82rem;">${g.titulo} <span style="font-size:0.68rem;color:#6b7280;font-weight:400;">· ${g.categoria} · ${g.nivel} · ${g.duracao}</span></div>
+            <div style="font-size:0.71rem;color:#94a3b8;margin-top:2px;line-height:1.45;">🧠 ${g.motivo}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+            <span style="padding:2px 8px;border-radius:99px;font-size:0.63rem;font-weight:700;${g.urgencia.includes('Alta')?'background:rgba(239,68,68,.12);color:#ef4444;':g.urgencia.includes('Média')?'background:rgba(245,158,11,.12);color:#f59e0b;':'background:rgba(34,197,94,.12);color:#22c55e;'}">${g.urgencia}</span>
+            <span style="padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06);color:#6b7280;font-size:0.63rem;white-space:nowrap;">❌ Não disponível</span>
+          </div>
+        </div>`).join('')}
+      <div style="padding:9px 12px;background:rgba(245,158,11,.05);border-radius:9px;font-size:0.72rem;color:#f59e0b;">
+        💡 Esses treinamentos podem ser criados e cadastrados na <strong>Biblioteca</strong> para enriquecer futuras campanhas de conscientização.
+      </div>
+    </div>
+
     <!-- Warning -->
     <div style="padding:10px 14px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:18px;">
-      ⚠️ Revise todas as informações antes de aprovar. Você poderá editar a campanha após a publicação.
+      ⚠️ Revise todas as informações antes de aprovar. Ao atribuir, os treinamentos recomendados serão automaticamente incluídos na lista de Atribuições.
     </div>
 
     <!-- Actions -->
@@ -2152,6 +2258,7 @@ window.phAiConfirmAssign = function() {
           ['✅ Aprovar', 'A campanha será aprovada e registrada no sistema.'],
           ['🚀 Publicar', 'A campanha será publicada e marcada como Ativa.'],
           ['👥 Atribuir ao Público-Alvo', `A campanha será enviada a <strong style="color:#f1f5f9;">${c.orgRisk.total} usuário(s)</strong> — ${c.grupo}.`],
+          ['📚 Criar Atribuições', `<strong style="color:#00d4ff;">${c.treinamentosRecomendados?.length||0} treinamento(s)</strong> da biblioteca serão automaticamente adicionados à lista de <strong>Atribuições</strong>.`],
         ].map(([titulo,desc])=>`
           <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 10px;background:rgba(255,255,255,.03);border-radius:8px;">
             <span style="font-size:0.82rem;flex-shrink:0;">${titulo.split(' ')[0]}</span>
@@ -2181,7 +2288,7 @@ window.phAiConfirmAssign = function() {
   `);
 };
 
-// ── Execute assign: approve + publish (Ativa) + assign ────────
+// ── Execute assign: approve + publish (Ativa) + assign + ASSIGN_DATA ────
 window.phAiExecuteAssign = function() {
   const c = _phAiCampaign;
   if (!c) return;
@@ -2192,34 +2299,73 @@ window.phAiExecuteAssign = function() {
     return;
   }
 
-  // 1. Create campaign as Ativa (not Rascunho) + mark enviados
+  const now = new Date();
+  const adminName = (typeof DEMO_STATE !== 'undefined') ? (DEMO_STATE.name || 'Admin Local') : 'Admin Local';
+
+  // 1. Create phishing campaign as Ativa
   const newCamp = {
     id: c.id, nome: c.nome, template: c.template, grupo: c.grupo,
     status: 'Ativa', inicio: c.inicio,
     enviados: c.orgRisk.total, abertos: 0, cliques: 0, reportou: 0,
     aiGenerated: true,
-    assignedAt: new Date().toLocaleString('pt-BR'),
+    assignedAt: now.toLocaleString('pt-BR'),
   };
   PHISHING_MOCK.campanhas.unshift(newCamp);
 
-  // 2. Audit log
+  // 2. Create assignments in ASSIGN_DATA for each recommended library training
+  if (typeof ASSIGN_DATA !== 'undefined' && Array.isArray(c.treinamentosRecomendados)) {
+    const maxId = ASSIGN_DATA.assignments.reduce((m,a)=>Math.max(m,+a.id||0), 0);
+    c.treinamentosRecomendados.forEach((t, i) => {
+      // Parse due date (dd/mm/yyyy) → yyyy-mm-dd
+      let dueStr = '';
+      if (t.prazo) {
+        const parts = t.prazo.split('/');
+        dueStr = parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : t.prazo;
+      }
+      const priority = t.prioridade.includes('Obrig') ? 'Alta' : 'Média';
+      const newAssign = {
+        id: maxId + i + 1,
+        course: t.title,
+        target: t.grupo || c.grupo,
+        targetType: t.grupo === 'Todos os usuários' ? 'global' : 'group',
+        due: dueStr,
+        completion: 0,
+        status: 'ativa',
+        mandatory: t.mandatory || t.prioridade.includes('Obrig'),
+        enviados: c.orgRisk.total,
+        concluidos: 0,
+        pendentes: c.orgRisk.total,
+        atrasados: 0,
+        created: now.toISOString().slice(0,10),
+        priority,
+        category: t.category || 'Cybersecurity',
+        notify: true,
+        aiGenerated: true,
+        campanha: c.nome,
+      };
+      ASSIGN_DATA.assignments.unshift(newAssign);
+    });
+  }
+
+  // 3. Audit log
   if (!window._phAuditLog) window._phAuditLog = [];
   window._phAuditLog.unshift({
-    ts: new Date().toLocaleString('pt-BR'),
+    ts: now.toLocaleString('pt-BR'),
     action: 'CAMPAIGN_ASSIGN',
-    detail: `Campanha "${c.nome}" aprovada, publicada e atribuída a ${c.orgRisk.total} usuário(s) — ${c.grupo}.`,
-    user: (typeof DEMO_STATE !== 'undefined') ? (DEMO_STATE.name || 'Admin Local') : 'Admin Local',
+    detail: `Campanha "${c.nome}" aprovada, publicada e atribuída a ${c.orgRisk.total} usuário(s) — ${c.grupo}. ${c.treinamentosRecomendados?.length||0} treinamento(s) adicionados às Atribuições.`,
+    user: adminName,
   });
 
-  // 3. Close + refresh
+  // 4. Close + refresh
   phCloseModal();
   if (typeof phTab === 'function') phTab('campanhas');
   _phAiCampaign = null;
 
-  // 4. Staged status toasts
+  // 5. Staged toasts
+  const nAssign = c.treinamentosRecomendados?.length || 0;
   showToast && showToast('✅ Campanha aprovada e publicada como Ativa!', 'success');
-  setTimeout(() => showToast && showToast(`📧 Campanha atribuída a ${newCamp.enviados} destinatário(s) — ${newCamp.grupo}!`, 'success'), 1000);
-  setTimeout(() => showToast && showToast('📋 Atribuição registrada no histórico do sistema.', 'info'), 2000);
+  setTimeout(() => showToast && showToast(`📧 Atribuída a ${newCamp.enviados} destinatário(s) — ${newCamp.grupo}!`, 'success'), 900);
+  setTimeout(() => showToast && showToast(`📚 ${nAssign} treinamento(s) adicionados às Atribuições automaticamente.`, 'info'), 1800);
 };
 
 window.phAiApproveCampaign = function() {
