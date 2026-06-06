@@ -70,9 +70,10 @@ window.DEMO_STATE = {
 
   // ── Helpers ───────────────────────────────────────────────────
   getCompletionPct() {
-    // How many of the 10 known courses are passed
-    const passed = this.completions.filter(c => c.passed).length;
-    return Math.round((passed / 10) * 100);
+    // Média de score de TODOS os cursos tentados (aprovados e reprovados)
+    if (!this.completions.length) return 0;
+    const avg = this.completions.reduce((s, c) => s + c.score, 0) / this.completions.length;
+    return Math.round(avg);
   },
 
   getCertCount() {
@@ -82,7 +83,7 @@ window.DEMO_STATE = {
   getLastActivity() {
     if (!this.completions.length && !this.phishing.length) return 'Nenhuma atividade ainda';
     const all = [
-      ...this.completions.map(c => ({ date: c.dateISO, label: '✅ ' + c.courseName })),
+      ...this.completions.map(c => ({ date: c.dateISO, label: (c.passed ? '✅ ' : '❌ Reprovado: ') + c.courseName })),
       ...this.phishing.map(p => ({ date: p.dateISO, label: p.action === 'clicked' ? '🎣 ' + p.campaignName : '🛡 Reportou: ' + p.campaignName })),
     ].sort((a, b) => b.date.localeCompare(a.date));
     return all[0]?.label || '—';
@@ -110,9 +111,11 @@ window.DEMO_STATE = {
       cliques:     this.phishing.filter(p => p.action === 'clicked').length,
       campanhas:   this.phishing.length,
       reportou:    this.phishing.filter(p => p.action === 'reported').length,
-      treinamentos:this.completions.filter(c => c.passed).length,
-      planos:      0,
-      trend:       this.completions.length > 0 ? 'up' : 'stable',
+      treinamentos:this.completions.length,        // tentados (aprovados + reprovados)
+      passados:    this.completions.filter(c => c.passed).length,
+      reprovados:  this.completions.filter(c => !c.passed).length,
+      planos:      this.completions.filter(c => !c.passed).length > 0 ? 1 : 0,
+      trend:       this.completions.filter(c=>c.passed).length > 0 ? 'up' : this.completions.length > 0 ? 'stable' : 'down',
       isDemo:      true,
     };
   },

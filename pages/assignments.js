@@ -251,6 +251,29 @@ window.renderPage_assignments = function() {
       });
     });
 
+    // ── Sincronizar atribuições manuais que incluem o Admin Local DEMO ──
+    // Grupos que incluem o usuário demo
+    const demoGroups = ['Todos os usuários', 'Diretoria', 'Lideranças', 'Gestores'];
+    ASSIGN_DATA.assignments.forEach(a => {
+      if (a.isDemo) return; // já tratado acima
+      if (!demoGroups.some(g => a.target.includes(g))) return;
+      // Encontrar completion do demo neste curso
+      const match = DEMO_STATE.completions.find(c =>
+        c.courseName.toLowerCase().includes(a.course.toLowerCase()) ||
+        a.course.toLowerCase().includes(c.courseName.toLowerCase())
+      );
+      if (match) {
+        // Atualizar conclusão do demo nesta atribuição
+        const demoCompletion = match.passed ? 100 : Math.round(match.score);
+        a.completion = Math.max(a.completion, demoCompletion);
+        if (match.passed && a.concluidos < a.enviados) {
+          a.concluidos = Math.min(a.concluidos + 1, a.enviados);
+          a.pendentes  = Math.max(0, a.pendentes - 1);
+          if (a.pendentes === 0) a.status = 'concluida';
+        }
+      }
+    });
+
     // If no activity yet: show one pending assignment so user is visible
     if (DEMO_STATE.completions.length === 0) {
       ASSIGN_DATA.assignments.unshift({
