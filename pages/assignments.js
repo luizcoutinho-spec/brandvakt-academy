@@ -343,13 +343,6 @@ window.renderPage_assignments = function() {
     }
   }
 
-  const total    = ASSIGN_DATA.assignments.length;
-  const ativas   = ASSIGN_DATA.assignments.filter(a=>a.status==='ativa').length;
-  const concl    = ASSIGN_DATA.assignments.filter(a=>a.status==='concluida').length;
-  const pend     = ASSIGN_DATA.assignments.reduce((s,a)=>s+a.pendentes,0);
-  const atras    = ASSIGN_DATA.assignments.reduce((s,a)=>s+a.atrasados,0);
-  const enviados = ASSIGN_DATA.assignments.reduce((s,a)=>s+a.enviados,0);
-
   return `
 <div id="assign-module">
   <!-- Header -->
@@ -365,8 +358,45 @@ window.renderPage_assignments = function() {
     </div>
   </div>
 
-  <!-- KPIs -->
-  <div class="as-kpi-grid">
+  <!-- KPIs — live target: id="as-kpi-wrap" -->
+  <div id="as-kpi-wrap">${asKPIHtml()}</div>
+
+  <!-- Tabs -->
+  <div class="as-tabs">
+    <button class="as-tab${AS.tab==='lista'?    ' active':''}" data-atab="lista"     onclick="asTab('lista')">📋 Lista</button>
+    <button class="as-tab${AS.tab==='kanban'?   ' active':''}" data-atab="kanban"    onclick="asTab('kanban')">🗂 Kanban</button>
+    <button class="as-tab${AS.tab==='analytics'?' active':''}" data-atab="analytics" onclick="asTab('analytics')">📊 Analytics</button>
+    <button class="as-tab${AS.tab==='calendar'? ' active':''}" data-atab="calendar"  onclick="asTab('calendar')">📅 Calendário</button>
+  </div>
+
+  <!-- Tab body -->
+  <div id="as-body">${renderAsTab(AS.tab)}</div>
+  <div id="as-modals"></div>
+</div>`;
+};
+
+window.initPage_assignments = function() {
+  asBindButtons();
+  setTimeout(() => {
+    document.querySelectorAll('.as-prog-fill').forEach(el => {
+      const w = el.style.width; el.style.width = '0';
+      requestAnimationFrame(() => { el.style.transition = 'width 0.7s ease'; el.style.width = w; });
+    });
+  }, 100);
+};
+
+// ── KPI computation — called on every mutation ─────────────────
+function asKPIHtml() {
+  const list     = ASSIGN_DATA.assignments;
+  const total    = list.length;
+  const ativas   = list.filter(a=>a.status==='ativa').length;
+  const concl    = list.filter(a=>a.status==='concluida').length;
+  const pend     = list.reduce((s,a)=>s+a.pendentes,0);
+  const atras    = list.reduce((s,a)=>s+a.atrasados,0);
+  const enviados = list.reduce((s,a)=>s+a.enviados,0);
+  const withEnv  = list.filter(a=>a.enviados>0);
+  const avgCompl = withEnv.length ? Math.round(withEnv.reduce((s,a)=>s+a.completion,0)/withEnv.length) : 0;
+  return `<div class="as-kpi-grid">
     <div class="as-kpi">
       <div class="as-kpi-icon">📋</div>
       <div class="as-kpi-val" style="color:var(--as-blue)">${ativas}</div>
@@ -399,35 +429,27 @@ window.renderPage_assignments = function() {
     </div>
     <div class="as-kpi">
       <div class="as-kpi-icon">📊</div>
-      <div class="as-kpi-val" style="color:#00d4ff">${Math.round(ASSIGN_DATA.assignments.filter(a=>a.enviados>0).reduce((s,a)=>s+a.completion,0)/Math.max(ASSIGN_DATA.assignments.filter(a=>a.enviados>0).length,1))}%</div>
+      <div class="as-kpi-val" style="color:#00d4ff">${avgCompl}%</div>
       <div class="as-kpi-lbl">Conclusão Média</div>
       <div class="as-kpi-sub" style="color:#6b7280">todas as atribuições</div>
     </div>
-  </div>
+  </div>`;
+}
 
-  <!-- Tabs -->
-  <div class="as-tabs">
-    <button class="as-tab${AS.tab==='lista'?    ' active':''}" data-atab="lista"     onclick="asTab('lista')">📋 Lista</button>
-    <button class="as-tab${AS.tab==='kanban'?   ' active':''}" data-atab="kanban"    onclick="asTab('kanban')">🗂 Kanban</button>
-    <button class="as-tab${AS.tab==='analytics'?' active':''}" data-atab="analytics" onclick="asTab('analytics')">📊 Analytics</button>
-    <button class="as-tab${AS.tab==='calendar'? ' active':''}" data-atab="calendar"  onclick="asTab('calendar')">📅 Calendário</button>
-  </div>
+// ── Refresh KPIs in-place (no full page reload) ─────────────────
+function asRefreshKPIs() {
+  const wrap = document.getElementById('as-kpi-wrap');
+  if (!wrap) return;
+  wrap.style.opacity = '0.5';
+  wrap.innerHTML = asKPIHtml();
+  requestAnimationFrame(() => { wrap.style.transition='opacity 0.25s'; wrap.style.opacity='1'; });
+}
 
-  <!-- Tab body -->
-  <div id="as-body">${renderAsTab(AS.tab)}</div>
-  <div id="as-modals"></div>
-</div>`;
-};
-
-window.initPage_assignments = function() {
-  asBindButtons();
-  setTimeout(() => {
-    document.querySelectorAll('.as-prog-fill').forEach(el => {
-      const w = el.style.width; el.style.width = '0';
-      requestAnimationFrame(() => { el.style.transition = 'width 0.7s ease'; el.style.width = w; });
-    });
-  }, 100);
-};
+// ── Full refresh: KPIs + tab body ──────────────────────────────
+function asRefreshAll() {
+  asRefreshKPIs();
+  asTab(AS.tab);
+}
 
 window.asTab = function(tab) {
   AS.tab = tab;
@@ -552,16 +574,16 @@ window.asSort = function(col) {
 window.asPublish = function(id) {
   const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id));
   if(a){ a.status='ativa'; a.enviados=asGroupSize(a.target||'Todos os usuários'); a.pendentes=a.enviados-a.concluidos; }
-  asTab(AS.tab); showToast&&showToast('✅ Atribuição publicada e enviada!','success');
+  asRefreshAll(); showToast&&showToast('✅ Atribuição publicada e enviada!','success');
 };
 window.asPause = function(id) {
   const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id)); if(a) a.status='pausada';
-  asTab(AS.tab); showToast&&showToast('Atribuição pausada.','info');
+  asRefreshAll(); showToast&&showToast('Atribuição pausada.','info');
 };
 
 window.asReactivate = function(id) {
   const a = ASSIGN_DATA.assignments.find(x=>String(x.id)===String(id)); if(a) a.status='ativa';
-  asTab(AS.tab); showToast&&showToast('✅ Atribuição reativada!','success');
+  asRefreshAll(); showToast&&showToast('✅ Atribuição reativada!','success');
 };
 
 window.asConfirmDelete = function(id) {
@@ -590,7 +612,7 @@ window.asDelete = function(id) {
   const idx = ASSIGN_DATA.assignments.findIndex(x=>String(x.id)===String(id));
   if(idx !== -1) ASSIGN_DATA.assignments.splice(idx,1);
   asCloseModal();
-  asTab(AS.tab);
+  asRefreshAll();
   showToast&&showToast('Atribuição excluída.','info');
 };
 
@@ -1062,13 +1084,13 @@ window.asStep3Next = function() {
 };
 window.asSaveAsDraft = function() {
   ASSIGN_DATA.assignments.push({ id:Date.now(), course:AS.newData.course, target:AS.newData.target||'Todos', targetType:'global', due:AS.newData.due, completion:0, status:'rascunho', mandatory:AS.newData.mandatory, enviados:0, concluidos:0, pendentes:0, atrasados:0, created:new Date().toISOString().split('T')[0], priority:AS.newData.priority||'Média', category:'Compliance', notify:true });
-  asCloseModal(); asTab(AS.tab);
+  asCloseModal(); asRefreshAll();
   showToast&&showToast('Rascunho salvo!','info');
 };
 window.asPublishNew = function() {
   const _asPubSize = asGroupSize(AS.newData.target||'Todos os usuários');
   ASSIGN_DATA.assignments.push({ id:Date.now(), course:AS.newData.course, target:AS.newData.target||'Todos os usuários', targetType:'global', due:AS.newData.due, completion:0, status:'ativa', mandatory:AS.newData.mandatory, enviados:_asPubSize, concluidos:0, pendentes:_asPubSize, atrasados:0, created:new Date().toISOString().split('T')[0], priority:AS.newData.priority||'Média', category:'Compliance', notify:true });
-  asCloseModal(); asTab(AS.tab);
+  asCloseModal(); asRefreshAll();
   showToast&&showToast('🚀 Atribuição publicada com sucesso!','success');
 };
 
@@ -1128,8 +1150,8 @@ window.asSaveEdit = function(id) {
     a.mandatory = document.getElementById('as-edit-mandatory')?.value === '1';
     a.status    = document.getElementById('as-edit-status')?.value    || a.status;
   }
-  asCloseModal(); asTab(AS.tab);
-  showToast&&showToast('Atribuição actualizada!','success');
+  asCloseModal(); asRefreshAll();
+  showToast&&showToast('Atribuição atualizada!','success');
 };
 
 // ── Notify ────────────────────────────────────────────────────
