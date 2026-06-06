@@ -315,7 +315,7 @@ window.renderPage_library = function () {
     </div>
 
     <!-- Category chips -->
-    <div id="lib-chips" style="display:flex;gap:8px;flex-wrap:wrap;">
+    <div id="lib-chips" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
       <span class="chip active" onclick="filterChip(this,'')">${L.chip_all}</span>
       <span class="chip" onclick="filterChip(this,'cybersecurity')">🛡 Cybersecurity</span>
       <span class="chip" onclick="filterChip(this,'compliance')">📋 Compliance</span>
@@ -323,6 +323,11 @@ window.renderPage_library = function () {
       <span class="chip" onclick="filterChip(this,'etica')">⚖️ Ética</span>
       <span class="chip" onclick="filterChip(this,'governanca')">🏢 Governança</span>
       <span class="chip" onclick="filterChip(this,'ia')">🤖 IA</span>
+      <span class="chip lib-chip-pending" onclick="filterChip(this,'__pending__')"
+        style="background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.35);color:#ef4444;display:${(window.LIBRARY_PENDING_COURSES||[]).length>0?'inline-flex':'none'};">
+        ⏳ Aguardando criação/publicação
+        <span style="margin-left:5px;font-size:0.60rem;font-weight:800;background:rgba(239,68,68,0.20);padding:1px 6px;border-radius:99px;">${(window.LIBRARY_PENDING_COURSES||[]).length}</span>
+      </span>
     </div>
 
     <!-- Stats strip -->
@@ -343,33 +348,7 @@ window.renderPage_library = function () {
       `).join('<div style="width:1px;background:var(--bg-border);height:28px;"></div>')}
     </div>
 
-    <!-- ── Cursos Pendentes de Criação ─────────────────────────── -->
-    ${(window.LIBRARY_PENDING_COURSES||[]).length > 0 ? `
-    <div id="lib-pending-section">
-      <!-- Section header -->
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
-        <div style="display:flex;align-items:center;gap:10px;">
-          <div style="width:4px;height:28px;background:linear-gradient(180deg,#ef4444,#b91c1c);border-radius:2px;flex-shrink:0;"></div>
-          <div>
-            <div style="font-size:1.0rem;font-weight:800;letter-spacing:-0.015em;color:#fca5a5;">Cursos Pendentes de Criação</div>
-            <div style="font-size:0.72rem;color:#6b7280;margin-top:1px;">Identificados pela IA — aguardando cadastro na biblioteca</div>
-          </div>
-        </div>
-        <span style="font-size:0.68rem;font-weight:700;padding:3px 12px;border-radius:99px;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.28);">${(window.LIBRARY_PENDING_COURSES||[]).length} pendente(s)</span>
-      </div>
-      <!-- Pending grid -->
-      <div id="lib-pending-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
-        ${(window.LIBRARY_PENDING_COURSES||[]).map((p,i) => pendingCourseCard(p, L, i)).join('')}
-      </div>
-      <!-- Divider -->
-      <div style="margin:28px 0 6px;display:flex;align-items:center;gap:14px;">
-        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div>
-        <span style="font-size:0.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;">Cursos Disponíveis na Biblioteca</span>
-        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div>
-      </div>
-    </div>` : ''}
-
-    <!-- Course Grid -->
+    <!-- Course Grid — also used for pending view when chip is active -->
     <div id="lib-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
       ${COURSES.map(c => courseCard(c, L)).join('')}
     </div>
@@ -457,24 +436,30 @@ function pendingCourseCard(p, L, idx) {
   </div>`;
 }
 
-// Delete a pending course by index and refresh the pending section
+// Delete a pending course by index, re-render and sync chip badge
 window.libDeletePending = function(idx) {
   if (!window.LIBRARY_PENDING_COURSES) return;
   const curso = window.LIBRARY_PENDING_COURSES[idx];
   if (!curso) return;
   window.LIBRARY_PENDING_COURSES.splice(idx, 1);
-  // Refresh the library page in-place
-  const grid = document.getElementById('lib-pending-grid');
-  const section = document.getElementById('lib-pending-section');
-  const L = libLabels[APP.lang] || libLabels.pt;
-  if (window.LIBRARY_PENDING_COURSES.length === 0) {
-    if (section) section.remove();
-  } else {
-    if (grid) grid.innerHTML = window.LIBRARY_PENDING_COURSES.map((p,i) => pendingCourseCard(p, L, i)).join('');
-    // Update counter badge
-    const badge = section?.querySelector('span[style*="pendente"]');
-    if (badge) badge.textContent = window.LIBRARY_PENDING_COURSES.length + ' pendente(s)';
+
+  const n = window.LIBRARY_PENDING_COURSES.length;
+  // Update or hide the chip
+  const chip = document.querySelector('#lib-chips .lib-chip-pending');
+  if (chip) {
+    if (n === 0) {
+      chip.style.display = 'none';
+      // If we just deleted the last one, switch back to "Todos"
+      _libPendingActive = false;
+      const allChip = document.querySelector('#lib-chips .chip');
+      if (allChip) { allChip.classList.add('active'); chip.classList.remove('active'); }
+    } else {
+      const badge = chip.querySelector('span');
+      if (badge) badge.textContent = n;
+    }
   }
+  // Re-render the grid
+  filterLibrary();
   showToast && showToast(`🗑 "${curso.titulo}" removido dos cursos pendentes.`, 'info');
 };
 
@@ -581,21 +566,76 @@ function openCourseDetail(id) {
 // ─────────────────────────────
 // FILTERS
 // ─────────────────────────────
+// Track whether the pending chip is active
+let _libPendingActive = false;
+
 window.filterChip = function(el, cat) {
-  document.querySelectorAll('#lib-chips .chip').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('#lib-chips .chip').forEach(c => {
+    c.classList.remove('active');
+    // restore default style for red chip when deactivated
+    if (c.classList.contains('lib-chip-pending')) {
+      c.style.background = 'rgba(239,68,68,0.10)';
+      c.style.borderColor = 'rgba(239,68,68,0.35)';
+      c.style.color = '#ef4444';
+    }
+  });
   el.classList.add('active');
-  document.getElementById('lib-filter-cat').value = cat;
+  // Style the red chip when active
+  if (el.classList.contains('lib-chip-pending')) {
+    el.style.background = 'rgba(239,68,68,0.25)';
+    el.style.borderColor = 'rgba(239,68,68,0.60)';
+    el.style.color = '#fca5a5';
+  }
+  _libPendingActive = (cat === '__pending__');
+  // sync dropdown (clear it for pending mode)
+  const catSelect = document.getElementById('lib-filter-cat');
+  if (catSelect) catSelect.value = _libPendingActive ? '' : cat;
   filterLibrary();
 };
 
 window.filterLibrary = function() {
   const search = (document.getElementById('lib-search')?.value || '').toLowerCase();
-  const cat    = document.getElementById('lib-filter-cat')?.value || '';
   const lang   = document.getElementById('lib-filter-lang')?.value || '';
   const status = document.getElementById('lib-filter-status')?.value || '';
+  const cat    = _libPendingActive ? '' : (document.getElementById('lib-filter-cat')?.value || '');
   const L = libLabels[APP.lang] || libLabels.pt;
+  const grid = document.getElementById('lib-grid');
+  if (!grid) return;
 
-  // Regular courses
+  // ── PENDING MODE: show only pending cards ──────────────────────
+  if (_libPendingActive) {
+    const pending = (window.LIBRARY_PENDING_COURSES || []).filter(p => {
+      if (search && !p.titulo.toLowerCase().includes(search)) return false;
+      return true;
+    });
+
+    if (!pending.length) {
+      grid.innerHTML = `
+        <div style="grid-column:1/-1;text-align:center;padding:48px 20px;">
+          <div style="font-size:2.5rem;margin-bottom:12px;">✅</div>
+          <div style="font-size:1.0rem;font-weight:700;color:#f1f5f9;margin-bottom:6px;">Nenhum curso pendente</div>
+          <div style="font-size:0.82rem;color:#6b7280;">Todos os cursos recomendados pela IA já estão na biblioteca.</div>
+        </div>`;
+      return;
+    }
+
+    // Pending section header inside the grid (full-width)
+    grid.innerHTML = `
+      <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;background:rgba(239,68,68,0.05);border:1px dashed rgba(239,68,68,0.30);border-radius:14px;margin-bottom:4px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:4px;height:28px;background:linear-gradient(180deg,#ef4444,#b91c1c);border-radius:2px;flex-shrink:0;"></div>
+          <div>
+            <div style="font-size:0.95rem;font-weight:800;letter-spacing:-0.015em;color:#fca5a5;">Cursos Pendentes de Criação</div>
+            <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">Identificados pela IA — aguardando cadastro na biblioteca</div>
+          </div>
+        </div>
+        <span style="font-size:0.68rem;font-weight:700;padding:3px 12px;border-radius:99px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.30);">${pending.length} pendente(s)</span>
+      </div>
+      ${pending.map((p,i) => pendingCourseCard(p, L, i)).join('')}`;
+    return;
+  }
+
+  // ── NORMAL MODE: show regular courses ─────────────────────────
   const filtered = COURSES.filter(c => {
     if (search && !c.title.toLowerCase().includes(search) && !c.desc.toLowerCase().includes(search)) return false;
     if (cat && c.category !== cat) return false;
@@ -604,35 +644,11 @@ window.filterLibrary = function() {
     return true;
   });
 
-  // Pending courses (from AI gaps)
-  // – hidden when filtering by published/draft/archived
-  // – exclusively shown when filtering by "pending"
-  const showPending = status !== 'published' && status !== 'draft' && status !== 'archived';
-  const pendingCourses = showPending ? (window.LIBRARY_PENDING_COURSES || []).filter(p => {
-    if (search && !p.titulo.toLowerCase().includes(search)) return false;
-    if (cat && p.categoria.toLowerCase() !== cat) return false;
-    return true;
-  }) : [];
-
-  // When status === 'pending', only show pending; hide regular courses
-  const regularCourses = status === 'pending' ? [] : filtered;
-
-  const grid = document.getElementById('lib-grid');
-  if (!grid) return;
-  if (!regularCourses.length && !pendingCourses.length) {
+  if (!filtered.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📭</div><div class="empty-title">Nenhum treinamento encontrado</div><div class="empty-sub">Tente ajustar os filtros.</div></div>`;
     return;
   }
-  // Update pending section visibility during search
-  const pendingSection = document.getElementById('lib-pending-section');
-  const pendingGrid    = document.getElementById('lib-pending-grid');
-  if (pendingSection) {
-    pendingSection.style.display = pendingCourses.length === 0 && regularCourses.length > 0 ? 'none' : '';
-    if (pendingGrid && pendingCourses.length > 0) {
-      pendingGrid.innerHTML = pendingCourses.map((p,i) => pendingCourseCard(p, L, i)).join('');
-    }
-  }
-  grid.innerHTML = regularCourses.map(c => courseCard(c, L)).join('');
+  grid.innerHTML = filtered.map(c => courseCard(c, L)).join('');
   // Re-animate progress bars
   setTimeout(() => {
     grid.querySelectorAll('.progress-fill').forEach(el => {
