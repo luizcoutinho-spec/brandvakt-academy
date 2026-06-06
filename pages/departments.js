@@ -1005,13 +1005,13 @@ let _dpAiEnrichedUsers = []; // tenant-isolated enriched user list
 // ── Step 1: Show scanning animation, then run analysis ────────
 window.dpAiGenerateTrail = function() {
   const steps = [
-    { pct: 12, msg: '🔍 Carregando perfil de Human Risk da organização...' },
-    { pct: 28, msg: '📊 Analisando scores de risco por usuário e departamento...' },
-    { pct: 44, msg: '🎣 Avaliando taxa de clique em simulações de phishing...' },
-    { pct: 60, msg: '📚 Verificando lacunas de treinamento e certificados vencidos...' },
-    { pct: 76, msg: '🧠 Gerando recomendações personalizadas com IA (Claude Sonnet)...' },
-    { pct: 90, msg: '📋 Definindo prioridades, prazos e metas de conformidade...' },
-    { pct: 100, msg: '✅ Trilha gerada com sucesso!' },
+    { pct: 14, msg: '🔍 Carregando perfil de usuários da empresa ativa...' },
+    { pct: 30, msg: '📊 Analisando scores de risco por usuário e departamento...' },
+    { pct: 48, msg: '📚 Verificando lacunas de treinamento e certificados vencidos...' },
+    { pct: 64, msg: '🎯 Identificando públicos-alvo por nível de risco e departamento...' },
+    { pct: 80, msg: '🧠 Gerando trilha personalizada com IA (Claude Sonnet)...' },
+    { pct: 94, msg: '📋 Definindo prioridades, prazos e metas de conformidade...' },
+    { pct: 100, msg: '✅ Trilha de treinamento gerada com sucesso!' },
   ];
 
   // Inject spinner keyframes once
@@ -1066,7 +1066,7 @@ window.dpAiGenerateTrail = function() {
 
       <!-- Non-blocking note -->
       <div style="margin-top:18px;padding:10px 14px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:9px;font-size:0.72rem;color:#94a3b8;line-height:1.55;">
-        🧠 A IA está analisando os scores de Human Risk, lacunas de treinamento, simulações de phishing e perfis por departamento para montar uma trilha totalmente personalizada.
+        🧠 A IA está analisando os scores de Human Risk, lacunas de treinamento, certificados vencidos e perfis por departamento para montar uma trilha de treinamento totalmente personalizada.
       </div>
     </div>
   `, 'dp-modal');
@@ -1202,75 +1202,75 @@ function dpAiBuildTrailData() {
     modules: [
       {
         n:1, priority:'🔴 URGENTE', deadline: addDays(7),
-        name:'Phishing — Reconhecimento e Resposta Imediata',
-        duration:'6h', recurrence:'Trimestral',
+        name:'Fundamentos de Segurança da Informação',
+        duration:'6h', recurrence:'Anual',
         audience: `${highRisk} usuários de alto risco · ${topDeptNames}`,
         userFilter: { type:'risk', level:'high' },
-        justification: `Score médio de phishing: ${phAvg}/100 — acima do limiar crítico de 60. ${highRisk} usuário(s) clicaram em simulações recentes. Ação imediata recomendada.`,
-        goal:'Reduzir taxa de clique para <8% em 30 dias',
+        justification: `${highRisk} usuário(s) identificado(s) com score HRM acima de 60 — nível crítico. Treinamento imediato em conceitos fundamentais de segurança é necessário para reduzir exposição da organização.`,
+        goal:'Reduzir usuários de alto risco de ${highRisk} para ${Math.max(0,Math.round(highRisk*0.3))} em 30 dias',
         status:'active', completion:0,
       },
       {
         n:2, priority:'🔴 URGENTE', deadline: addDays(14),
-        name:'Engenharia Social & CEO Fraud Awareness',
+        name:'Gestão de Riscos e Tomada de Decisão Segura',
         duration:'4h', recurrence:'Semestral',
-        audience:`Gestores · Diretoria · Financeiro`,
+        audience:`${topDeptNames} — lideranças e gestores`,
         userFilter: { type:'dept', depts: sortedDepts.map(d=>d.name) },
-        justification:`Departamentos de alto risco (${topDeptNames}) apresentam maior exposição a ataques de spear-phishing e fraude de CEO. Score médio HRM: ${avgScore}/100.`,
-        goal:'100% de conclusão por gestores em 14 dias',
+        justification:`Departamentos prioritários (${topDeptNames}) concentram os maiores scores de risco HRM (média: ${avgScore}/100). Gestores precisam compreender e mitigar riscos humanos nas suas equipes.`,
+        goal:'100% dos gestores concluídos em 14 dias',
         status:'active', completion:0,
       },
       {
         n:3, priority:'🟡 ALTA', deadline: addDays(21),
-        name:'Senhas Seguras, MFA e Gestão de Acessos',
+        name:'Senhas Seguras, MFA e Controle de Acessos',
         duration:'3h', recurrence:'Anual',
         audience:`Todos os ${total} usuários`,
         userFilter: { type:'all' },
-        justification:`Score médio de senha/acesso: ${pwAvg}/100. ${expCerts} usuário(s) com certificados vencidos, indicando baixo engajamento com boas práticas de segurança.`,
+        justification:`Score médio de controle de acesso: ${pwAvg}/100. ${expCerts} usuário(s) com certificados vencidos indicam lacunas em boas práticas de autenticação e controle de identidade.`,
         goal:'100% dos usuários com MFA ativado em 21 dias',
         status:'active', completion:0,
       },
       {
         n:4, priority:'🟡 ALTA', deadline: addDays(30),
-        name:'Lacunas de Treinamento — Reforço Direcionado',
+        name:'Reforço de Treinamento — Usuários em Risco Moderado',
         duration:'8h', recurrence:'Semestral',
         audience:`${medRisk} usuários de risco moderado`,
         userFilter: { type:'risk', level:'med' },
-        justification:`Score médio de treinamento: ${trAvg}/100. ${medRisk} usuário(s) com conclusão <50% nos últimos 90 dias. Módulos de reforço personalizados por departamento.`,
+        justification:`Score médio de conclusão de treinamento: ${trAvg}/100. ${medRisk} usuário(s) com aproveitamento abaixo do esperado nos últimos 90 dias requerem módulos de reforço direcionados.`,
         goal:`Elevar taxa de conclusão para >85% em 30 dias`,
         status:'active', completion:0,
       },
       {
         n:5, priority:'🟡 ALTA', deadline: addDays(45),
-        name:'Proteção de Dados, LGPD e Privacidade Avançada',
+        name:'Proteção de Dados, LGPD e Privacidade',
         duration:'6h', recurrence:'Anual',
         audience:`RH · Jurídico · TI · todos os ${total} usuários`,
         userFilter: { type:'dept', depts:['RH','Jurídico','TI'] },
-        justification:`Cobertura ISO 27001 abaixo do ideal. Riscos de privacidade e conformidade identificados nos fatores de acesso e treinamento do perfil HRM.`,
+        justification:`Cobertura de conformidade abaixo do ideal. Riscos de privacidade e proteção de dados identificados nos perfis HRM de RH, Jurídico e TI exigem capacitação específica em LGPD e boas práticas de governança.`,
         goal:'Cobertura de privacidade >90% em 45 dias',
         status:'active', completion:0,
       },
       {
         n:6, priority:'🟢 MÉDIA', deadline: addDays(60),
-        name:'Cultura de Segurança — Boas Práticas Contínuas',
+        name:'Cultura de Segurança e Comportamento Seguro',
         duration:'4h', recurrence:'Trimestral',
         audience:`Todos os ${total} usuários`,
         userFilter: { type:'all' },
-        justification:`Reforço cultural necessário para manter os ganhos gerados pelos módulos urgentes. Inclui gamificação, casos reais e métricas de progresso individuais.`,
-        goal:'Score HRM médio <40 em 60 dias',
+        justification:`Consolidação dos ganhos das etapas anteriores. Score HRM médio atual de ${avgScore}/100 indica que há espaço para amadurecimento cultural em toda a organização através de conteúdos de reforço contínuo.`,
+        goal:'Score HRM médio abaixo de ${Math.max(10,Math.round(avgScore*0.55))}/100 em 60 dias',
         status:'active', completion:0,
       },
     ],
     metrics: [
       { label:'Usuários de alto risco', baseline: highRisk, target: Math.max(0, Math.round(highRisk * 0.3)), unit:'' },
-      { label:'Taxa de clique (phishing)', baseline: phAvg+'%', target:'<8%', unit:'' },
       { label:'Conclusão de treinamentos', baseline: (100-trAvg)+'%', target:'>85%', unit:'' },
       { label:'Score HRM médio', baseline: avgScore, target: Math.max(10, Math.round(avgScore * 0.55)), unit:'/100' },
       { label:'Certificados válidos', baseline: (total-expCerts)+'/'+total, target: total+'/'+total, unit:'' },
+      { label:'Usuários sem lacunas', baseline: (total-highRisk-medRisk)+'/'+total, target: total+'/'+total, unit:'' },
     ],
     recs: [
-      `Agendar simulações de phishing mensais para os ${highRisk} usuários de maior risco, com relatório automático para gestores.`,
-      `Configurar alertas automáticos de Human Risk para usuários que atingirem score > 70 pela primeira vez.`,
+      `Estabelecer ciclo de avaliação mensal de conhecimento para os ${highRisk} usuários de alto risco, com plano de desenvolvimento individual.`,
+      `Configurar alertas automáticos de Human Risk para usuários que atingirem score > 70, acionando trilha de reforço automaticamente.`,
       `Implementar plano de recompensas (badges, ranking) para aumentar o engajamento com os módulos de reforço.`,
       `Revisão trimestral desta trilha com nova análise de IA para ajustar módulos conforme a evolução do perfil de risco.`,
     ],
@@ -1313,9 +1313,9 @@ function dpAiShowReview() {
           </div>`).join('')}
       </div>
       <div style="margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:0.72rem;">
-        <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;"><span style="color:#6b7280;">Score Phishing: </span><strong style="color:#ef4444;">${t.phAvg}/100</strong></div>
         <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;"><span style="color:#6b7280;">Score Treinamento: </span><strong style="color:#f59e0b;">${t.trAvg}/100</strong></div>
         <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;"><span style="color:#6b7280;">Score Senha/Acesso: </span><strong style="color:#f59e0b;">${t.pwAvg}/100</strong></div>
+        <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;"><span style="color:#6b7280;">Baixo Risco: </span><strong style="color:#22c55e;">${t.orgRisk.total - t.orgRisk.highRisk - t.orgRisk.medRisk} usuários</strong></div>
       </div>
       <div style="margin-top:8px;font-size:0.72rem;color:#6b7280;">🎯 Departamentos prioritários identificados: <strong style="color:#f1f5f9;">${t.topDeptNames}</strong></div>
     </div>
