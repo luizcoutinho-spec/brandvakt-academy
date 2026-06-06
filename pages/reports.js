@@ -822,20 +822,106 @@ window.rpOpenNewReport = function() {
 window.rpSaveNewReport = function() {
   const name = document.getElementById('rp-nr-name')?.value.trim();
   if (!name) { showToast&&showToast('Informe o nome do relatório','error'); return; }
-  const type = document.getElementById('rp-nr-type')?.value || 'Compliance';
+  const type   = document.getElementById('rp-nr-type')?.value   || 'Compliance';
+  const period = document.getElementById('rp-nr-period')?.value || 'Último mês';
+  const dept   = document.getElementById('rp-nr-dept')?.value   || 'Todos os Departamentos';
+  const fmt    = document.getElementById('rp-nr-fmt')?.value    || 'pdf';
   const catMap = {'Compliance':'compliance','Risco':'risk','Certificados':'certs','Privacidade':'privacy','Cybersecurity':'cyber','Treinamento':'training','Executivo':'executive'};
+  const newId  = 'r'+Date.now();
+
   REPORTS_DATA.reports.unshift({
-    id:'r'+Date.now(), name, type, category:catMap[type]||'compliance',
-    icon:'📄', date:new Date().toLocaleDateString('pt-BR'),
-    size:'—', views:0, status:'generating', color:'#00d4ff',
+    id: newId, name, type, category: catMap[type]||'compliance',
+    icon:'📄', date: new Date().toLocaleDateString('pt-BR'),
+    size:'2.3 MB', views:0, status:'ready', color:'#00d4ff',
   });
-  rpCloseModal(); rpTab('reports');
-  showToast&&showToast('Gerando relatório: ' + name + '...', 'info');
+
+  rpCloseModal();
+  rpTab('reports');
+  showToast&&showToast(`📄 Gerando PDF "${name}"...`, 'info');
+
+  // Generate and open PDF immediately
   setTimeout(() => {
-    const r = REPORTS_DATA.reports.find(x=>x.name===name);
-    if (r) { r.status='ready'; r.size='2.1 MB'; }
-    showToast&&showToast('✅ Relatório gerado com sucesso!', 'success');
-  }, 3000);
+    const depts    = REPORTS_DATA.dept_perf || [];
+    const insights = REPORTS_DATA.insights  || [];
+    const tenantName = APP&&APP.tenants ? (APP.tenants.find(t=>t.active)||{}).name||'Empresa' : 'Empresa';
+    const now = new Date().toLocaleString('pt-BR');
+
+    const deptRows = depts.map(d => `
+      <tr>
+        <td>${d.name}</td>
+        <td style="text-align:center">${d.compliance}%</td>
+        <td style="text-align:center">${d.risk}%</td>
+        <td style="text-align:center">${d.certs}</td>
+        <td style="text-align:center">${d.training}%</td>
+      </tr>`).join('');
+
+    const insightRows = insights.map(i => `
+      <tr>
+        <td>${i.title}</td>
+        <td style="text-align:center;font-weight:700">${i.value}</td>
+        <td style="text-align:center;color:${(i.trend||'').startsWith('+')?'#16a34a':'#dc2626'}">${i.trend||'—'}</td>
+      </tr>`).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<title>${name}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#111;padding:32px;font-size:13px;}
+  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #1e293b;}
+  .logo{font-size:20px;font-weight:900;color:#1e293b;letter-spacing:-0.03em;}
+  .logo span{color:#7c3aed;}
+  .meta{text-align:right;font-size:11px;color:#64748b;}
+  h1{font-size:18px;font-weight:800;color:#1e293b;margin-bottom:4px;}
+  h2{font-size:13px;font-weight:700;color:#374151;margin:22px 0 10px;text-transform:uppercase;letter-spacing:.06em;}
+  .params{display:flex;gap:24px;margin-bottom:20px;padding:12px 16px;background:#f8fafc;border-radius:8px;font-size:12px;}
+  .param label{font-weight:700;color:#64748b;display:block;margin-bottom:2px;font-size:10px;text-transform:uppercase;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;background:#ede9fe;color:#6d28d9;margin-bottom:14px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  th{background:#1e293b;color:#fff;padding:8px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.05em;}
+  td{padding:7px 12px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  .footer{margin-top:32px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center;}
+  @media print{body{padding:20px}@page{margin:18mm}}
+</style>
+</head><body>
+<div class="header">
+  <div class="logo">Brand<span>vakt</span> <span style="font-weight:400;font-size:13px;color:#64748b;">Academy</span></div>
+  <div class="meta"><strong>${tenantName}</strong><br>Gerado em: ${now}</div>
+</div>
+
+<h1>${name}</h1>
+<span class="badge">${type}</span>
+
+<div class="params">
+  <div class="param"><label>Período</label>${period}</div>
+  <div class="param"><label>Departamento</label>${dept}</div>
+  <div class="param"><label>Formato</label>PDF</div>
+</div>
+
+${deptRows ? `<h2>Desempenho por Departamento</h2>
+<table>
+  <thead><tr><th>Departamento</th><th>Compliance</th><th>Risco</th><th>Certificados</th><th>Treinamento</th></tr></thead>
+  <tbody>${deptRows}</tbody>
+</table>` : ''}
+
+${insightRows ? `<h2>Principais Insights</h2>
+<table>
+  <thead><tr><th>Indicador</th><th>Valor</th><th>Tendência</th></tr></thead>
+  <tbody>${insightRows}</tbody>
+</table>` : ''}
+
+<div class="footer">Brandvakt Academy — Documento gerado automaticamente · ${now}</div>
+</body></html>`;
+
+    const win = window.open('', '_blank');
+    if (!win) { showToast&&showToast('❌ Permita pop-ups para exportar PDF.','error'); return; }
+    win.document.write(html);
+    win.document.close();
+    win.onload = () => { win.focus(); win.print(); };
+    showToast&&showToast(`✅ Relatório "${name}" gerado e aberto para impressão/PDF!`, 'success');
+  }, 400);
 };
 
 // Schedule Modal
