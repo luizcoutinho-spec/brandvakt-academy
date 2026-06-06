@@ -2555,7 +2555,7 @@ function phAiSimReview() {
           <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(${v.corDif==='#ef4444'?'239,68,68':v.corDif==='#f97316'?'249,115,22':v.corDif==='#f59e0b'?'245,158,11':'34,197,94'},.08);border-bottom:1px solid rgba(255,255,255,.06);">
             <span style="padding:3px 10px;border-radius:99px;background:${v.corDif}18;color:${v.corDif};font-size:0.72rem;font-weight:800;">${v.dificuldade}</span>
             <span style="font-weight:800;font-size:0.90rem;flex:1;">${v.nome}</span>
-            <span style="font-size:0.70rem;color:#6b7280;">👥 ${v.usuarios} usuários · ${v.grupo}</span>
+            <span style="font-size:0.70rem;color:#6b7280;cursor:pointer;padding:3px 8px;border-radius:99px;transition:background .2s;" onmouseover="this.style.background='rgba(239,68,68,.12)'" onmouseout="this.style.background=''" onclick="phAiSimShowUsers(${v.n-1})">👥 <span style="text-decoration:underline;text-decoration-style:dotted;">${v.usuarios} usuários</span> · ${v.grupo}</span>
           </div>
           <div style="padding:12px 14px;">
             <!-- Theme + Email preview -->
@@ -2596,9 +2596,9 @@ function phAiSimReview() {
                 <div style="font-size:1.0rem;font-weight:800;color:#22c55e;">${v.reportExpected}%</div>
                 <div style="font-size:0.62rem;color:#6b7280;margin-top:2px;">Reporte esperado</div>
               </div>
-              <div style="padding:8px;background:rgba(255,255,255,.03);border-radius:8px;">
+              <div style="padding:8px;background:rgba(0,212,255,.07);border-radius:8px;cursor:pointer;border:1px solid rgba(0,212,255,.20);transition:background .2s;" onclick="phAiSimShowUsers(${v.n-1})" onmouseover="this.style.background='rgba(0,212,255,.15)'" onmouseout="this.style.background='rgba(0,212,255,.07)'">
                 <div style="font-size:1.0rem;font-weight:800;color:#00d4ff;">${v.usuarios}</div>
-                <div style="font-size:0.62rem;color:#6b7280;margin-top:2px;">Destinatários</div>
+                <div style="font-size:0.62rem;color:#6b7280;margin-top:2px;">👁 Ver usuários</div>
               </div>
             </div>
             <!-- Post-campaign training -->
@@ -2673,6 +2673,79 @@ function phAiSimReview() {
 }
 
 window.phAiSimRegenerate = function() { phCloseModal(); setTimeout(()=>phAiSimulateGenerate(), 100); };
+
+window.phAiSimShowUsers = function(idx) {
+  const s = _phAiSim; if (!s) return;
+  const v = s.variantes[idx]; if (!v) return;
+
+  // Determine which enriched user list to show
+  const all = (typeof getActiveTenantUsers==='function') ? getActiveTenantUsers() : [];
+  const hrmByEmail = {};
+  if (typeof HRM_DATA!=='undefined' && Array.isArray(HRM_DATA.users)) {
+    const emails = new Set(all.map(u=>(u.email||'').toLowerCase()));
+    HRM_DATA.users.forEach(h=>{ const e=(h.email||'').toLowerCase(); if(emails.has(e)) hrmByEmail[e]=h; });
+  }
+  const rMap={high:75,med:45,low:18};
+  const enriched = all.map(u=>{
+    const h=hrmByEmail[(u.email||'').toLowerCase()];
+    const score=h?(h.score??rMap[u.risk]??35):(u.riskScore??u.score??rMap[u.risk]??35);
+    return {...u, score, dept:u.dept||u.department||'Geral'};
+  });
+
+  let users;
+  if (idx===0)      users = enriched.filter(u=>u.score>60);
+  else if (idx===1) users = enriched.filter(u=>u.score>30&&u.score<=60);
+  else              users = enriched.filter(u=>u.score<=30);
+
+  // Fallback: if group is empty, show all
+  if (!users.length) users = enriched;
+
+  const riskBadge = score => score>60
+    ? `<span style="padding:2px 7px;border-radius:99px;background:rgba(239,68,68,.15);color:#ef4444;font-size:0.63rem;font-weight:700;">Alto</span>`
+    : score>30
+    ? `<span style="padding:2px 7px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b;font-size:0.63rem;font-weight:700;">Médio</span>`
+    : `<span style="padding:2px 7px;border-radius:99px;background:rgba(34,197,94,.15);color:#22c55e;font-size:0.63rem;font-weight:700;">Baixo</span>`;
+
+  const initials = u => {
+    const p=(u.name||u.nome||'?').split(' ');
+    return (p[0][0]+(p[1]?p[1][0]:'')).toUpperCase();
+  };
+
+  const avatarColor = score => score>60?'#ef4444':score>30?'#f97316':'#22c55e';
+
+  phShowModal(`
+    <div class="ph-modal-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button onclick="phCloseModal();phAiSimReview()" style="background:rgba(255,255,255,.06);border:none;color:#94a3b8;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">←</button>
+        <div>
+          <div style="font-weight:800;font-size:0.95rem;">👥 ${v.nome}</div>
+          <div style="font-size:0.70rem;color:#6b7280;">${users.length} usuário(s) · ${v.grupo} · ${v.dificuldade}</div>
+        </div>
+      </div>
+      <button class="ph-modal-close" onclick="phCloseModal();phAiSimReview()">✕</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;max-height:480px;overflow-y:auto;padding-right:4px;">
+      ${users.length===0 ? `<div style="text-align:center;padding:40px;color:#6b7280;">Nenhum usuário encontrado neste grupo.</div>` :
+        users.map((u,i)=>`
+          <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;">
+            <div style="width:36px;height:36px;border-radius:50%;background:${avatarColor(u.score)};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.80rem;color:#fff;flex-shrink:0;">${initials(u)}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-weight:700;font-size:0.83rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.name||u.nome||'—'}</div>
+              <div style="font-size:0.70rem;color:#6b7280;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${u.email||'—'} · ${u.dept}</div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              ${riskBadge(u.score)}
+              <div style="font-size:0.68rem;color:#6b7280;margin-top:3px;">Score: <strong style="color:#f1f5f9;">${u.score}</strong></div>
+            </div>
+          </div>`).join('')}
+    </div>
+
+    <div style="margin-top:14px;display:flex;justify-content:center;">
+      <button class="ph-btn ph-btn-ghost" onclick="phCloseModal();phAiSimReview()">← Voltar para a simulação</button>
+    </div>
+  `);
+};
 
 window.phAiSimApprove = function() {
   const s = _phAiSim; if(!s) return;
