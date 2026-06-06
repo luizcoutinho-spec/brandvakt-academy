@@ -337,10 +337,10 @@
 // ── Mock Data ─────────────────────────────────────────────────
 const PHISHING_MOCK = {
   campanhas: [
-    { id:1, nome:'Q1 2025 — Teste de Credenciais', status:'Concluída', template:'Redefinição de Senha Urgente', enviados:342, abertos:287, cliques:94, submeteu:31, reportou:48, data_inicio:'2025-01-15', data_fim:'2025-01-22', grupo:'Todos os Usuários' },
-    { id:2, nome:'Fevereiro — CEO Fraud', status:'Concluída', template:'CEO Request — Urgente', enviados:89, abertos:71, cliques:12, submeteu:4, reportou:28, data_inicio:'2025-02-10', data_fim:'2025-02-17', grupo:'Diretoria' },
-    { id:3, nome:'Março — Benefícios RH', status:'Ativa', template:'Aviso de RH — Revisão de benefícios', enviados:214, abertos:198, cliques:67, submeteu:19, reportou:22, data_inicio:'2025-03-01', data_fim:'2025-03-08', grupo:'RH' },
-    { id:4, nome:'Abril — SharePoint Urgente', status:'Rascunho', template:'Documento compartilhado no SharePoint', enviados:0, abertos:0, cliques:0, submeteu:0, reportou:0, data_inicio:'2025-04-01', data_fim:'2025-04-08', grupo:'TI & Tecnologia' },
+    { id:1, nome:'Q1 2025 — Teste de Credenciais', status:'Concluída', template:'Redefinição de Senha Urgente', enviados:342, abertos:287, cliques:94, submeteu:31, reportou:48, data_inicio:'2025-01-15', data_fim:'2025-01-22', grupo:'Todos os Usuários', createdAt:'2025-01-08', recommendedStart:'2025-01-15', startReason:'Prioridade alta · Preparação de 7 dias concluída' },
+    { id:2, nome:'Fevereiro — CEO Fraud', status:'Concluída', template:'CEO Request — Urgente', enviados:89, abertos:71, cliques:12, submeteu:4, reportou:28, data_inicio:'2025-02-10', data_fim:'2025-02-17', grupo:'Diretoria', createdAt:'2025-02-03', recommendedStart:'2025-02-10', startReason:'Grupo reduzido (Diretoria) · Complexidade alta · 7 dias de preparação' },
+    { id:3, nome:'Março — Benefícios RH', status:'Ativa', template:'Aviso de RH — Revisão de benefícios', enviados:214, abertos:198, cliques:67, submeteu:19, reportou:22, data_inicio:'2025-03-01', data_fim:'2025-03-08', grupo:'RH', createdAt:'2025-02-22', recommendedStart:'2025-03-01', startReason:'Prioridade média · 7 dias de preparação · Sem dependências pendentes' },
+    { id:4, nome:'Abril — SharePoint Urgente', status:'Rascunho', template:'Documento compartilhado no SharePoint', enviados:0, abertos:0, cliques:0, submeteu:0, reportou:0, data_inicio:'2025-04-01', data_fim:'2025-04-08', grupo:'TI & Tecnologia', createdAt:'2025-03-20', recommendedStart:'2025-04-01', startReason:'Rascunho · Aguardando revisão e aprovação antes do lançamento' },
   ],
   templates: [
     { id:1, nome:'Redefinição de Senha Urgente', cat:'TI', diff:'Fácil', sender:'TI Corporativo', email:'ti@suporte-corp.com', assunto:'⚠️ Sua senha expira em 24h — Ação necessária', corpo:'Prezado colaborador,\n\nIdentificamos que sua senha corporativa expirará nas próximas 24 horas.\n\nPara evitar bloqueio imediato, clique no link abaixo e redefina sua senha agora:\n\n[REDEFINIR SENHA AGORA]\n\nAtenciosamente,\nEquipe de TI Corporativo', iocs:['Domínio do remetente diferente do oficial','Urgência artificial com prazo de 24h','Link genérico sem HTTPS corporativo','Ausência de assinatura personalizada'] },
@@ -906,11 +906,23 @@ function renderCampaignCard(c) {
         <div>Reportaram</div>
       </div>
       <div class="ph-campaign-metric">
-        <div class="ph-campaign-metric-val">${c.data_inicio}</div>
+        <div class="ph-campaign-metric-val" style="font-size:0.80rem">${c.data_inicio||c.recommendedStart||'—'}</div>
         <div>Início</div>
       </div>
     </div>
-    ${c.enviados>0?`<div class="ph-progress-bar"><div class="ph-progress-fill" style="width:${prog}%"></div></div>`:``}
+    ${c.enviados>0?`<div class="ph-progress-bar"><div class="ph-progress-fill" style="width:${prog}%"></div></div>`:''}
+    <!-- Date info row -->
+    <div style="display:flex;gap:16px;flex-wrap:wrap;padding:8px 16px 12px;border-top:1px solid rgba(255,255,255,0.05);margin-top:4px;">
+      <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#6b7280;">
+        <span>📅</span>
+        <span>Criação: <strong style="color:#94a3b8;">${c.createdAt || '—'}</strong></span>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#6b7280;">
+        <span>${c.aiGenerated ? '🤖' : '🗓'}</span>
+        <span>Início recomendado: <strong style="color:${c.aiGenerated?'#a78bfa':'#94a3b8'};">${c.recommendedStart || c.data_inicio || '—'}</strong></span>
+        ${c.aiGenerated ? '<span style="font-size:0.60rem;padding:1px 6px;border-radius:99px;background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.30);">IA</span>' : ''}
+      </div>
+    </div>
   </div>`;
 }
 
@@ -938,10 +950,23 @@ window.phViewCampaign = function(id) {
       <span class="ph-modal-title">📊 ${c.nome}</span>
       <button class="ph-modal-close" onclick="phCloseModal()">✕</button>
     </div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
       ${statusBadge(c.status)}
-      <span style="font-size:0.78rem;color:var(--ph-muted)">${c.data_inicio} → ${c.data_fim}</span>
+      <span style="font-size:0.78rem;color:var(--ph-muted)">${c.data_inicio||'—'} → ${c.data_fim||'—'}</span>
       <span style="font-size:0.78rem;color:var(--ph-muted)">Template: ${c.template}</span>
+      ${c.aiGenerated ? '<span style="font-size:0.68rem;padding:2px 8px;border-radius:99px;background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.30);">🤖 Gerada pela IA</span>' : ''}
+    </div>
+    <!-- Date cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
+      <div style="padding:12px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:10px;">
+        <div style="font-size:0.62rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">📅 Data de Criação</div>
+        <div style="font-size:1.0rem;font-weight:800;color:#f1f5f9;">${c.createdAt||'—'}</div>
+      </div>
+      <div style="padding:12px 16px;background:${c.aiGenerated?'rgba(139,92,246,0.07)':'rgba(255,255,255,0.03)'};border:1px solid ${c.aiGenerated?'rgba(139,92,246,0.25)':'rgba(255,255,255,0.08)'};border-radius:10px;">
+        <div style="font-size:0.62rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;">${c.aiGenerated?'🤖 Início Recomendado pela IA':'🗓 Início Recomendado'}</div>
+        <div style="font-size:1.0rem;font-weight:800;color:${c.aiGenerated?'#a78bfa':'#f1f5f9'};">${c.recommendedStart||c.data_inicio||'—'}</div>
+        ${c.startReason ? `<div style="font-size:0.66rem;color:#6b7280;margin-top:5px;line-height:1.45;">${c.startReason}</div>` : ''}
+      </div>
     </div>
     <div class="ph-chart-title">Funil de Engajamento</div>
     <div class="ph-funnel" style="margin-bottom:24px">
@@ -1205,14 +1230,20 @@ function phNCGroupPreview(g) {
 window.phLaunchCampaign = function() {
   const g = PHISHING_MOCK.grupos.find(x=>x.id===PH.newCampaign.grupo)||PHISHING_MOCK.grupos[0];
   const t = PHISHING_MOCK.templates.find(x=>x.id===PH.newCampaign.template)||PHISHING_MOCK.templates[0];
+  const _now = new Date();
+  const _todayIso = _now.toISOString().split('T')[0];
+  const _recStart = PH.newCampaign.dataInicio || _todayIso;
   const newCamp = {
     id: Date.now(), nome: PH.newCampaign.nome||'Nova Campanha',
     status: 'Ativa', template: t?t.nome:'N/A',
     enviados: g.count, abertos: Math.floor(g.count*0.82),
     cliques: Math.floor(g.count*0.15), submeteu: Math.floor(g.count*0.05),
     reportou: Math.floor(g.count*0.12),
-    data_inicio: PH.newCampaign.dataInicio||new Date().toISOString().split('T')[0],
-    data_fim: PH.newCampaign.dataFim||'', grupo: g.nome
+    data_inicio: _recStart,
+    data_fim: PH.newCampaign.dataFim||'', grupo: g.nome,
+    createdAt: _todayIso,
+    recommendedStart: _recStart,
+    startReason: 'Campanha criada manualmente · Início conforme configurado',
   };
   PHISHING_MOCK.campanhas.unshift(newCamp);
   phSaveTenantPool();
@@ -2085,6 +2116,34 @@ function phAiBuildCampaign() {
     { label:'Score Phishing HRM',          icon:'🎣', meta:`<${Math.round(avgPhScore*0.7)}/100`,baseline:`${avgPhScore}/100`,fonte:'Human Risk Module' },
   ];
 
+  // ── 8. Recommended start date with AI reasoning ─────────────
+  // Factors: risk level (urgency), pending gaps (dependency delay),
+  // number of trainings (complexity), group size (resource load)
+  const hasPendingGaps    = lacunas.length > 0;
+  const highComplexity    = rec.length > 3;
+  const largeGroup        = total > 50;
+  const criticalRisk      = avgScore > 60;
+
+  // Base preparation days from risk level
+  let prepDays = criticalRisk ? 2 : avgScore > 40 ? 4 : 7;
+  // Add days for complexity
+  if (highComplexity) prepDays += 2;
+  // Add days for large group (coordination overhead)
+  if (largeGroup)     prepDays += 2;
+  // Add days if there are pending course gaps (dependency — courses not yet in library)
+  if (hasPendingGaps) prepDays += 3;
+
+  const recStartDate      = addDays(prepDays);
+  const recStartIso       = (() => { const d=new Date(today); d.setDate(d.getDate()+prepDays); return d.toISOString().slice(0,10); })();
+
+  const startReasonParts  = [];
+  if (criticalRisk)    startReasonParts.push(`Risco crítico (score ${avgScore}/100) → preparação mínima de ${prepDays} dias`);
+  else                 startReasonParts.push(`Nível ${riskLevel} (score ${avgScore}/100) → ${prepDays} dias de preparação estimados`);
+  if (highComplexity)  startReasonParts.push(`${rec.length} treinamentos · complexidade elevada (+2 dias)`);
+  if (largeGroup)      startReasonParts.push(`Grupo amplo (${total} usuários) · coordenação adicional (+2 dias)`);
+  if (hasPendingGaps)  startReasonParts.push(`${lacunas.length} curso(s) pendente(s) de criação · dependência (+3 dias)`);
+  const startReason = startReasonParts.join(' · ');
+
   return {
     id: Date.now(),
     tenant, generatedAt: fmt(today) + ' às ' + today.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
@@ -2093,6 +2152,10 @@ function phAiBuildCampaign() {
     topDepts, topDeptStr, riskLevel, riskColor, enriched,
     nome: campName, grupo, status:'Rascunho',
     inicio: addDays(3), fim: addDays(45),
+    createdAt: today.toISOString().slice(0,10),
+    recommendedStart: recStartIso,
+    startReason,
+    prepDays,
     enviados:0, abertos:0, cliques:0, reportou:0,
     treinamentosRecomendados: rec,
     lacunas,
@@ -2391,6 +2454,10 @@ window.phAiExecuteAssign = function() {
     status: 'Ativa', inicio: c.inicio,
     enviados: c.orgRisk.total, abertos: 0, cliques: 0, reportou: 0,
     aiGenerated: true, assignedAt: now.toLocaleString('pt-BR'),
+    createdAt: now.toISOString().slice(0,10),
+    recommendedStart: c.recommendedStart || now.toISOString().slice(0,10),
+    startReason: c.startReason || '',
+    data_inicio: c.recommendedStart || now.toISOString().slice(0,10),
   };
   PHISHING_MOCK.campanhas.unshift(newCamp);
   phSaveTenantPool(); // persist immediately so campaign survives navigation
@@ -2494,6 +2561,10 @@ window.phAiApproveCampaign = function() {
     status: 'Rascunho', inicio: c.inicio,
     enviados: 0, abertos: 0, cliques: 0, reportou: 0,
     aiGenerated: true,
+    createdAt: new Date().toISOString().slice(0,10),
+    recommendedStart: c.recommendedStart || '',
+    startReason: c.startReason || '',
+    data_inicio: c.recommendedStart || '',
   };
   PHISHING_MOCK.campanhas.unshift(newCamp);
   phSaveTenantPool(); // persist so campaign survives navigation
