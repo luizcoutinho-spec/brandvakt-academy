@@ -839,88 +839,24 @@ window.rpSaveNewReport = function() {
   rpTab('reports');
   showToast&&showToast(`📄 Gerando PDF "${name}"...`, 'info');
 
-  // Generate and open PDF immediately
+  // Generate and open PDF using rpBuildBody for type-specific content
   setTimeout(() => {
-    const depts    = REPORTS_DATA.dept_perf || [];
-    const insights = REPORTS_DATA.insights  || [];
     const tenantName = APP&&APP.tenants ? (APP.tenants.find(t=>t.active)||{}).name||'Empresa' : 'Empresa';
     const now = new Date().toLocaleString('pt-BR');
-
-    const deptRows = depts.map(d => `
-      <tr>
-        <td>${d.name}</td>
-        <td style="text-align:center">${d.compliance}%</td>
-        <td style="text-align:center">${d.risk}%</td>
-        <td style="text-align:center">${d.certs}</td>
-        <td style="text-align:center">${d.training}%</td>
-      </tr>`).join('');
-
-    const insightRows = insights.map(i => `
-      <tr>
-        <td>${i.title}</td>
-        <td style="text-align:center;font-weight:700">${i.value}</td>
-        <td style="text-align:center;color:${(i.trend||'').startsWith('+')?'#16a34a':'#dc2626'}">${i.trend||'—'}</td>
-      </tr>`).join('');
-
-    const html = `<!DOCTYPE html>
-<html lang="pt-BR"><head>
-<meta charset="UTF-8">
-<title>${name}</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Segoe UI',Arial,sans-serif;color:#111;padding:32px;font-size:13px;}
-  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #1e293b;}
-  .logo{font-size:20px;font-weight:900;color:#1e293b;letter-spacing:-0.03em;}
-  .logo span{color:#7c3aed;}
-  .meta{text-align:right;font-size:11px;color:#64748b;}
-  h1{font-size:18px;font-weight:800;color:#1e293b;margin-bottom:4px;}
-  h2{font-size:13px;font-weight:700;color:#374151;margin:22px 0 10px;text-transform:uppercase;letter-spacing:.06em;}
-  .params{display:flex;gap:24px;margin-bottom:20px;padding:12px 16px;background:#f8fafc;border-radius:8px;font-size:12px;}
-  .param label{font-weight:700;color:#64748b;display:block;margin-bottom:2px;font-size:10px;text-transform:uppercase;}
-  .badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;background:#ede9fe;color:#6d28d9;margin-bottom:14px;}
-  table{width:100%;border-collapse:collapse;margin-bottom:10px;}
-  th{background:#1e293b;color:#fff;padding:8px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.05em;}
-  td{padding:7px 12px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
-  tr:nth-child(even) td{background:#f8fafc;}
-  .footer{margin-top:32px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center;}
-  @media print{body{padding:20px}@page{margin:18mm}}
-</style>
-</head><body>
-<div class="header">
-  <div class="logo">Brand<span>vakt</span> <span style="font-weight:400;font-size:13px;color:#64748b;">Academy</span></div>
-  <div class="meta"><strong>${tenantName}</strong><br>Gerado em: ${now}</div>
-</div>
-
-<h1>${name}</h1>
-<span class="badge">${type}</span>
-
-<div class="params">
-  <div class="param"><label>Período</label>${period}</div>
-  <div class="param"><label>Departamento</label>${dept}</div>
-  <div class="param"><label>Formato</label>PDF</div>
-</div>
-
-${deptRows ? `<h2>Desempenho por Departamento</h2>
-<table>
-  <thead><tr><th>Departamento</th><th>Compliance</th><th>Risco</th><th>Certificados</th><th>Treinamento</th></tr></thead>
-  <tbody>${deptRows}</tbody>
-</table>` : ''}
-
-${insightRows ? `<h2>Principais Insights</h2>
-<table>
-  <thead><tr><th>Indicador</th><th>Valor</th><th>Tendência</th></tr></thead>
-  <tbody>${insightRows}</tbody>
-</table>` : ''}
-
-<div class="footer">Brandvakt Academy — Documento gerado automaticamente · ${now}</div>
-</body></html>`;
-
+    const newR = REPORTS_DATA.reports.find(x=>x.id===newId);
+    const paramsHtml = `<div style="display:flex;gap:20px;margin-bottom:16px;padding:10px 14px;background:#f8fafc;border-radius:8px;font-size:11px;border:1px solid #e2e8f0;">
+      <div><strong style="color:#64748b;text-transform:uppercase;font-size:10px;letter-spacing:.06em;display:block;margin-bottom:2px;">Período</strong>${period}</div>
+      <div><strong style="color:#64748b;text-transform:uppercase;font-size:10px;letter-spacing:.06em;display:block;margin-bottom:2px;">Departamento</strong>${dept}</div>
+      <div><strong style="color:#64748b;text-transform:uppercase;font-size:10px;letter-spacing:.06em;display:block;margin-bottom:2px;">Formato</strong>PDF</div>
+    </div>`;
+    const body = paramsHtml + (newR ? rpBuildBody(newR) : '');
+    const html = rpPdfShell(name, type, tenantName, now, null, body);
     const win = window.open('', '_blank');
     if (!win) { showToast&&showToast('❌ Permita pop-ups para exportar PDF.','error'); return; }
     win.document.write(html);
     win.document.close();
     win.onload = () => { win.focus(); win.print(); };
-    showToast&&showToast(`✅ Relatório "${name}" gerado e aberto para impressão/PDF!`, 'success');
+    showToast&&showToast(`✅ Relatório "${name}" gerado como PDF!`, 'success');
   }, 400);
 };
 
@@ -987,84 +923,292 @@ function rpShowModal(html, cls='rp-modal') {
 window.rpCloseModal = function() { const el=document.getElementById('rp-overlay'); if (el) el.remove(); };
 document.addEventListener('keydown', e => { if (e.key==='Escape') rpCloseModal(); });
 
+// ── Shared PDF shell ──────────────────────────────────────────
+function rpPdfShell(title, type, tenantName, now, size, bodyHtml) {
+  return `<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8"><title>${title}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#111;padding:32px;font-size:13px;line-height:1.5;}
+  .hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid #1e293b;}
+  .logo{font-size:19px;font-weight:900;color:#1e293b;letter-spacing:-0.03em;}
+  .logo span{color:#7c3aed;}
+  .meta{text-align:right;font-size:11px;color:#64748b;}
+  h1{font-size:17px;font-weight:800;color:#1e293b;margin-bottom:4px;}
+  h2{font-size:12px;font-weight:700;color:#374151;margin:20px 0 8px;text-transform:uppercase;letter-spacing:.07em;border-bottom:1px solid #e2e8f0;padding-bottom:4px;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;background:#ede9fe;color:#6d28d9;margin-bottom:12px;}
+  .kpi-row{display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .kpi{flex:1;min-width:100px;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;text-align:center;}
+  .kpi-val{font-size:20px;font-weight:800;color:#1e293b;}
+  .kpi-lbl{font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px;}
+  th{background:#1e293b;color:#fff;padding:7px 11px;font-size:10px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.05em;}
+  td{padding:6px 11px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  .ok{color:#16a34a;font-weight:700;} .warn{color:#d97706;font-weight:700;} .bad{color:#dc2626;font-weight:700;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;}
+  .tag-g{background:#dcfce7;color:#16a34a;} .tag-y{background:#fef9c3;color:#92400e;} .tag-r{background:#fee2e2;color:#b91c1c;}
+  p{margin-bottom:10px;font-size:12px;color:#374151;}
+  .footer{margin-top:28px;padding-top:12px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center;}
+  @media print{body{padding:20px}@page{margin:16mm}}
+</style>
+</head><body>
+<div class="hdr">
+  <div class="logo">Brand<span>vakt</span> <span style="font-weight:400;font-size:12px;color:#64748b;">Academy</span></div>
+  <div class="meta"><strong>${tenantName}</strong><br>Gerado em: ${now}${size?'<br>Tamanho: '+size:''}</div>
+</div>
+<h1>${title}</h1>
+<span class="badge">${type}</span>
+${bodyHtml}
+<div class="footer">Brandvakt Academy · Documento gerado automaticamente · ${now}</div>
+</body></html>`;
+}
+
+// ── Build report body per category ───────────────────────────
+function rpBuildBody(r) {
+  const depts    = REPORTS_DATA.dept_perf || [];
+  const insights = REPORTS_DATA.insights  || [];
+  const trends   = REPORTS_DATA.trends    || {};
+  const camps    = (typeof PHISHING_MOCK !== 'undefined') ? PHISHING_MOCK.campanhas : [];
+  const assigns  = (typeof ASSIGN_DATA   !== 'undefined') ? ASSIGN_DATA.assignments : [];
+  const users    = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
+  const cat      = r.category || 'compliance';
+
+  // ── helpers ──
+  const bar = (pct, color='#6d28d9') =>
+    `<div style="height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden;display:inline-block;width:80px;vertical-align:middle;margin-right:6px"><div style="height:100%;width:${pct}%;background:${color};border-radius:4px"></div></div>`;
+  const cls = pct => pct>=80?'ok':pct>=60?'warn':'bad';
+  const clsR = pct => pct<=30?'ok':pct<=60?'warn':'bad'; // reversed for risk
+
+  // ── COMPLIANCE ───────────────────────────────────────────────
+  if (cat === 'compliance') {
+    const avgCompl = depts.length ? Math.round(depts.reduce((s,d)=>s+d.compliance,0)/depts.length) : 0;
+    const failing  = depts.filter(d=>d.compliance<80);
+    const passing  = depts.filter(d=>d.compliance>=80);
+    const rows = depts.map(d=>`<tr>
+      <td>${d.name}</td>
+      <td>${bar(d.compliance,'#22c55e')}<span class="${cls(d.compliance)}">${d.compliance}%</span></td>
+      <td class="${clsR(d.risk)}">${d.risk}%</td>
+      <td>${d.certs}</td>
+      <td class="${cls(d.training)}">${d.training}%</td>
+      <td>${d.compliance>=80?'<span class="tag tag-g">✓ Conforme</span>':'<span class="tag tag-r">✗ Em risco</span>'}</td>
+    </tr>`).join('');
+    return `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val ${cls(avgCompl)}">${avgCompl}%</div><div class="kpi-lbl">Score Médio</div></div>
+      <div class="kpi"><div class="kpi-val ok">${passing.length}</div><div class="kpi-lbl">Depts Conformes</div></div>
+      <div class="kpi"><div class="kpi-val bad">${failing.length}</div><div class="kpi-lbl">Depts Em Risco</div></div>
+      <div class="kpi"><div class="kpi-val">${depts.reduce((s,d)=>s+d.certs,0)}</div><div class="kpi-lbl">Certificados</div></div>
+    </div>
+    <h2>Compliance por Departamento</h2>
+    <table><thead><tr><th>Departamento</th><th>Compliance</th><th>Risco</th><th>Certificados</th><th>Treinamento</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    ${failing.length?`<h2>Departamentos Abaixo da Meta (&lt;80%)</h2><p>${failing.map(d=>`<strong>${d.name}</strong> (${d.compliance}%)`).join(', ')} — recomenda-se plano de ação imediato.</p>`:''}
+    <h2>Recomendações</h2>
+    <p>${avgCompl>=80?'Score geral acima da meta de 80%. Manter cadência de treinamentos obrigatórios.':'Score geral abaixo da meta. Priorizar '+failing.map(d=>d.name).join(', ')+' com treinamentos obrigatórios imediatos.'}</p>`;
+  }
+
+  // ── RISK / HUMAN RISK ────────────────────────────────────────
+  if (cat === 'risk') {
+    const highRisk = users.filter(u=>(u.riskScore||u.score||0)>60);
+    const medRisk  = users.filter(u=>{const s=u.riskScore||u.score||0;return s>30&&s<=60;});
+    const lowRisk  = users.filter(u=>(u.riskScore||u.score||0)<=30);
+    const avgScore = users.length ? Math.round(users.reduce((s,u)=>s+(u.riskScore||u.score||0),0)/users.length) : 0;
+    const userRows = [...users].sort((a,b)=>(b.riskScore||b.score||0)-(a.riskScore||a.score||0))
+      .slice(0,15).map(u=>{
+        const s=u.riskScore||u.score||0;
+        return `<tr><td>${u.name||u.nome||'—'}</td><td>${u.dept||u.department||'—'}</td><td>${u.role||u.cargo||'—'}</td>
+        <td>${bar(s, s>60?'#ef4444':s>30?'#f59e0b':'#22c55e')}<span class="${s>60?'bad':s>30?'warn':'ok'}">${s}/100</span></td>
+        <td>${s>60?'<span class="tag tag-r">Alto Risco</span>':s>30?'<span class="tag tag-y">Médio</span>':'<span class="tag tag-g">Baixo</span>'}</td></tr>`;
+      }).join('');
+    return `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val ${avgScore>60?'bad':avgScore>30?'warn':'ok'}">${avgScore}/100</div><div class="kpi-lbl">Score HRM Médio</div></div>
+      <div class="kpi"><div class="kpi-val bad">${highRisk.length}</div><div class="kpi-lbl">Alto Risco</div></div>
+      <div class="kpi"><div class="kpi-val warn">${medRisk.length}</div><div class="kpi-lbl">Médio Risco</div></div>
+      <div class="kpi"><div class="kpi-val ok">${lowRisk.length}</div><div class="kpi-lbl">Baixo Risco</div></div>
+    </div>
+    <h2>Ranking de Risco por Usuário (Top 15)</h2>
+    <table><thead><tr><th>Usuário</th><th>Departamento</th><th>Cargo</th><th>Score HRM</th><th>Nível</th></tr></thead>
+    <tbody>${userRows||'<tr><td colspan="5" style="text-align:center;color:#64748b">Nenhum usuário com dados de risco</td></tr>'}</tbody></table>
+    <h2>Distribuição por Departamento</h2>
+    <table><thead><tr><th>Departamento</th><th>Compliance</th><th>Risco Médio</th><th>Treinamento</th></tr></thead>
+    <tbody>${depts.map(d=>`<tr><td>${d.name}</td><td class="${cls(d.compliance)}">${d.compliance}%</td><td class="${clsR(d.risk)}">${d.risk}%</td><td class="${cls(d.training)}">${d.training}%</td></tr>`).join('')}</tbody></table>
+    <h2>Recomendações</h2>
+    <p>${highRisk.length>0?`${highRisk.length} usuário(s) em alto risco requerem treinamento prioritário de phishing e gestão de senhas.`:'Nenhum usuário em alto risco. Manter monitoramento contínuo.'}</p>`;
+  }
+
+  // ── CERTIFICADOS ─────────────────────────────────────────────
+  if (cat === 'certs') {
+    const totalCerts  = depts.reduce((s,d)=>s+d.certs,0);
+    const totalUsers  = users.length || 11;
+    const certRate    = Math.round(totalCerts/totalUsers*100);
+    const certAssigns = assigns.filter(a=>a.status==='concluida');
+    const rows = depts.map(d=>`<tr>
+      <td>${d.name}</td>
+      <td style="text-align:center;font-weight:700">${d.certs}</td>
+      <td>${bar(d.compliance,'#8b5cf6')}<span class="${cls(d.compliance)}">${d.compliance}%</span></td>
+      <td>${d.certs>0?'<span class="tag tag-g">Emitidos</span>':'<span class="tag tag-y">Pendente</span>'}</td>
+    </tr>`).join('');
+    return `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val" style="color:#8b5cf6">${totalCerts}</div><div class="kpi-lbl">Total Certificados</div></div>
+      <div class="kpi"><div class="kpi-val ${cls(certRate)}">${certRate}%</div><div class="kpi-lbl">Taxa de Certificação</div></div>
+      <div class="kpi"><div class="kpi-val ok">${certAssigns.length}</div><div class="kpi-lbl">Cursos Concluídos</div></div>
+      <div class="kpi"><div class="kpi-val">${totalUsers}</div><div class="kpi-lbl">Total Usuários</div></div>
+    </div>
+    <h2>Certificados por Departamento</h2>
+    <table><thead><tr><th>Departamento</th><th>Certificados Emitidos</th><th>Taxa de Conclusão</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    ${certAssigns.length?`<h2>Cursos com Certificação Concluída</h2>
+    <table><thead><tr><th>Curso</th><th>Público-Alvo</th><th>Conclusão</th></tr></thead>
+    <tbody>${certAssigns.map(a=>`<tr><td>${a.course}</td><td>${a.target}</td><td class="ok">${a.completion}%</td></tr>`).join('')}</tbody></table>`:''}
+    <h2>Análise</h2>
+    <p>Taxa de certificação: <strong>${certRate}%</strong>. ${certRate>=80?'Meta atingida.':certRate>=60?'Próximo da meta de 80%. Foco em concluir treinamentos pendentes.':'Abaixo da meta. Ação imediata recomendada para acelerar conclusões.'}</p>`;
+  }
+
+  // ── PRIVACIDADE / LGPD / GDPR ────────────────────────────────
+  if (cat === 'privacy') {
+    const privAssigns = assigns.filter(a=>a.category==='Privacidade');
+    const avgPriv = privAssigns.length ? Math.round(privAssigns.reduce((s,a)=>s+a.completion,0)/privAssigns.length) : 0;
+    const frameworks = [
+      {name:'LGPD (Lei 13.709/2018)', status:depts[0]?.compliance>=80?'Conforme':'Parcial', score:depts[0]?.compliance||0},
+      {name:'GDPR (EU 2016/679)',     status:depts[1]?.compliance>=80?'Conforme':'Parcial', score:depts[1]?.compliance||0},
+      {name:'ISO 27701',              status:depts[2]?.compliance>=80?'Conforme':'Em avaliação', score:depts[2]?.compliance||0},
+    ];
+    return `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val ${cls(avgPriv)}">${avgPriv}%</div><div class="kpi-lbl">Conclusão Privacidade</div></div>
+      <div class="kpi"><div class="kpi-val ok">${frameworks.filter(f=>f.status==='Conforme').length}</div><div class="kpi-lbl">Frameworks Conformes</div></div>
+      <div class="kpi"><div class="kpi-val">${privAssigns.length}</div><div class="kpi-lbl">Treinamentos Ativos</div></div>
+    </div>
+    <h2>Status por Framework</h2>
+    <table><thead><tr><th>Framework</th><th>Score</th><th>Status</th></tr></thead>
+    <tbody>${frameworks.map(f=>`<tr><td><strong>${f.name}</strong></td><td>${bar(f.score,'#8b5cf6')}<span class="${cls(f.score)}">${f.score}%</span></td>
+    <td>${f.status==='Conforme'?'<span class="tag tag-g">✓ Conforme</span>':f.status==='Parcial'?'<span class="tag tag-y">⚠ Parcial</span>':'<span class="tag tag-r">Em Avaliação</span>'}</td></tr>`).join('')}</tbody></table>
+    <h2>Treinamentos de Privacidade</h2>
+    <table><thead><tr><th>Treinamento</th><th>Público</th><th>Conclusão</th><th>Status</th></tr></thead>
+    <tbody>${privAssigns.length?privAssigns.map(a=>`<tr><td>${a.course}</td><td>${a.target}</td><td class="${cls(a.completion)}">${a.completion}%</td><td>${a.status==='concluida'?'<span class="tag tag-g">Concluído</span>':a.status==='ativa'?'<span class="tag tag-y">Ativo</span>':'<span class="tag tag-r">'+a.status+'</span>'}</td></tr>`).join(''):'<tr><td colspan="4" style="text-align:center;color:#64748b">Nenhum treinamento de privacidade registrado</td></tr>'}</tbody></table>
+    <h2>Exposição a Dados Pessoais por Departamento</h2>
+    <table><thead><tr><th>Departamento</th><th>Compliance</th><th>Risco</th></tr></thead>
+    <tbody>${depts.map(d=>`<tr><td>${d.name}</td><td class="${cls(d.compliance)}">${d.compliance}%</td><td class="${clsR(d.risk)}">${d.risk}%</td></tr>`).join('')}</tbody></table>`;
+  }
+
+  // ── CYBERSECURITY / PHISHING ─────────────────────────────────
+  if (cat === 'cyber') {
+    const concluded = camps.filter(c=>c.status==='Concluída');
+    const active    = camps.filter(c=>c.status==='Ativa');
+    const totalSent = concluded.reduce((s,c)=>s+(c.enviados||0),0);
+    const totalClk  = concluded.reduce((s,c)=>s+(c.cliques||0),0);
+    const totalRpt  = concluded.reduce((s,c)=>s+(c.reportou||0),0);
+    const clickRate = totalSent>0?Math.round(totalClk/totalSent*100):0;
+    const rptRate   = totalSent>0?Math.round(totalRpt/totalSent*100):0;
+    const campRows  = camps.slice(0,8).map(c=>{
+      const pct = c.enviados>0?Math.round(c.cliques/c.enviados*100):0;
+      const rpt = c.enviados>0?Math.round(c.reportou/c.enviados*100):0;
+      return `<tr><td><strong>${c.nome}</strong></td><td>${c.template||'—'}</td><td>${c.enviados||0}</td>
+      <td class="${pct>20?'bad':pct>10?'warn':'ok'}">${pct}%</td>
+      <td class="${rpt>30?'ok':rpt>15?'warn':'bad'}">${rpt}%</td>
+      <td>${c.status==='Concluída'?'<span class="tag tag-g">Concluída</span>':c.status==='Ativa'?'<span class="tag tag-y">Ativa</span>':'<span class="tag">'+c.status+'</span>'}</td></tr>`;
+    }).join('');
+    return `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val">${camps.length}</div><div class="kpi-lbl">Campanhas Total</div></div>
+      <div class="kpi"><div class="kpi-val ok">${concluded.length}</div><div class="kpi-lbl">Concluídas</div></div>
+      <div class="kpi"><div class="kpi-val ${clickRate>20?'bad':clickRate>10?'warn':'ok'}">${clickRate}%</div><div class="kpi-lbl">Taxa de Cliques</div></div>
+      <div class="kpi"><div class="kpi-val ${rptRate>30?'ok':rptRate>15?'warn':'bad'}">${rptRate}%</div><div class="kpi-lbl">Taxa de Reporte</div></div>
+    </div>
+    <h2>Histórico de Campanhas de Phishing</h2>
+    <table><thead><tr><th>Campanha</th><th>Template</th><th>Enviados</th><th>% Clicaram</th><th>% Reportaram</th><th>Status</th></tr></thead>
+    <tbody>${campRows||'<tr><td colspan="6" style="text-align:center;color:#64748b">Nenhuma campanha registrada</td></tr>'}</tbody></table>
+    <h2>Análise de Vulnerabilidade por Departamento</h2>
+    <table><thead><tr><th>Departamento</th><th>Risco</th><th>Compliance</th></tr></thead>
+    <tbody>${depts.sort((a,b)=>b.risk-a.risk).map(d=>`<tr><td>${d.name}</td><td class="${clsR(d.risk)}">${d.risk}%</td><td class="${cls(d.compliance)}">${d.compliance}%</td></tr>`).join('')}</tbody></table>
+    <h2>Conclusão</h2>
+    <p>Taxa de cliques: <strong class="${clickRate>20?'bad':clickRate>10?'warn':'ok'}">${clickRate}%</strong> ${clickRate>20?'— Acima do limite aceitável (20%). Reforço imediato recomendado.':clickRate>10?'— Atenção. Recomendado treinamento adicional de conscientização.':'— Dentro do limite aceitável.'}</p>`;
+  }
+
+  // ── TREINAMENTO / ENGAJAMENTO ────────────────────────────────
+  if (cat === 'training') {
+    const avgCompl = assigns.length ? Math.round(assigns.reduce((s,a)=>s+a.completion,0)/assigns.length) : 0;
+    const active   = assigns.filter(a=>a.status==='ativa');
+    const concluded= assigns.filter(a=>a.status==='concluida');
+    const overdue  = assigns.filter(a=>a.atrasados>0);
+    const rows = [...assigns].sort((a,b)=>b.completion-a.completion).map(a=>`<tr>
+      <td>${a.course}</td><td>${a.target}</td>
+      <td>${bar(a.completion, a.completion>=80?'#22c55e':a.completion>=60?'#f59e0b':'#ef4444')}<span class="${cls(a.completion)}">${a.completion}%</span></td>
+      <td>${a.concluidos||0}/${a.enviados||0}</td>
+      <td>${a.atrasados>0?`<span class="tag tag-r">${a.atrasados} atrasado(s)</span>`:'<span class="tag tag-g">Em dia</span>'}</td>
+    </tr>`).join('');
+    return `
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-val ${cls(avgCompl)}">${avgCompl}%</div><div class="kpi-lbl">Conclusão Média</div></div>
+      <div class="kpi"><div class="kpi-val ok">${concluded.length}</div><div class="kpi-lbl">Concluídos</div></div>
+      <div class="kpi"><div class="kpi-val">${active.length}</div><div class="kpi-lbl">Em Andamento</div></div>
+      <div class="kpi"><div class="kpi-val bad">${overdue.length}</div><div class="kpi-lbl">Com Atraso</div></div>
+    </div>
+    <h2>Progresso por Treinamento</h2>
+    <table><thead><tr><th>Treinamento</th><th>Público</th><th>Conclusão</th><th>Concluídos/Enviados</th><th>Atrasos</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="5" style="text-align:center;color:#64748b">Nenhum treinamento registrado</td></tr>'}</tbody></table>
+    <h2>Análise por Categoria</h2>
+    <table><thead><tr><th>Categoria</th><th>Qtd Treinamentos</th><th>Conclusão Média</th></tr></thead>
+    <tbody>${['Cybersecurity','Compliance','Privacidade','ESG','Information Security'].map(cat=>{
+      const items=assigns.filter(a=>a.category===cat);
+      const avg=items.length?Math.round(items.reduce((s,a)=>s+a.completion,0)/items.length):null;
+      return items.length?`<tr><td>${cat}</td><td>${items.length}</td><td class="${cls(avg)}">${avg}%</td></tr>`:'';
+    }).join('')||'<tr><td colspan="3">—</td></tr>'}</tbody></table>`;
+  }
+
+  // ── EXECUTIVO ────────────────────────────────────────────────
+  const avgCompl2 = depts.length?Math.round(depts.reduce((s,d)=>s+d.compliance,0)/depts.length):0;
+  const totalCerts2=depts.reduce((s,d)=>s+d.certs,0);
+  const campsActive=camps.filter(c=>c.status==='Ativa').length;
+  const concluded2=camps.filter(c=>c.status==='Concluída');
+  const totalSent2=concluded2.reduce((s,c)=>s+(c.enviados||0),0);
+  const clickRate2=totalSent2>0?Math.round(concluded2.reduce((s,c)=>s+(c.cliques||0),0)/totalSent2*100):0;
+  const avgTraining=assigns.length?Math.round(assigns.reduce((s,a)=>s+a.completion,0)/assigns.length):0;
+  const highRiskU=users.filter(u=>(u.riskScore||u.score||0)>60);
+  return `
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-val ${cls(avgCompl2)}">${avgCompl2}%</div><div class="kpi-lbl">Compliance Geral</div></div>
+    <div class="kpi"><div class="kpi-val ${cls(avgTraining)}">${avgTraining}%</div><div class="kpi-lbl">Conclusão Treinamentos</div></div>
+    <div class="kpi"><div class="kpi-val">${totalCerts2}</div><div class="kpi-lbl">Certificados Emitidos</div></div>
+    <div class="kpi"><div class="kpi-val ${clickRate2>20?'bad':clickRate2>10?'warn':'ok'}">${clickRate2}%</div><div class="kpi-lbl">Cliques Phishing</div></div>
+    <div class="kpi"><div class="kpi-val bad">${highRiskU.length}</div><div class="kpi-lbl">Usuários Alto Risco</div></div>
+  </div>
+  <h2>Visão Executiva — Desempenho por Área</h2>
+  <table><thead><tr><th>Departamento</th><th>Compliance</th><th>Risco</th><th>Certificados</th><th>Treinamento</th><th>Status</th></tr></thead>
+  <tbody>${depts.map(d=>`<tr><td><strong>${d.name}</strong></td><td class="${cls(d.compliance)}">${d.compliance}%</td><td class="${clsR(d.risk)}">${d.risk}%</td><td>${d.certs}</td><td class="${cls(d.training)}">${d.training}%</td><td>${d.compliance>=80&&d.risk<=50?'<span class="tag tag-g">✓ OK</span>':d.compliance>=60?'<span class="tag tag-y">⚠ Atenção</span>':'<span class="tag tag-r">✗ Crítico</span>'}</td></tr>`).join('')}</tbody></table>
+  <h2>Campanhas de Phishing</h2>
+  <table><thead><tr><th>Métrica</th><th>Valor</th><th>Avaliação</th></tr></thead>
+  <tbody>
+    <tr><td>Campanhas concluídas</td><td>${concluded2.length}</td><td>—</td></tr>
+    <tr><td>Campanhas ativas</td><td>${campsActive}</td><td>—</td></tr>
+    <tr><td>Taxa de cliques</td><td class="${clickRate2>20?'bad':clickRate2>10?'warn':'ok'}">${clickRate2}%</td><td>${clickRate2>20?'Crítico — acima de 20%':clickRate2>10?'Atenção':'Aceitável'}</td></tr>
+  </tbody></table>
+  <h2>Treinamentos em Andamento</h2>
+  <table><thead><tr><th>Treinamento</th><th>Conclusão</th><th>Obrigatório</th></tr></thead>
+  <tbody>${assigns.slice(0,8).map(a=>`<tr><td>${a.course}</td><td class="${cls(a.completion)}">${a.completion}%</td><td>${a.mandatory?'Sim':'Não'}</td></tr>`).join('')}</tbody></table>
+  <h2>Recomendações Executivas</h2>
+  <p>${avgCompl2<80?`Compliance abaixo da meta (${avgCompl2}% vs meta 80%). Priorizar ${depts.filter(d=>d.compliance<80).map(d=>d.name).join(', ')}.`:'Compliance acima da meta. Manter cadência atual.'}</p>
+  <p>${highRiskU.length>0?`${highRiskU.length} usuário(s) em alto risco. Treinamento obrigatório recomendado.`:'Nenhum usuário em alto risco crítico.'}</p>`;
+}
+
 // ── Export report as PDF (print dialog) ──────────────────────
 window.rpExportReport = function(id) {
   const r = REPORTS_DATA.reports.find(x=>x.id===id);
   if (!r) { showToast&&showToast('Relatório não encontrado','error'); return; }
-
-  const depts      = REPORTS_DATA.dept_perf || [];
-  const insights   = REPORTS_DATA.insights  || [];
   const tenantName = APP&&APP.tenants ? (APP.tenants.find(t=>t.active)||{}).name||'Empresa' : 'Empresa';
-  const now        = new Date().toLocaleString('pt-BR');
-
-  const deptRows = depts.map(d => `
-    <tr>
-      <td>${d.name}</td>
-      <td style="text-align:center">${d.compliance}%</td>
-      <td style="text-align:center">${d.risk}%</td>
-      <td style="text-align:center">${d.certs}</td>
-      <td style="text-align:center">${d.training}%</td>
-    </tr>`).join('');
-
-  const insightRows = insights.map(i => `
-    <tr>
-      <td>${i.title}</td>
-      <td style="text-align:center;font-weight:700">${i.value}</td>
-      <td style="text-align:center;color:${(i.trend||'').startsWith('+')?'#16a34a':'#dc2626'}">${i.trend||'—'}</td>
-    </tr>`).join('');
-
-  const html = `<!DOCTYPE html>
-<html lang="pt-BR"><head>
-<meta charset="UTF-8">
-<title>${r.name}</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box;}
-  body{font-family:'Segoe UI',Arial,sans-serif;color:#111;padding:32px;font-size:13px;}
-  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #1e293b;}
-  .logo{font-size:20px;font-weight:900;color:#1e293b;letter-spacing:-0.03em;}
-  .logo span{color:#7c3aed;}
-  .meta{text-align:right;font-size:11px;color:#64748b;}
-  h1{font-size:18px;font-weight:800;color:#1e293b;margin-bottom:4px;}
-  h2{font-size:13px;font-weight:700;color:#374151;margin:22px 0 10px;text-transform:uppercase;letter-spacing:.06em;}
-  .badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;background:#ede9fe;color:#6d28d9;margin-bottom:14px;}
-  table{width:100%;border-collapse:collapse;margin-bottom:10px;}
-  th{background:#1e293b;color:#fff;padding:8px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.05em;}
-  td{padding:7px 12px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
-  tr:nth-child(even) td{background:#f8fafc;}
-  .footer{margin-top:32px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center;}
-  @media print{body{padding:20px}@page{margin:18mm}}
-</style>
-</head><body>
-<div class="header">
-  <div class="logo">Brand<span>vakt</span> <span style="font-weight:400;font-size:13px;color:#64748b;">Academy</span></div>
-  <div class="meta"><strong>${tenantName}</strong><br>Gerado em: ${now}<br>Tamanho: ${r.size}</div>
-</div>
-
-<h1>${r.name}</h1>
-<span class="badge">${r.type||r.category||'Relatório'}</span>
-
-${deptRows ? `<h2>Desempenho por Departamento</h2>
-<table>
-  <thead><tr><th>Departamento</th><th>Compliance</th><th>Risco</th><th>Certificados</th><th>Treinamento</th></tr></thead>
-  <tbody>${deptRows}</tbody>
-</table>` : ''}
-
-${insightRows ? `<h2>Principais Insights</h2>
-<table>
-  <thead><tr><th>Indicador</th><th>Valor</th><th>Tendência</th></tr></thead>
-  <tbody>${insightRows}</tbody>
-</table>` : ''}
-
-<div class="footer">Brandvakt Academy — Documento gerado automaticamente · ${now}</div>
-</body></html>`;
-
+  const now = new Date().toLocaleString('pt-BR');
+  const html = rpPdfShell(r.name, r.type||r.category, tenantName, now, r.size, rpBuildBody(r));
   showToast&&showToast(`📄 Abrindo PDF de "${r.name}"...`, 'info');
   const win = window.open('', '_blank');
   if (!win) { showToast&&showToast('❌ Permita pop-ups para exportar PDF.','error'); return; }
   win.document.write(html);
   win.document.close();
   win.onload = () => { win.focus(); win.print(); };
-  setTimeout(() => showToast&&showToast(`✅ Relatório "${r.name}" exportado como PDF!`, 'success'), 800);
+  setTimeout(() => showToast&&showToast(`✅ "${r.name}" exportado como PDF!`, 'success'), 800);
 };
 
 // ── Copy share link ───────────────────────────────────────────
