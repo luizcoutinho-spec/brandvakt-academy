@@ -440,60 +440,82 @@ function companyRisk() {
   return Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
 }
 
-// ── Rebuild PHISHING_MOCK.usuarios from active tenant users ───────
-function phInjectDemoUser() {
-  // Rebuild full user list from active tenant
-  if (typeof getActiveTenantUsers === 'function') {
-    const tenantUsers = getActiveTenantUsers();
-    PHISHING_MOCK.usuarios = tenantUsers.map((u, i) => {
-      if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
-        const ds = DEMO_STATE;
-        return {
-          id: 999, nome: ds.user.name, email: ds.user.email,
-          dept: ds.user.dept, cargo: ds.user.role,
-          riskScore: ds.getRiskScore(),
-          campanhas: ds.phishing.length,
-          cliques: ds.phishing.filter(p=>p.action==='clicked').length,
-          reportou: ds.phishing.filter(p=>p.action==='reported').length,
-          grupo: ds.user.deptId, isDemo: true,
-        };
-      }
-      const deptMap = { Diretoria:'dir', RH:'rh', TI:'ti', Jurídico:'jur', Financeiro:'fin', Comercial:'com', Operações:'ops', Marketing:'mkt' };
-      const riskBase = u.risk === 'high' ? 75 : u.risk === 'med' ? 45 : 15;
-      return {
-        id: u.id,
-        nome: u.name,
-        email: u.email,
-        dept: u.dept,
-        cargo: u.role,
-        riskScore: Math.min(99, riskBase + Math.round((100 - u.completion) * 0.15)),
-        campanhas: 3 + (i % 2),
-        cliques: u.risk === 'high' ? 3 : u.risk === 'med' ? 1 : 0,
-        reportou: u.risk === 'low' ? 2 : u.risk === 'med' ? 1 : 0,
-        grupo: deptMap[u.dept] || 'ops',
-      };
-    });
-  } else if (typeof DEMO_STATE !== 'undefined') {
-    // Fallback: só o demo
-    const ds = DEMO_STATE;
-    const entry = {
-      id: 999, nome: ds.user.name, email: ds.user.email,
-      dept: ds.user.dept, cargo: ds.user.role,
-      riskScore: ds.getRiskScore(),
-      campanhas: ds.phishing.length,
-      cliques: ds.phishing.filter(p=>p.action==='clicked').length,
-      reportou: ds.phishing.filter(p=>p.action==='reported').length,
-      grupo: ds.user.deptId, isDemo: true,
-    };
-    const idx = PHISHING_MOCK.usuarios.findIndex(u => u.id === 999);
-    if (idx >= 0) PHISHING_MOCK.usuarios[idx] = entry;
-    else PHISHING_MOCK.usuarios.push(entry);
+// ── Rebuild usuarios + grupos from active tenant (single source of truth) ──
+function phRebuildFromTenant() {
+  if (typeof getActiveTenantUsers !== 'function') return;
+  const tenantUsers = getActiveTenantUsers();
+  if (!tenantUsers || !tenantUsers.length) return;
+
+  // helper: dept → stable group id
+  function deptToId(dept) {
+    return (dept || 'outros').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
   }
+
+  const deptIconMap = {
+    'Diretoria':'💼','TI':'💻','Financeiro':'💰','Comercial':'📞',
+    'RH':'👤','Marketing':'📣','Jurídico':'⚖️','Operações':'⚙️',
+    'TI & Tecnologia':'💻','Juridico':'⚖️',
+  };
+
+  // Build usuario list
+  PHISHING_MOCK.usuarios = tenantUsers.map((u, i) => {
+    let riskScore, campanhas, cliques, reportou;
+
+    if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
+      const ds = DEMO_STATE;
+      riskScore = (typeof ds.getRiskScore === 'function') ? ds.getRiskScore() : 50;
+      campanhas = (ds.phishing||[]).length;
+      cliques   = (ds.phishing||[]).filter(p=>p.action==='clicked').length;
+      reportou  = (ds.phishing||[]).filter(p=>p.action==='reported').length;
+    } else {
+      const rBase = u.risk==='high' ? 72 : u.risk==='med' ? 44 : 14;
+      riskScore = Math.min(99, rBase + Math.round((100-(u.completion||70))*0.15));
+      campanhas = 3 + (i % 2);
+      cliques   = u.risk==='high' ? 3 : u.risk==='med' ? 1 : 0;
+      reportou  = u.risk==='low'  ? 2 : u.risk==='med' ? 1 : 0;
+    }
+
+    const emailFallback = (u.name||'user').toLowerCase().replace(/\s+/g,'.') + '@empresa.com';
+    return {
+      id:        u.id,
+      nome:      u.name  || 'Usuário',
+      email:     u.email || emailFallback,
+      dept:      u.dept  || 'Outros',
+      cargo:     u.role  || u.dept || '',
+      riskScore,
+      campanhas,
+      cliques,
+      reportou,
+      grupo:     deptToId(u.dept),
+      isDemo:    u.isDemo || false,
+    };
+  });
+
+  // Build grupos from real departments
+  const deptCount = {};
+  PHISHING_MOCK.usuarios.forEach(u => {
+    deptCount[u.dept] = (deptCount[u.dept]||0) + 1;
+  });
+
+  PHISHING_MOCK.grupos = [
+    { id:'all', nome:'Todos os Usuários', icon:'🏢', count: PHISHING_MOCK.usuarios.length },
+    ...Object.keys(deptCount).sort().map(dept => ({
+      id:    deptToId(dept),
+      nome:  dept,
+      icon:  deptIconMap[dept] || '👥',
+      count: deptCount[dept],
+    })),
+  ];
 }
+
+// legacy alias
+function phInjectDemoUser() { phRebuildFromTenant(); }
 
 // ── Main Render ────────────────────────────────────────────────
 window.renderPage_phishing = function () {
-  phInjectDemoUser();
+  phRebuildFromTenant();
   (function injectPhishingCSS() {
     if (document.getElementById('phishing-css')) return;
     // CSS already injected at top of file
@@ -1371,7 +1393,7 @@ window.phOpenAddUser = function() {
       <div class="ph-input-group"><label class="ph-label">E-mail Corporativo *</label><input class="ph-input" id="ph-au-email" type="email" placeholder="joao@empresa.com"></div>
       <div class="ph-input-group"><label class="ph-label">Departamento</label>
         <select class="ph-select" id="ph-au-dept">
-          ${['Financeiro','TI & Tecnologia','Comercial','RH','Marketing','Diretoria','Jurídico'].map(d=>`<option>${d}</option>`).join('')}
+          ${PHISHING_MOCK.grupos.filter(g=>g.id!=='all').map(g=>`<option>${g.nome}</option>`).join('')}
         </select>
       </div>
       <div class="ph-input-group"><label class="ph-label">Cargo</label><input class="ph-input" id="ph-au-cargo" placeholder="Ex: Analista Sr."></div>
@@ -1442,15 +1464,26 @@ window.phExportUsers = function() {
 // ── RELATÓRIOS ────────────────────────────────────────────────
 function renderPhRelatorios() {
   const c = PHISHING_MOCK.campanhas[0];
-  const depts = [
-    { name:'Financeiro',  members:67, clique:38, reporte:12, risk:72 },
-    { name:'Comercial',   members:89, clique:29, reporte:18, risk:54 },
-    { name:'Diretoria',   members:12, clique:45, reporte:8,  risk:81 },
-    { name:'Marketing',   members:42, clique:22, reporte:25, risk:41 },
-    { name:'TI',          members:48, clique:8,  reporte:42, risk:14 },
-    { name:'RH',          members:34, clique:15, reporte:35, risk:28 },
-    { name:'Jurídico',    members:18, clique:11, reporte:38, risk:19 },
-  ];
+
+  // Build dept stats from real users
+  const deptAgg = {};
+  PHISHING_MOCK.usuarios.forEach(u => {
+    const d = u.dept || 'Outros';
+    if (!deptAgg[d]) deptAgg[d] = { name:d, members:0, totalCliques:0, totalReportes:0, totalCamps:0, totalRisk:0 };
+    deptAgg[d].members++;
+    deptAgg[d].totalCliques   += u.cliques;
+    deptAgg[d].totalReportes  += u.reportou;
+    deptAgg[d].totalCamps     += u.campanhas;
+    deptAgg[d].totalRisk      += u.riskScore;
+  });
+  const depts = Object.values(deptAgg).map(d => ({
+    name:    d.name,
+    members: d.members,
+    clique:  d.totalCamps>0 ? Math.round(d.totalCliques/d.totalCamps*100) : 0,
+    reporte: d.totalCamps>0 ? Math.round(d.totalReportes/d.totalCamps*100) : 0,
+    risk:    d.members>0    ? Math.round(d.totalRisk/d.members) : 0,
+  }));
+
   const topRisk = [...PHISHING_MOCK.usuarios].sort((a,b)=>b.riskScore-a.riskScore).slice(0,10);
 
   return `
@@ -1476,7 +1509,7 @@ function renderPhRelatorios() {
         <label class="ph-label">Departamento</label>
         <select class="ph-select">
           <option>Todos</option>
-          ${['Financeiro','TI','Comercial','RH','Marketing','Diretoria'].map(d=>`<option>${d}</option>`).join('')}
+          ${PHISHING_MOCK.grupos.filter(g=>g.id!=='all').map(g=>`<option>${g.nome}</option>`).join('')}
         </select>
       </div>
       <button class="ph-btn ph-btn-primary" onclick="showToast&&showToast('Filtros aplicados!','info')">Aplicar Filtros</button>
