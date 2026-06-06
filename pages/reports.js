@@ -653,7 +653,6 @@ function rpRenderExport() {
         ${[
           { id:'pdf',   icon:'📄', name:'PDF',      desc:'Relatório visual completo' },
           { id:'xlsx',  icon:'📊', name:'Excel',    desc:'Dados tabulares editáveis' },
-          { id:'csv',   icon:'📋', name:'CSV',      desc:'Exportação de dados brutos' },
           { id:'json',  icon:'🔧', name:'JSON',     desc:'Integração via API / BI' },
         ].map(f=>`
           <div class="rp-fmt${RP.selectedFmt===f.id?' selected':''}" onclick="RP.selectedFmt='${f.id}';document.querySelectorAll('.rp-fmt').forEach(el=>el.classList.remove('selected'));this.classList.add('selected')">
@@ -713,7 +712,7 @@ function rpRenderExport() {
         { icon:'⚠️', name:'Human Risk Report',      desc:'Score + ranking · Excel',  color:'#ef4444' },
         { icon:'📋', name:'Compliance Audit',        desc:'Evidências + gaps · PDF', color:'#22c55e' },
         { icon:'📧', name:'Phishing Summary',        desc:'Resultados Q2 · PDF',     color:'#f59e0b' },
-        { icon:'🏆', name:'Certificados Emitidos',  desc:'Lista completa · CSV',     color:'#8b5cf6' },
+        { icon:'🏆', name:'Certificados Emitidos',  desc:'Lista completa · PDF',     color:'#8b5cf6' },
         { icon:'🛤', name:'Trilhas & Progresso',    desc:'Por usuário · Excel',      color:'#14b8a6' },
       ].map(e=>`
         <div class="rp-sched-card" onclick="showToast&&showToast('Exportando ${e.name}...','info')" style="cursor:pointer;flex-direction:column;align-items:flex-start;gap:6px;">
@@ -728,7 +727,7 @@ function rpRenderExport() {
 }
 
 window.rpDoExport = function() {
-  const fmtNames = { pdf:'PDF', xlsx:'Excel', csv:'CSV', json:'JSON' };
+  const fmtNames = { pdf:'PDF', xlsx:'Excel', json:'JSON' };
   showToast&&showToast('Gerando relatório ' + (fmtNames[RP.selectedFmt]||'PDF') + '... Aguarde.', 'info');
   setTimeout(() => showToast&&showToast('✅ Relatório exportado com sucesso!', 'success'), 1800);
 };
@@ -810,7 +809,6 @@ window.rpOpenNewReport = function() {
         <select class="rp-select" id="rp-nr-fmt">
           <option value="pdf">PDF — Relatório visual completo</option>
           <option value="xlsx">Excel — Dados tabulares</option>
-          <option value="csv">CSV — Dados brutos</option>
         </select>
       </div>
     </div>
@@ -864,7 +862,7 @@ window.rpOpenSchedule = function() {
       <div><label class="rp-label">Destinatário(s) *</label><input class="rp-input" id="rp-sc-to" placeholder="email@empresa.com, email2@empresa.com"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div><label class="rp-label">Formato</label>
-          <select class="rp-select" id="rp-sc-fmt"><option>PDF</option><option>Excel</option><option>CSV</option></select>
+          <select class="rp-select" id="rp-sc-fmt"><option>PDF</option><option>Excel</option></select>
         </div>
         <div><label class="rp-label">Horário</label>
           <input type="time" class="rp-input" id="rp-sc-time" value="08:00">
@@ -903,30 +901,84 @@ function rpShowModal(html, cls='rp-modal') {
 window.rpCloseModal = function() { const el=document.getElementById('rp-overlay'); if (el) el.remove(); };
 document.addEventListener('keydown', e => { if (e.key==='Escape') rpCloseModal(); });
 
-// ── Export report as CSV ──────────────────────────────────────
+// ── Export report as PDF (print dialog) ──────────────────────
 window.rpExportReport = function(id) {
   const r = REPORTS_DATA.reports.find(x=>x.id===id);
   if (!r) { showToast&&showToast('Relatório não encontrado','error'); return; }
-  // Build a summary CSV from department performance data
-  const depts = REPORTS_DATA.dept_perf || [];
+
+  const depts      = REPORTS_DATA.dept_perf || [];
+  const insights   = REPORTS_DATA.insights  || [];
   const tenantName = APP&&APP.tenants ? (APP.tenants.find(t=>t.active)||{}).name||'Empresa' : 'Empresa';
-  let csv = `"Relatório: ${r.name}"\n"Empresa: ${tenantName}"\n"Gerado em: ${new Date().toLocaleString('pt-BR')}"\n\n`;
-  csv += '"Departamento","Compliance (%)","Risco (%)","Certificados","Treinamento (%)"\n';
-  depts.forEach(d => {
-    csv += [d.name, d.compliance, d.risk, d.certs, d.training].map(v=>`"${v}"`).join(',') + '\n';
-  });
-  if (REPORTS_DATA.insights && REPORTS_DATA.insights.length) {
-    csv += '\n"Insights Principais","Valor","Trend"\n';
-    REPORTS_DATA.insights.forEach(i => {
-      csv += `"${i.title}","${i.value}","${i.trend||''}"\n`;
-    });
-  }
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = `${r.name.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click(); URL.revokeObjectURL(url);
-  showToast&&showToast(`✅ Relatório "${r.name}" exportado com sucesso!`, 'success');
+  const now        = new Date().toLocaleString('pt-BR');
+
+  const deptRows = depts.map(d => `
+    <tr>
+      <td>${d.name}</td>
+      <td style="text-align:center">${d.compliance}%</td>
+      <td style="text-align:center">${d.risk}%</td>
+      <td style="text-align:center">${d.certs}</td>
+      <td style="text-align:center">${d.training}%</td>
+    </tr>`).join('');
+
+  const insightRows = insights.map(i => `
+    <tr>
+      <td>${i.title}</td>
+      <td style="text-align:center;font-weight:700">${i.value}</td>
+      <td style="text-align:center;color:${(i.trend||'').startsWith('+')?'#16a34a':'#dc2626'}">${i.trend||'—'}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<title>${r.name}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  body{font-family:'Segoe UI',Arial,sans-serif;color:#111;padding:32px;font-size:13px;}
+  .header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px;padding-bottom:18px;border-bottom:2px solid #1e293b;}
+  .logo{font-size:20px;font-weight:900;color:#1e293b;letter-spacing:-0.03em;}
+  .logo span{color:#7c3aed;}
+  .meta{text-align:right;font-size:11px;color:#64748b;}
+  h1{font-size:18px;font-weight:800;color:#1e293b;margin-bottom:4px;}
+  h2{font-size:13px;font-weight:700;color:#374151;margin:22px 0 10px;text-transform:uppercase;letter-spacing:.06em;}
+  .badge{display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;background:#ede9fe;color:#6d28d9;margin-bottom:14px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  th{background:#1e293b;color:#fff;padding:8px 12px;font-size:11px;font-weight:700;text-align:left;text-transform:uppercase;letter-spacing:.05em;}
+  td{padding:7px 12px;border-bottom:1px solid #e2e8f0;vertical-align:middle;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  .footer{margin-top:32px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center;}
+  @media print{body{padding:20px}@page{margin:18mm}}
+</style>
+</head><body>
+<div class="header">
+  <div class="logo">Brand<span>vakt</span> <span style="font-weight:400;font-size:13px;color:#64748b;">Academy</span></div>
+  <div class="meta"><strong>${tenantName}</strong><br>Gerado em: ${now}<br>Tamanho: ${r.size}</div>
+</div>
+
+<h1>${r.name}</h1>
+<span class="badge">${r.type||r.category||'Relatório'}</span>
+
+${deptRows ? `<h2>Desempenho por Departamento</h2>
+<table>
+  <thead><tr><th>Departamento</th><th>Compliance</th><th>Risco</th><th>Certificados</th><th>Treinamento</th></tr></thead>
+  <tbody>${deptRows}</tbody>
+</table>` : ''}
+
+${insightRows ? `<h2>Principais Insights</h2>
+<table>
+  <thead><tr><th>Indicador</th><th>Valor</th><th>Tendência</th></tr></thead>
+  <tbody>${insightRows}</tbody>
+</table>` : ''}
+
+<div class="footer">Brandvakt Academy — Documento gerado automaticamente · ${now}</div>
+</body></html>`;
+
+  showToast&&showToast(`📄 Abrindo PDF de "${r.name}"...`, 'info');
+  const win = window.open('', '_blank');
+  if (!win) { showToast&&showToast('❌ Permita pop-ups para exportar PDF.','error'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.focus(); win.print(); };
+  setTimeout(() => showToast&&showToast(`✅ Relatório "${r.name}" exportado como PDF!`, 'success'), 800);
 };
 
 // ── Copy share link ───────────────────────────────────────────
