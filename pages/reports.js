@@ -1232,13 +1232,9 @@ window.rpExportReport = function(id) {
 
 // ── Delete report ─────────────────────────────────────────────
 window.rpDeleteReport = function(id) {
-  const r = REPORTS_DATA.reports.find(x=>x.id===id);
-  if (!r) return;
-  if (!confirm(`Excluir o relatório "${r.name}"? Esta ação não pode ser desfeita.`)) return;
   const idx = REPORTS_DATA.reports.findIndex(x=>x.id===id);
   if (idx > -1) REPORTS_DATA.reports.splice(idx, 1);
   rpRefreshList();
-  showToast&&showToast(`🗑 Relatório "${r.name}" excluído.`, 'info');
 };
 
 // ── Copy share link ───────────────────────────────────────────
