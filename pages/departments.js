@@ -1072,34 +1072,43 @@ window.dpAiGenerateTrail = function() {
 
   let i = 0;
   function tick() {
+    const bar = document.getElementById('dp-ai-bar');
+    const msg = document.getElementById('dp-ai-step-msg');
+    const pct = document.getElementById('dp-ai-pct');
+    const log = document.getElementById('dp-ai-log');
+
+    // Mark previous step as done in the log
+    if (i > 0) {
+      const prev = steps[i - 1];
+      const isDoneFinal = (i === steps.length);
+      if (log) {
+        const item = document.createElement('div');
+        item.className = 'dp-ai-log-item';
+        item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:7px;background:rgba(255,255,255,0.03);font-size:0.72rem;';
+        item.innerHTML = isDoneFinal
+          ? `<span style="color:#22c55e;flex-shrink:0;">✅</span><span style="color:#22c55e;font-weight:600;">${prev.msg}</span>`
+          : `<span style="color:#8b5cf6;flex-shrink:0;">✓</span><span style="color:#94a3b8;">${prev.msg}</span>`;
+        log.appendChild(item);
+        log.scrollTop = log.scrollHeight;
+      }
+    }
+
+    // All done — open review
     if (i >= steps.length) {
       _dpAiTrail = dpAiBuildTrailData();
       dpAiShowReview();
       return;
     }
+
+    // Show current step as "in progress"
     const s = steps[i++];
-    const bar = document.getElementById('dp-ai-bar');
-    const msg = document.getElementById('dp-ai-step-msg');
-    const pct = document.getElementById('dp-ai-pct');
-    const log = document.getElementById('dp-ai-log');
     if (bar) bar.style.width = s.pct + '%';
-    if (msg) msg.textContent = s.msg;
     if (pct) pct.textContent = s.pct + '%';
-    if (log) {
-      const isDone = (i === steps.length);
-      const item = document.createElement('div');
-      item.className = 'dp-ai-log-item';
-      item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:7px;background:rgba(255,255,255,0.03);font-size:0.72rem;color:#94a3b8;';
-      item.innerHTML = isDone
-        ? `<span style="color:#22c55e;flex-shrink:0;">✅</span><span style="color:#22c55e;font-weight:600;">${s.msg}</span>`
-        : `<span style="color:#8b5cf6;flex-shrink:0;">✓</span><span>${s.msg}</span>`;
-      log.appendChild(item);
-      // Keep scroll at bottom
-      log.scrollTop = log.scrollHeight;
-    }
-    setTimeout(tick, isDone ? 700 : 620);
+    if (msg) msg.textContent = s.msg;
+
+    setTimeout(tick, 350);
   }
-  setTimeout(tick, 400);
+  setTimeout(tick, 200);
 };
 
 // ── Build the AI trail object from live HRM + tenant data ─────
