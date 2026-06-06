@@ -1178,6 +1178,7 @@ function dpAiBuildTrailData() {
         name:'Phishing — Reconhecimento e Resposta Imediata',
         duration:'6h', recurrence:'Trimestral',
         audience: `${highRisk} usuários de alto risco · ${topDeptNames}`,
+        userFilter: { type:'risk', level:'high' },
         justification: `Score médio de phishing: ${phAvg}/100 — acima do limiar crítico de 60. ${highRisk} usuário(s) clicaram em simulações recentes. Ação imediata recomendada.`,
         goal:'Reduzir taxa de clique para <8% em 30 dias',
         status:'active', completion:0,
@@ -1187,6 +1188,7 @@ function dpAiBuildTrailData() {
         name:'Engenharia Social & CEO Fraud Awareness',
         duration:'4h', recurrence:'Semestral',
         audience:`Gestores · Diretoria · Financeiro`,
+        userFilter: { type:'dept', depts: sortedDepts.map(d=>d.name) },
         justification:`Departamentos de alto risco (${topDeptNames}) apresentam maior exposição a ataques de spear-phishing e fraude de CEO. Score médio HRM: ${avgScore}/100.`,
         goal:'100% de conclusão por gestores em 14 dias',
         status:'active', completion:0,
@@ -1196,6 +1198,7 @@ function dpAiBuildTrailData() {
         name:'Senhas Seguras, MFA e Gestão de Acessos',
         duration:'3h', recurrence:'Anual',
         audience:`Todos os ${total} usuários`,
+        userFilter: { type:'all' },
         justification:`Score médio de senha/acesso: ${pwAvg}/100. ${expCerts} usuário(s) com certificados vencidos, indicando baixo engajamento com boas práticas de segurança.`,
         goal:'100% dos usuários com MFA ativado em 21 dias',
         status:'active', completion:0,
@@ -1205,6 +1208,7 @@ function dpAiBuildTrailData() {
         name:'Lacunas de Treinamento — Reforço Direcionado',
         duration:'8h', recurrence:'Semestral',
         audience:`${medRisk} usuários de risco moderado`,
+        userFilter: { type:'risk', level:'med' },
         justification:`Score médio de treinamento: ${trAvg}/100. ${medRisk} usuário(s) com conclusão <50% nos últimos 90 dias. Módulos de reforço personalizados por departamento.`,
         goal:`Elevar taxa de conclusão para >85% em 30 dias`,
         status:'active', completion:0,
@@ -1214,6 +1218,7 @@ function dpAiBuildTrailData() {
         name:'Proteção de Dados, LGPD e Privacidade Avançada',
         duration:'6h', recurrence:'Anual',
         audience:`RH · Jurídico · TI · todos os ${total} usuários`,
+        userFilter: { type:'dept', depts:['RH','Jurídico','TI'] },
         justification:`Cobertura ISO 27001 abaixo do ideal. Riscos de privacidade e conformidade identificados nos fatores de acesso e treinamento do perfil HRM.`,
         goal:'Cobertura de privacidade >90% em 45 dias',
         status:'active', completion:0,
@@ -1223,6 +1228,7 @@ function dpAiBuildTrailData() {
         name:'Cultura de Segurança — Boas Práticas Contínuas',
         duration:'4h', recurrence:'Trimestral',
         audience:`Todos os ${total} usuários`,
+        userFilter: { type:'all' },
         justification:`Reforço cultural necessário para manter os ganhos gerados pelos módulos urgentes. Inclui gamificação, casos reais e métricas de progresso individuais.`,
         goal:'Score HRM médio <40 em 60 dias',
         status:'active', completion:0,
@@ -1298,7 +1304,7 @@ function dpAiShowReview() {
             <span style="font-size:0.68rem;color:#6b7280;">${m.duration} · ${m.recurrence}</span>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;font-size:0.72rem;">
-            <div style="padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:7px;"><span style="color:#6b7280;">👥 Público: </span>${m.audience}</div>
+            <div onclick="dpAiShowModuleUsers(${m.n - 1})" style="padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:7px;cursor:pointer;transition:background 0.15s;" onmouseover="this.style.background='rgba(139,92,246,0.10)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'"><span style="color:#6b7280;">👥 Público: </span><span style="color:#8b5cf6;text-decoration:underline dotted;">${m.audience}</span> <span style="color:#8b5cf6;font-size:0.65rem;">↗</span></div>
             <div style="padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:7px;"><span style="color:#6b7280;">⏰ Prazo: </span><strong>${m.deadline}</strong></div>
           </div>
           <div style="padding:8px 10px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.10);border-radius:8px;font-size:0.72rem;color:#94a3b8;line-height:1.55;margin-bottom:6px;">
@@ -1376,6 +1382,96 @@ window.dpAiApproveTrail = function() {
   dpTab('trails');
   showToast && showToast('✅ Trilha gerada pela IA publicada com sucesso!', 'success');
   _dpAiTrail = null;
+};
+
+// ── Show users for a given AI module ─────────────────────────
+window.dpAiShowModuleUsers = function(moduleIndex) {
+  const t = _dpAiTrail;
+  if (!t || !t.modules[moduleIndex]) return;
+  const m = t.modules[moduleIndex];
+  const f = m.userFilter || { type:'all' };
+
+  // Get all users from HRM_DATA or tenant
+  const allUsers = (typeof HRM_DATA !== 'undefined' && HRM_DATA.users && HRM_DATA.users.length)
+    ? HRM_DATA.users
+    : (typeof getActiveTenantUsers === 'function' ? getActiveTenantUsers() : []);
+
+  // Filter according to the module's userFilter rule
+  let filtered = [];
+  if (f.type === 'risk' && f.level === 'high') {
+    filtered = allUsers.filter(u => (u.score || 0) > 60);
+  } else if (f.type === 'risk' && f.level === 'med') {
+    filtered = allUsers.filter(u => (u.score || 0) > 30 && (u.score || 0) <= 60);
+  } else if (f.type === 'dept' && f.depts && f.depts.length) {
+    const lc = f.depts.map(d => d.toLowerCase());
+    filtered = allUsers.filter(u => {
+      const d = (u.dept || u.department || '').toLowerCase();
+      return lc.some(fd => d.includes(fd));
+    });
+    // If none matched (dept names may differ), fall back to top scorers
+    if (!filtered.length) filtered = [...allUsers].sort((a,b) => (b.score||0)-(a.score||0)).slice(0, Math.min(6, allUsers.length));
+  } else {
+    filtered = allUsers;
+  }
+
+  // Risk badge helper
+  const riskBadge = (score) => {
+    if (score > 60) return `<span style="padding:2px 8px;border-radius:99px;background:rgba(239,68,68,0.12);color:#ef4444;font-size:0.62rem;font-weight:700;">Alto</span>`;
+    if (score > 30) return `<span style="padding:2px 8px;border-radius:99px;background:rgba(245,158,11,0.12);color:#f59e0b;font-size:0.62rem;font-weight:700;">Médio</span>`;
+    return `<span style="padding:2px 8px;border-radius:99px;background:rgba(34,197,94,0.12);color:#22c55e;font-size:0.62rem;font-weight:700;">Baixo</span>`;
+  };
+
+  const avatarColors = ['#3b82f6','#8b5cf6','#ec4899','#ef4444','#f59e0b','#22c55e','#06b6d4','#f97316'];
+  const avatar = (name, size=32) => {
+    const bg = avatarColors[(name.charCodeAt(0) + (name.charCodeAt(1)||0)) % avatarColors.length];
+    const ini = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    return `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:${size*0.28}px;font-weight:700;color:#fff;flex-shrink:0;">${ini}</div>`;
+  };
+
+  const rows = filtered.map(u => {
+    const name  = u.name  || u.nome  || '—';
+    const email = u.email || '—';
+    const dept  = u.dept  || u.department || u.role || '—';
+    const score = u.score ?? '—';
+    const comp  = u.completion ?? u.training ?? '—';
+    return `
+      <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;border-bottom:1px solid rgba(255,255,255,0.04);">
+        ${avatar(name)}
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:0.84rem;">${name}</div>
+          <div style="font-size:0.70rem;color:#6b7280;">${email} · ${dept}</div>
+        </div>
+        <div style="text-align:center;min-width:52px;">
+          <div style="font-size:0.90rem;font-weight:800;color:${score>60?'#ef4444':score>30?'#f59e0b':'#22c55e'}">${score}</div>
+          <div style="font-size:0.60rem;color:#6b7280;">HRM</div>
+        </div>
+        <div style="text-align:center;min-width:48px;">
+          <div style="font-size:0.84rem;font-weight:700;color:#00d4ff;">${comp}${typeof comp==='number'?'%':''}</div>
+          <div style="font-size:0.60rem;color:#6b7280;">Conclusão</div>
+        </div>
+        ${typeof score === 'number' ? riskBadge(score) : ''}
+      </div>`;
+  }).join('');
+
+  const emptyMsg = filtered.length === 0
+    ? `<div style="text-align:center;padding:24px;color:#6b7280;font-size:0.83rem;">Nenhum usuário encontrado para este filtro.</div>`
+    : '';
+
+  dpShowModal(`
+    <div class="dp-modal-hdr">
+      <div>
+        <div style="font-size:0.95rem;font-weight:800;">👥 Usuários — Módulo ${m.n}: ${m.name}</div>
+        <div style="font-size:0.72rem;color:#6b7280;margin-top:3px;">${filtered.length} usuário(s) · ${m.audience}</div>
+      </div>
+      <button class="dp-modal-close" onclick="this.closest('#dp-overlay').remove()">✕</button>
+    </div>
+    <div style="max-height:420px;overflow-y:auto;margin:0 -4px;">
+      ${rows || emptyMsg}
+    </div>
+    <div style="margin-top:16px;">
+      <button class="dp-btn dp-btn-ghost" style="width:100%;" onclick="this.closest('#dp-overlay').remove()">Fechar</button>
+    </div>
+  `);
 };
 
 // ── Modal helpers ─────────────────────────────────────────────
