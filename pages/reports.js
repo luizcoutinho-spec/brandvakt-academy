@@ -708,19 +708,20 @@ function rpRenderExport() {
     <h3 style="font-size:0.95rem;font-weight:800;margin-bottom:14px;">⚡ Exportações Rápidas</h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;">
       ${[
-        { icon:'📑', name:'Relatório Executivo',    desc:'Resumo completo · PDF',    color:'#00d4ff' },
-        { icon:'⚠️', name:'Human Risk Report',      desc:'Score + ranking · Excel',  color:'#ef4444' },
-        { icon:'📋', name:'Compliance Audit',        desc:'Evidências + gaps · PDF', color:'#22c55e' },
-        { icon:'📧', name:'Phishing Summary',        desc:'Resultados Q2 · PDF',     color:'#f59e0b' },
-        { icon:'🏆', name:'Certificados Emitidos',  desc:'Lista completa · PDF',     color:'#8b5cf6' },
-        { icon:'🛤', name:'Trilhas & Progresso',    desc:'Por usuário · Excel',      color:'#14b8a6' },
+        { icon:'📑', name:'Relatório Executivo',   desc:'Resumo completo · PDF',    color:'#00d4ff', cat:'executive',  type:'Executivo'     },
+        { icon:'⚠️', name:'Human Risk Report',     desc:'Score + ranking · PDF',    color:'#ef4444', cat:'risk',       type:'Risco'         },
+        { icon:'📋', name:'Compliance Audit',       desc:'Evidências + gaps · PDF',  color:'#22c55e', cat:'compliance', type:'Compliance'    },
+        { icon:'📧', name:'Phishing Summary',       desc:'Resultados Q2 · PDF',      color:'#f59e0b', cat:'cyber',      type:'Cybersecurity' },
+        { icon:'🏆', name:'Certificados Emitidos', desc:'Lista completa · PDF',      color:'#8b5cf6', cat:'certs',      type:'Certificados'  },
+        { icon:'🛤', name:'Trilhas & Progresso',   desc:'Por usuário · PDF',         color:'#14b8a6', cat:'training',   type:'Treinamento'   },
       ].map(e=>`
-        <div class="rp-sched-card" onclick="showToast&&showToast('Exportando ${e.name}...','info')" style="cursor:pointer;flex-direction:column;align-items:flex-start;gap:6px;">
+        <div class="rp-sched-card" onclick="rpQuickExport('${e.cat}','${e.name}','${e.type}')" style="cursor:pointer;flex-direction:column;align-items:flex-start;gap:6px;transition:all 0.18s;" onmouseenter="this.style.borderColor='${e.color}55';this.style.background='rgba(255,255,255,0.04)'" onmouseleave="this.style.borderColor='';this.style.background=''">
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="font-size:1.1rem;">${e.icon}</span>
             <span style="font-size:0.82rem;font-weight:700;color:${e.color};">${e.name}</span>
           </div>
           <div style="font-size:0.70rem;color:#6b7280;">${e.desc}</div>
+          <div style="font-size:0.66rem;color:${e.color};opacity:0.7;margin-top:2px;">📤 Clique para gerar PDF</div>
         </div>`).join('')}
     </div>
   </div>`;
@@ -730,6 +731,23 @@ window.rpDoExport = function() {
   const fmtNames = { pdf:'PDF', xlsx:'Excel', json:'JSON' };
   showToast&&showToast('Gerando relatório ' + (fmtNames[RP.selectedFmt]||'PDF') + '... Aguarde.', 'info');
   setTimeout(() => showToast&&showToast('✅ Relatório exportado com sucesso!', 'success'), 1800);
+};
+
+// ── Quick Export: generate PDF directly from category ─────────
+window.rpQuickExport = function(category, name, type) {
+  showToast&&showToast(`📄 Gerando "${name}"...`, 'info');
+  const tenantName = APP&&APP.tenants ? (APP.tenants.find(t=>t.active)||{}).name||'Empresa' : 'Empresa';
+  const now = new Date().toLocaleString('pt-BR');
+  // Build a synthetic report object matching rpBuildBody expectations
+  const synth = { id: 'quick_'+category, name, type, category, icon:'📄', date: new Date().toLocaleDateString('pt-BR'), size: null, views: 0, status: 'ready', color: '#00d4ff' };
+  const body = rpBuildBody(synth);
+  const html = rpPdfShell(name, type, tenantName, now, null, body);
+  const win = window.open('', '_blank');
+  if (!win) { showToast&&showToast('❌ Permita pop-ups para exportar PDF.','error'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.focus(); win.print(); };
+  setTimeout(() => showToast&&showToast(`✅ "${name}" gerado como PDF!`, 'success'), 700);
 };
 
 // ══════════════════════════════════════════════════════════════
