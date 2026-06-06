@@ -710,13 +710,23 @@ window.exDownloadPDF = function(id) {
   <script>window.onload = function() { window.print(); };<\/script>
   </body></html>`;
 
-  const win = window.open('', '_blank', 'width=900,height=700');
-  if (!win) {
-    showToast&&showToast('⚠️ Pop-up bloqueado. Permita pop-ups para este site.', 'warning');
-    return;
+  try {
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const win  = window.open(url, '_blank');
+    if (!win) {
+      // Fallback: force download as .html file the user can open and print
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `relatorio-executivo-${r.period.replace(/\s/g,'-')}.html`;
+      a.click();
+      showToast&&showToast('📥 Pop-up bloqueado — arquivo HTML baixado. Abra e pressione Ctrl+P para gerar o PDF.', 'info');
+    }
+    // Revoke after a delay to allow the tab to finish loading
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch(e) {
+    showToast&&showToast('Erro ao gerar PDF: ' + e.message, 'error');
   }
-  win.document.write(html);
-  win.document.close();
 };
 
 window.exSendToAdmin = function(id) {
