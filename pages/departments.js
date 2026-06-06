@@ -1463,13 +1463,13 @@ window.dpAiShowModuleUsers = function(moduleIndex) {
         <div style="font-size:0.95rem;font-weight:800;">👥 Usuários — Módulo ${m.n}: ${m.name}</div>
         <div style="font-size:0.72rem;color:#6b7280;margin-top:3px;">${filtered.length} usuário(s) · ${m.audience}</div>
       </div>
-      <button class="dp-modal-close" onclick="this.closest('#dp-overlay').remove()">✕</button>
+      <button class="dp-modal-close" onclick="dpCloseModal();dpAiShowReview()">✕</button>
     </div>
     <div style="max-height:420px;overflow-y:auto;margin:0 -4px;">
       ${rows || emptyMsg}
     </div>
     <div style="margin-top:16px;">
-      <button class="dp-btn dp-btn-ghost" style="width:100%;" onclick="this.closest('#dp-overlay').remove()">Fechar</button>
+      <button class="dp-btn dp-btn-ghost" style="width:100%;" onclick="dpCloseModal();dpAiShowReview()">← Voltar para a Trilha</button>
     </div>
   `);
 };
