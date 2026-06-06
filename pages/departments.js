@@ -631,7 +631,7 @@ function dpRenderMatrix() {
         <th>Risk</th>
         <th>Ações</th>
       </tr></thead>
-      <tbody>
+      <tbody id="dp-matrix-tbody">
         ${[...DEPT_DATA.departments].sort((a,b)=>b.completion-a.completion).map(d=>`
         <tr onclick="dpOpenDeptDetail('${d.id}')">
           <td>
@@ -674,8 +674,44 @@ function dpRenderMatrix() {
   </div>`;
 }
 
+let _dpMatrixSortCol = 'completion';
+let _dpMatrixSortDir = -1; // -1 = desc, 1 = asc
 window.dpMatrixSort = function(col) {
-  showToast&&showToast('Ordenando por '+col,'info');
+  if (_dpMatrixSortCol === col) { _dpMatrixSortDir *= -1; }
+  else { _dpMatrixSortCol = col; _dpMatrixSortDir = -1; }
+  const tbody = document.getElementById('dp-matrix-tbody');
+  if (!tbody) { dpTab('matrix'); return; }
+  const sorted = [...DEPT_DATA.departments].sort((a,b) => _dpMatrixSortDir * ((a[col]||0) - (b[col]||0)));
+  tbody.innerHTML = sorted.map(d => `
+    <tr onclick="dpOpenDeptDetail('${d.id}')">
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font-size:1.1rem">${d.icon}</span>
+          <div>
+            <div style="font-weight:700">${d.name}</div>
+            <div style="font-size:0.70rem;color:#6b7280">${d.users} usuários</div>
+          </div>
+        </div>
+      </td>
+      <td><div style="font-size:1.1rem;font-weight:900;color:${dpCompColor(d.completion)}">${d.completion}%</div></td>
+      <td><div style="font-size:1rem;font-weight:800;color:${dpAvgColor(d.avg)}">${d.avg}</div></td>
+      <td><span style="font-size:0.88rem;font-weight:700;color:#8b5cf6">🏆 ${d.certs}</span></td>
+      <td style="min-width:140px">
+        <div class="dp-stat-bar" style="height:6px">
+          <div class="dp-stat-fill" style="width:${d.completion}%;background:${d.color}"></div>
+        </div>
+        <div style="font-size:0.62rem;color:#6b7280;margin-top:3px">${d.mandatory}% obrigatórios</div>
+      </td>
+      <td style="min-width:80px">${dpSparkline(d.trend, d.color, 80, 28)}</td>
+      <td><span class="dp-badge ${dpRiskClass[d.risk]}">${dpRiskLabel[d.risk]}</span></td>
+      <td onclick="event.stopPropagation()">
+        <div style="display:flex;gap:4px">
+          <button class="dp-btn dp-btn-ghost dp-btn-icon" onclick="dpOpenDeptDetail('${d.id}')" title="Detalhes">👁</button>
+          <button class="dp-btn dp-btn-ghost dp-btn-icon" onclick="dpOpenEditDept('${d.id}')" title="Editar">✏️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+  showToast&&showToast(`Ordenado por ${col} ${_dpMatrixSortDir < 0 ? '↓ decrescente' : '↑ crescente'}`, 'info');
 };
 
 // ══════════════════════════════════════════════════════════════

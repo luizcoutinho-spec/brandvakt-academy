@@ -1512,7 +1512,7 @@ function renderPhRelatorios() {
           ${PHISHING_MOCK.grupos.filter(g=>g.id!=='all').map(g=>`<option>${g.nome}</option>`).join('')}
         </select>
       </div>
-      <button class="ph-btn ph-btn-primary" onclick="showToast&&showToast('Filtros aplicados!','info')">Aplicar Filtros</button>
+      <button class="ph-btn ph-btn-primary" onclick="phApplyReportFilters()">Aplicar Filtros</button>
     </div>
   </div>
 
@@ -1655,13 +1655,44 @@ function initPhReportCharts() {
   requestAnimationFrame(() => { if (PH.charts.timeline) PH.charts.timeline.resize(); });
 }
 
+window.phApplyReportFilters = function() {
+  const campSel  = document.getElementById('ph-r-camp')?.value || '';
+  const fromDate = document.getElementById('ph-r-from')?.value || '';
+  const toDate   = document.getElementById('ph-r-to')?.value   || '';
+  let filtered = PHISHING_MOCK.campanhas;
+  if (campSel && campSel !== 'Todas as campanhas') {
+    filtered = filtered.filter(c => c.nome === campSel);
+  }
+  const count = filtered.length;
+  const clicks = filtered.reduce((s,c) => s + (c.cliques||0), 0);
+  const sent   = filtered.reduce((s,c) => s + (c.enviados||0), 0);
+  const rate   = sent ? Math.round(clicks/sent*100) : 0;
+  showToast&&showToast(`✅ Filtros aplicados: ${count} campanha(s) · ${sent} envios · ${rate}% cliques`, 'success');
+};
+
 window.phExportPDF = function() {
   showToast&&showToast('Gerando relatório PDF…','info');
   setTimeout(()=>showToast&&showToast('Relatório PDF gerado!','success'),2000);
 };
 window.phExportCSV = function() {
-  showToast&&showToast('Exportando dados CSV…','info');
-  setTimeout(()=>showToast&&showToast('CSV exportado!','success'),1200);
+  const camps = PHISHING_MOCK.campanhas;
+  if (!camps || !camps.length) { showToast&&showToast('Nenhuma campanha para exportar','error'); return; }
+  const header = ['Campanha','Template','Status','Enviados','Cliques','Taxa Clique (%)','Reportou','Taxa Reporte (%)','Período'];
+  const rows = camps.map(c => [
+    c.nome, c.template || '', c.status,
+    c.enviados, c.cliques,
+    Math.round((c.cliques / Math.max(c.enviados,1)) * 100),
+    c.reportou,
+    Math.round((c.reportou / Math.max(c.enviados,1)) * 100),
+    c.periodo || ''
+  ].map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `phishing_campanhas_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast&&showToast(`✅ ${camps.length} campanhas exportadas com sucesso!`, 'success');
 };
 window.phEmailReport = function() {
   phShowModal(`

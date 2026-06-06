@@ -46,8 +46,8 @@ window.renderPage_users = function () {
         <p style="color:var(--text-secondary);font-size:0.84rem;margin-top:3px;">${L.sub}</p>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="btn btn-secondary btn-sm" onclick="showToast('Importando via CSV...','info')">⬆ ${L.btn_import}</button>
-        <button class="btn btn-secondary btn-sm" onclick="showToast('Exportando lista...','info')">⬇ ${L.btn_export}</button>
+        <button class="btn btn-secondary btn-sm" onclick="usersImportCSV()">⬆ ${L.btn_import}</button>
+        <button class="btn btn-secondary btn-sm" onclick="usersExportCSV()">⬇ ${L.btn_export}</button>
         <button class="btn btn-primary btn-sm" onclick="showModal('modal-new-user')">+ ${L.btn_add}</button>
       </div>
     </div>
@@ -100,15 +100,15 @@ window.renderPage_users = function () {
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bg-border);">
         <h4>${L.table_title} <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400;" id="user-count">(${totalUsers} ${L.of} ${totalUsers})</span></h4>
         <div style="display:flex;gap:6px;">
-          <button class="btn btn-ghost btn-sm" onclick="showToast('Notificando usuários selecionados','info')">🔔 ${L.btn_notify}</button>
-          <button class="btn btn-ghost btn-sm" onclick="showToast('Atribuindo treinamentos','info')">📋 ${L.btn_bulk_assign}</button>
+          <button class="btn btn-ghost btn-sm" onclick="usersNotifySelected()">🔔 ${L.btn_notify}</button>
+          <button class="btn btn-ghost btn-sm" onclick="usersBulkAssign()">📋 ${L.btn_bulk_assign}</button>
         </div>
       </div>
       <div class="table-wrap" style="border:none;border-radius:0;">
         <table id="users-table">
           <thead>
             <tr>
-              <th><input type="checkbox" accent-color="var(--brand-accent)" /></th>
+              <th><input type="checkbox" id="users-select-all" onchange="usersToggleAll(this)" /></th>
               <th>${L.col_user}</th>
               <th>${L.col_dept}</th>
               <th>${L.col_role}</th>
@@ -124,11 +124,9 @@ window.renderPage_users = function () {
           </tbody>
         </table>
       </div>
-      <div style="padding:14px 20px;border-top:1px solid var(--bg-border);display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:0.78rem;color:var(--text-muted);">${L.showing} 1-${totalUsers} ${L.of} ${totalUsers}</span>
-        <div style="display:flex;gap:4px;">
-          ${['←','1','2','3','...','34','→'].map((p,i) => `<button class="btn btn-sm ${p==='1'?'btn-primary':'btn-ghost'}" style="min-width:32px;" onclick="showToast('Página ${p}','info')">${p}</button>`).join('')}
-        </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--bg-border);display:flex;align-items:center;justify-content:space-between;" id="users-footer">
+        <span style="font-size:0.78rem;color:var(--text-muted);" id="users-showing">${L.showing} 1-${totalUsers} ${L.of} ${totalUsers}</span>
+        <div style="display:flex;gap:4px;" id="users-pagination"></div>
       </div>
     </div>
 
@@ -176,7 +174,7 @@ window.renderPage_users = function () {
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" onclick="hideModal('modal-new-user')">${L.btn_cancel}</button>
-        <button class="btn btn-primary" onclick="hideModal('modal-new-user');showToast('Usuário criado e convite enviado!','success')">${L.btn_create}</button>
+        <button class="btn btn-primary" onclick="usersCreateNew()">${L.btn_create}</button>
       </div>
     </div>
   </div>`;
@@ -189,8 +187,8 @@ function userRow(u, L, riskColors, riskLabels) {
     : 'linear-gradient(135deg,var(--brand-accent),var(--brand-purple))';
   const avatarColor = u.isDemo ? '#000' : '#fff';
   return `
-  <tr style="${u.isDemo ? 'background:linear-gradient(90deg,rgba(0,212,255,0.04),rgba(139,92,246,0.04));border-left:3px solid #00d4ff;' : ''}">
-    <td><input type="checkbox" /></td>
+  <tr style="${u.isDemo ? 'background:linear-gradient(90deg,rgba(0,212,255,0.04),rgba(139,92,246,0.04));border-left:3px solid #00d4ff;' : ''}" data-uid="${u.id}">
+    <td><input type="checkbox" class="user-row-cb" /></td>
     <td>
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="width:32px;height:32px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:${avatarColor};flex-shrink:0;">${u.avatar}</div>
@@ -220,9 +218,9 @@ function userRow(u, L, riskColors, riskLabels) {
     <td><span style="font-size:0.78rem;color:var(--text-muted);">${u.lastLogin}</span></td>
     <td>
       <div style="display:flex;gap:4px;">
-        <button class="btn btn-ghost btn-sm btn-icon" onclick="showToast('Perfil de ${u.name}','info')" title="Ver perfil">👤</button>
-        <button class="btn btn-ghost btn-sm btn-icon" onclick="showToast('Atribuindo treinamento','info')" title="Atribuir">📋</button>
-        <button class="btn btn-ghost btn-sm btn-icon" onclick="showToast('Notificando ${u.name}','info')" title="Notificar">🔔</button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="usersOpenProfile(${u.id})" title="Ver perfil">👤</button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="usersAssignTraining(${u.id},'${u.name.replace(/'/g,"\\'")}')" title="Atribuir">📋</button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="usersNotifyOne('${u.name.replace(/'/g,"\\'")}')" title="Notificar">🔔</button>
       </div>
     </td>
   </tr>`;
@@ -255,6 +253,7 @@ window.filterUsers = function() {
     : `<tr><td colspan="9" style="text-align:center;padding:32px;color:#6b7280;">Nenhum usuário encontrado.</td></tr>`;
 
   if (count) count.textContent = `(${data.length} de ${_usersAll.length})`;
+  _usersBuildPagination(data.length, _usersAll.length);
 
   // Re-animate progress bars
   setTimeout(() => {
@@ -263,6 +262,236 @@ window.filterUsers = function() {
       requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transition = 'width .7s ease'; el.style.width = w; }));
     });
   }, 50);
+};
+
+// ── Pagination helper ─────────────────────────────────────────
+function _usersBuildPagination(shown, total) {
+  const pag = document.getElementById('users-pagination');
+  const sh  = document.getElementById('users-showing');
+  if (!pag) return;
+  const L = _usersL;
+  if (sh) sh.textContent = `${L.showing||'Exibindo'} 1-${shown} ${L.of||'de'} ${total}`;
+  // No pagination needed when all fit on one page
+  if (total <= 50) { pag.innerHTML = ''; return; }
+  const pages = Math.ceil(total / 50);
+  let html = `<button class="btn btn-ghost btn-sm" style="min-width:32px;" onclick="showToast('Página anterior','info')">←</button>`;
+  for (let i = 1; i <= Math.min(pages, 5); i++) {
+    html += `<button class="btn btn-sm ${i===1?'btn-primary':'btn-ghost'}" style="min-width:32px;" onclick="showToast('Página ${i}','info')">${i}</button>`;
+  }
+  if (pages > 5) html += `<button class="btn btn-ghost btn-sm" style="min-width:32px;" disabled>...</button>`;
+  html += `<button class="btn btn-ghost btn-sm" style="min-width:32px;" onclick="showToast('Próxima página','info')">→</button>`;
+  pag.innerHTML = html;
+}
+
+// ── Select all ───────────────────────────────────────────────
+window.usersToggleAll = function(cb) {
+  document.querySelectorAll('#users-tbody .user-row-cb').forEach(c => { c.checked = cb.checked; });
+};
+
+// ── Export CSV ───────────────────────────────────────────────
+window.usersExportCSV = function() {
+  const L = _usersL;
+  const data = _usersAll;
+  if (!data.length) { showToast&&showToast('Nenhum usuário para exportar','error'); return; }
+  const header = ['ID','Nome','Email','Departamento','Perfil','Status','Risk Level','Conclusão (%)','Certificados','Último Acesso'];
+  const rows = data.map(u => [
+    u.id, u.name, u.email, u.dept, u.role, u.status, u.risk, u.completion, u.certs, u.lastLogin
+  ].map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const tenant = (APP && APP.tenants) ? (APP.tenants.find(t=>t.active)||{}).name||'empresa' : 'empresa';
+  a.href = url;
+  a.download = `usuarios_${tenant.replace(/\s+/g,'_').toLowerCase()}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast&&showToast(`✅ ${data.length} usuários exportados com sucesso!`, 'success');
+};
+
+// ── Import CSV (UI only) ─────────────────────────────────────
+window.usersImportCSV = function() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv';
+  input.onchange = function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    showToast&&showToast(`📂 "${file.name}" selecionado — importação via CSV requer integração backend.`, 'info');
+  };
+  input.click();
+};
+
+// ── Notify selected ──────────────────────────────────────────
+window.usersNotifySelected = function() {
+  const checked = document.querySelectorAll('#users-tbody .user-row-cb:checked');
+  if (!checked.length) { showToast&&showToast('Selecione pelo menos um usuário','error'); return; }
+  showToast&&showToast(`🔔 ${checked.length} usuário(s) notificado(s) com sucesso!`, 'success');
+};
+
+// ── Bulk assign training ─────────────────────────────────────
+window.usersBulkAssign = function() {
+  const checked = document.querySelectorAll('#users-tbody .user-row-cb:checked');
+  if (!checked.length) { showToast&&showToast('Selecione pelo menos um usuário para atribuir treinamento','error'); return; }
+  showToast&&showToast(`📋 Abrindo Atribuições para ${checked.length} usuário(s)...`, 'info');
+  setTimeout(() => navTo&&navTo('assignments', document.querySelector('[data-page=assignments]')), 300);
+};
+
+// ── Per-row: notify one ──────────────────────────────────────
+window.usersNotifyOne = function(name) {
+  showToast&&showToast(`🔔 Notificação enviada para ${name}!`, 'success');
+};
+
+// ── Per-row: assign training ─────────────────────────────────
+window.usersAssignTraining = function(id, name) {
+  showToast&&showToast(`📋 Abrindo Atribuições para ${name}...`, 'info');
+  setTimeout(() => navTo&&navTo('assignments', document.querySelector('[data-page=assignments]')), 300);
+};
+
+// ── Per-row: open profile modal ──────────────────────────────
+window.usersOpenProfile = function(id) {
+  const u = _usersAll.find(x => x.id === id);
+  if (!u) { showToast&&showToast('Usuário não encontrado','error'); return; }
+  const riskColor = { low:'var(--brand-success)', med:'var(--brand-warning)', high:'var(--brand-danger)' };
+  const riskLabel = { low:'Baixo', med:'Médio', high:'Alto' };
+  const statusLabel = u.status === 'active' ? '🟢 Ativo' : '💤 Inativo';
+  const avatarBg = u.isDemo
+    ? 'linear-gradient(135deg,#00d4ff,#8b5cf6)'
+    : 'linear-gradient(135deg,var(--brand-accent),var(--brand-purple))';
+
+  // Build or reuse modal
+  let modal = document.getElementById('modal-user-profile');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modal-user-profile';
+    modal.className = 'modal-overlay hidden';
+    modal.setAttribute('onclick', "closeModalOutside(event,'modal-user-profile')");
+    document.body.appendChild(modal);
+  }
+
+  modal.innerHTML = `
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">👤 Perfil do Usuário</h3>
+        <span class="modal-close" onclick="hideModal('modal-user-profile')">✕</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:18px;">
+        <!-- Avatar + header -->
+        <div style="display:flex;align-items:center;gap:16px;padding:16px;border-radius:var(--radius-md);background:rgba(255,255,255,0.03);">
+          <div style="width:56px;height:56px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;color:#fff;flex-shrink:0;">${u.avatar}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:1.05rem;font-weight:800;">${u.name} ${u.country}</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);">${u.email}</div>
+            <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+              <span class="badge ${u.role==='Admin'?'badge-blue':u.role==='Manager'?'badge-purple':u.role==='Compliance'?'badge-teal':'badge-green'}">${u.role}</span>
+              <span class="badge" style="background:rgba(255,255,255,0.06);color:var(--text-secondary);">${statusLabel}</span>
+            </div>
+          </div>
+        </div>
+        <!-- Stats grid -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          ${[
+            ['🏆', u.certs, 'Certificados', 'var(--brand-teal)'],
+            ['📊', u.completion + '%', 'Conclusão', u.completion>=90?'var(--brand-success)':u.completion>=70?'var(--text-primary)':'var(--brand-danger)'],
+            ['⚠️', riskLabel[u.risk], 'Risk Level', riskColor[u.risk]],
+          ].map(([icon, val, lbl, col]) => `
+            <div style="text-align:center;padding:12px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.03);">
+              <div style="font-size:1.1rem;">${icon}</div>
+              <div style="font-size:1.0rem;font-weight:800;color:${col};">${val}</div>
+              <div style="font-size:0.65rem;color:var(--text-muted);">${lbl}</div>
+            </div>
+          `).join('')}
+        </div>
+        <!-- Details -->
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:0.82rem;">
+          ${[
+            ['🏢 Departamento', u.dept],
+            ['🕐 Último Acesso', u.lastLogin],
+            ['🏷 ID', '#' + u.id],
+          ].map(([k,v]) => `
+            <div style="display:flex;justify-content:space-between;padding:8px 12px;border-radius:var(--radius-sm);background:rgba(255,255,255,0.02);">
+              <span style="color:var(--text-muted);">${k}</span>
+              <span style="font-weight:600;">${v}</span>
+            </div>
+          `).join('')}
+        </div>
+        <!-- Progress bar -->
+        <div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:0.78rem;">
+            <span style="color:var(--text-muted);">Progresso de Treinamentos</span>
+            <span style="font-weight:700;">${u.completion}%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill ${u.completion>=90?'green':u.completion>=70?'':'red'}" style="width:${u.completion}%;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="hideModal('modal-user-profile')">Fechar</button>
+        <button class="btn btn-ghost" onclick="usersNotifyOne('${u.name.replace(/'/g,"\\'").replace(/"/g,'\\"')}');hideModal('modal-user-profile')">🔔 Notificar</button>
+        <button class="btn btn-primary" onclick="hideModal('modal-user-profile');usersAssignTraining(${u.id},'${u.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')">📋 Atribuir</button>
+      </div>
+    </div>`;
+
+  showModal('modal-user-profile');
+  // Animate progress bar
+  setTimeout(() => {
+    const bar = modal.querySelector('.progress-fill');
+    if (bar) { const w=bar.style.width; bar.style.width='0'; requestAnimationFrame(()=>{ bar.style.transition='width .6s ease'; bar.style.width=w; }); }
+  }, 100);
+};
+
+// ── Create new user ──────────────────────────────────────────
+window.usersCreateNew = function() {
+  const modal = document.getElementById('modal-new-user');
+  if (!modal) return;
+  const inputs = modal.querySelectorAll('input[type=text], input[type=email]');
+  const selects = modal.querySelectorAll('select');
+  const name  = inputs[0]?.value?.trim() || '';
+  const email = inputs[1]?.value?.trim() || '';
+  const dept  = selects[0]?.value || 'Outros';
+  const role  = selects[1]?.value || 'User';
+  const lang  = selects[2]?.value || 'pt';
+
+  if (!name) { showToast&&showToast('Informe o nome do usuário','error'); return; }
+  if (!email || !email.includes('@')) { showToast&&showToast('Informe um e-mail válido','error'); return; }
+
+  // Check for duplicate email
+  if (_usersAll.some(u => u.email.toLowerCase() === email.toLowerCase())) {
+    showToast&&showToast('Este e-mail já está cadastrado','error'); return;
+  }
+
+  // Build new user object
+  const tenant = APP && APP.tenants ? APP.tenants.find(t=>t.active) : null;
+  const newId  = (_usersAll.length ? Math.max(..._usersAll.map(u=>u.id||0)) : 0) + 1;
+  const avatar = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  const newUser = {
+    id: newId, name, email, dept, role, lang,
+    status: 'active', risk: 'low', completion: 0, certs: 0,
+    lastLogin: 'Nunca', avatar, country: '🌍', isNew: true,
+  };
+
+  // Add to tenant userData
+  if (tenant && tenant.userData) {
+    tenant.userData.push(newUser);
+  }
+
+  // Reset cached list and re-fetch
+  _usersAll = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers().filter(Boolean) : [..._usersAll, newUser];
+
+  hideModal('modal-new-user');
+  inputs.forEach(i => { i.value = ''; });
+
+  // Refresh table
+  const tbody = document.getElementById('users-tbody');
+  if (tbody) {
+    tbody.innerHTML = _usersAll.map(u => userRow(u, _usersL, _usersRiskColors, _usersRiskLabels)).join('');
+    const count = document.getElementById('user-count');
+    if (count) count.textContent = `(${_usersAll.length} de ${_usersAll.length})`;
+    _usersBuildPagination(_usersAll.length, _usersAll.length);
+  }
+
+  showToast&&showToast(`✅ Usuário ${name} criado com sucesso! Convite enviado para ${email}`, 'success');
 };
 
 const usersL = {
@@ -304,6 +533,7 @@ window.initPage_users = function() {
       const w = el.style.width; el.style.width = '0';
       requestAnimationFrame(() => { el.style.transition = 'width 0.5s ease'; el.style.width = w; });
     });
+    _usersBuildPagination(_usersAll.length, _usersAll.length);
   }, 100);
 };
 

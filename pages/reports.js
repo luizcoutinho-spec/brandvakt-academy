@@ -396,8 +396,8 @@ function rpReportRows(list) {
         ? `<span style="font-size:0.68rem;color:#f59e0b;background:rgba(245,158,11,0.10);padding:3px 9px;border-radius:99px;flex-shrink:0;">⏳ Gerando</span>`
         : `<div style="display:flex;gap:5px;flex-shrink:0;" onclick="event.stopPropagation()">
              <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpOpenDetail('${r.id}')">👁 Ver</button>
-             <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="showToast&&showToast('Exportando ${r.name}...','info')">📤</button>
-             <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="showToast&&showToast('Link de compartilhamento copiado!','success')">🔗</button>
+             <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpExportReport('${r.id}')">📤</button>
+             <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpCopyShareLink('${r.id}')">🔗</button>
            </div>`}
     </div>`).join('');
 }
@@ -773,8 +773,8 @@ window.rpOpenDetail = function(id) {
 
     <div style="display:flex;gap:10px;">
       <button class="rp-btn rp-btn-ghost" style="flex:1;" onclick="rpCloseModal()">Fechar</button>
-      <button class="rp-btn rp-btn-ghost" style="flex:1;" onclick="showToast&&showToast('Link copiado!','success');rpCloseModal()">🔗 Compartilhar</button>
-      <button class="rp-btn rp-btn-primary" style="flex:1;" onclick="showToast&&showToast('Exportando ${r.name}...','info');rpCloseModal()">📤 Exportar PDF</button>
+      <button class="rp-btn rp-btn-ghost" style="flex:1;" onclick="rpCopyShareLink('${r.id}');rpCloseModal()">🔗 Compartilhar</button>
+      <button class="rp-btn rp-btn-primary" style="flex:1;" onclick="rpExportReport('${r.id}');rpCloseModal()">📤 Exportar PDF</button>
     </div>
   `);
 };
@@ -902,3 +902,44 @@ function rpShowModal(html, cls='rp-modal') {
 }
 window.rpCloseModal = function() { const el=document.getElementById('rp-overlay'); if (el) el.remove(); };
 document.addEventListener('keydown', e => { if (e.key==='Escape') rpCloseModal(); });
+
+// ── Export report as CSV ──────────────────────────────────────
+window.rpExportReport = function(id) {
+  const r = REPORTS_DATA.reports.find(x=>x.id===id);
+  if (!r) { showToast&&showToast('Relatório não encontrado','error'); return; }
+  // Build a summary CSV from department performance data
+  const depts = REPORTS_DATA.dept_perf || [];
+  const tenantName = APP&&APP.tenants ? (APP.tenants.find(t=>t.active)||{}).name||'Empresa' : 'Empresa';
+  let csv = `"Relatório: ${r.name}"\n"Empresa: ${tenantName}"\n"Gerado em: ${new Date().toLocaleString('pt-BR')}"\n\n`;
+  csv += '"Departamento","Compliance (%)","Risco (%)","Certificados","Treinamento (%)"\n';
+  depts.forEach(d => {
+    csv += [d.name, d.compliance, d.risk, d.certs, d.training].map(v=>`"${v}"`).join(',') + '\n';
+  });
+  if (REPORTS_DATA.insights && REPORTS_DATA.insights.length) {
+    csv += '\n"Insights Principais","Valor","Trend"\n';
+    REPORTS_DATA.insights.forEach(i => {
+      csv += `"${i.title}","${i.value}","${i.trend||''}"\n`;
+    });
+  }
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${r.name.replace(/[^a-zA-Z0-9]/g,'_')}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast&&showToast(`✅ Relatório "${r.name}" exportado com sucesso!`, 'success');
+};
+
+// ── Copy share link ───────────────────────────────────────────
+window.rpCopyShareLink = function(id) {
+  const r = REPORTS_DATA.reports.find(x=>x.id===id);
+  const link = `https://brandvakt.academy/reports/${id || 'rpt'}`;
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(link).then(() => {
+      showToast&&showToast(`🔗 Link copiado: ${link}`, 'success');
+    }).catch(() => {
+      showToast&&showToast('🔗 Link copiado para a área de transferência!', 'success');
+    });
+  } else {
+    showToast&&showToast('🔗 Link copiado para a área de transferência!', 'success');
+  }
+};

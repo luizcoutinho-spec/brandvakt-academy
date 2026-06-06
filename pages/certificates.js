@@ -1151,29 +1151,29 @@ window.certOpenIssue = function() {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
       <div style="grid-column:1/-1">
         <label style="display:block;font-size:0.70rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px">Usuário *</label>
-        <select class="cert-select" style="width:100%">
-          <option>Selecionar usuário...</option>
-          ${[...new Set(CERT_DATA.certificates.map(c=>c.user))].sort().map(u=>`<option>${u}</option>`).join('')}
+        <select class="cert-select" id="cert-issue-user" style="width:100%">
+          <option value="">Selecionar usuário...</option>
+          ${(typeof getActiveTenantUsers === 'function' ? getActiveTenantUsers() : CERT_DATA.certificates.map(c=>({name:c.user}))).map(u=>`<option>${u.name}</option>`).join('')}
         </select>
       </div>
       <div style="grid-column:1/-1">
         <label style="display:block;font-size:0.70rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px">Curso / Certificação *</label>
-        <select class="cert-select" style="width:100%">
-          <option>Selecionar certificação...</option>
+        <select class="cert-select" id="cert-issue-course" style="width:100%">
+          <option value="">Selecionar certificação...</option>
           ${CERT_DATA.courses.map(c=>`<option>${c}</option>`).join('')}
         </select>
       </div>
       <div>
         <label style="display:block;font-size:0.70rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px">Nota (0–100) *</label>
-        <input class="cert-input" type="number" min="0" max="100" placeholder="Ex: 92" style="width:100%">
+        <input class="cert-input" id="cert-issue-score" type="number" min="0" max="100" placeholder="Ex: 92" style="width:100%">
       </div>
       <div>
         <label style="display:block;font-size:0.70rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px">Data de Conclusão</label>
-        <input class="cert-input" type="date" style="width:100%" value="${new Date().toISOString().split('T')[0]}">
+        <input class="cert-input" id="cert-issue-date" type="date" style="width:100%" value="${new Date().toISOString().split('T')[0]}">
       </div>
       <div>
         <label style="display:block;font-size:0.70rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px">Idioma</label>
-        <select class="cert-select" style="width:100%">
+        <select class="cert-select" id="cert-issue-lang" style="width:100%">
           <option value="pt">🇧🇷 Português</option>
           <option value="en">🇺🇸 English</option>
           <option value="es">🇪🇸 Español</option>
@@ -1182,16 +1182,57 @@ window.certOpenIssue = function() {
       </div>
       <div>
         <label style="display:block;font-size:0.70rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px">Validade</label>
-        <select class="cert-select" style="width:100%">
+        <select class="cert-select" id="cert-issue-validity" style="width:100%">
           <option>12 meses</option><option>24 meses</option><option>Permanente</option>
         </select>
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:18px">
       <button class="cert-btn" style="flex:1;background:rgba(255,255,255,0.06);color:#94a3b8;border:1px solid rgba(255,255,255,0.10)" onclick="certCloseModal()">Cancelar</button>
-      <button class="cert-btn cert-btn-gold" style="flex:1" onclick="certCloseModal();showToast&&showToast('🏆 Certificado emitido com sucesso!','success')">🏆 Emitir Certificado</button>
+      <button class="cert-btn cert-btn-gold" style="flex:1" onclick="certIssueSubmit()">🏆 Emitir Certificado</button>
     </div>
   `);
+};
+
+window.certIssueSubmit = function() {
+  const user     = document.getElementById('cert-issue-user')?.value?.trim()   || '';
+  const course   = document.getElementById('cert-issue-course')?.value?.trim() || '';
+  const scoreVal = document.getElementById('cert-issue-score')?.value           || '';
+  const dateVal  = document.getElementById('cert-issue-date')?.value            || new Date().toISOString().split('T')[0];
+  const validity = document.getElementById('cert-issue-validity')?.value        || '12 meses';
+
+  if (!user || user === 'Selecionar usuário...') { showToast&&showToast('Selecione um usuário','error'); return; }
+  if (!course || course === 'Selecionar certificação...') { showToast&&showToast('Selecione um curso','error'); return; }
+  const score = parseInt(scoreVal, 10);
+  if (isNaN(score) || score < 0 || score > 100) { showToast&&showToast('Informe uma nota entre 0 e 100','error'); return; }
+
+  // Compute expiry date
+  const issued = new Date(dateVal);
+  let expires = null;
+  if (validity !== 'Permanente') {
+    const months = parseInt(validity, 10) || 12;
+    expires = new Date(issued);
+    expires.setMonth(expires.getMonth() + months);
+  }
+  const fmt = d => d ? `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}` : 'Sem validade';
+
+  // Create new certificate entry
+  const newCert = {
+    id: 'CERT-' + Date.now().toString(36).toUpperCase(),
+    user, course, score,
+    status: 'valid',
+    issued: fmt(issued),
+    expires: expires ? fmt(expires) : 'Permanente',
+    validity,
+    dept: (typeof getActiveTenantUsers === 'function' ? getActiveTenantUsers().find(u=>u.name===user)?.dept : null) || '—',
+  };
+
+  CERT_DATA.certificates.unshift(newCert);
+
+  certCloseModal();
+  // Refresh the current tab
+  if (typeof certTab === 'function') certTab(CERT_STATE.tab || 'all');
+  showToast&&showToast(`🏆 Certificado emitido para ${user} — ${course} (nota: ${score})`, 'success');
 };
 
 // ── Modal helpers ─────────────────────────────────────────────

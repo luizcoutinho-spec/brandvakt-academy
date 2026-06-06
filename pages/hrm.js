@@ -766,8 +766,21 @@ window.hrmFilterUsers = function() {
 };
 
 window.hrmExportUsers = function() {
-  showToast && showToast('Exportando CSV de perfis de risco…','info');
-  setTimeout(() => showToast && showToast('CSV exportado com sucesso!','success'), 1200);
+  const users = HRM_DATA.users;
+  if (!users || !users.length) { showToast&&showToast('Nenhum usuário para exportar','error'); return; }
+  const header = ['Nome','Email','Departamento','Perfil','Risk Score','Risk Level','Treinamento (%)','Certificados','Alertas','Último Acesso'];
+  const rows = users.map(u => [
+    u.name, u.email, u.dept, u.role,
+    u.riskScore, u.riskLevel === 'critical' ? 'Crítico' : u.riskLevel === 'high' ? 'Alto' : u.riskLevel === 'medium' ? 'Médio' : 'Baixo',
+    u.training, u.certs, u.alerts, u.lastLogin
+  ].map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [header.join(','), ...rows].join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `hrm_risk_profiles_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast&&showToast(`✅ ${users.length} perfis de risco exportados!`, 'success');
 };
 
 // ── User Profile Modal ────────────────────────────────────────
