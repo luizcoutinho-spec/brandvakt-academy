@@ -11,12 +11,13 @@ const COURSE_FILES = { 2: true, 3: true };
 var COURSE_MEDIA = {
   3: {
     video: {
-      pt:   'courses/home-office-pt-pt.mp4',
-      en:   'courses/home-office-en.mp4',
-      fr:   'courses/home-office-fr.mp4',
-      es:   'courses/home-office-es.mp4'
+      pt:   'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Proteja.Seu.Home.Office_.PT.mp4',
+      br:   'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Proteja.Seu.Home.Office_.BR.mp4',
+      en:   'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Cybersecurity.for.Remote.Work.mp4',
+      fr:   'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Scurit.numrique.en.tltravail.mp4',
+      es:   'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Ciberseguridad.en.el.home.office.mp4'
     },
-    pdf: 'courses/home-office.pdf'
+    pdf: 'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Home_Office_Seguro_Cybersecurity_Curso.pdf'
   }
 };
 
@@ -147,13 +148,43 @@ window.launchCourse=function(tid,title){
   if(!COURSE_FILES[tid]){if(typeof showToast==='function')showToast('Curso em produção — disponível em breve','info');return;}
   closeCoursePlayer();
   if(tid===3){CP_SLIDES=HO_SLIDES;CP_QUIZ=HO_QUIZ;CP_TOT=600;}else{CP_SLIDES=MFA_SLIDES;CP_QUIZ=MFA_QUIZ;CP_TOT=300;}
-  _cp={cur:0,qi:0,qs:0,qa:false,mode:'slides',tmr:null,elapsed:0,tid:tid};
+  _cp={cur:0,qi:0,qs:0,qa:false,mode:'slides',tmr:null,elapsed:0,tid:tid,tab:'video'};
   var comp=COURSE_COMPLETIONS[tid];
   var badge=comp?('<span style="color:'+(comp.passed?'#22c55e':'#f59e0b')+';font-weight:700;">'+(comp.passed?'✅ Aprovado':'⚠️ Reprovado')+' — '+comp.score+'%</span>'):'<span style="color:#6b7280;">Não concluído</span>';
+  var hasVideo=!!(COURSE_MEDIA[tid]&&COURSE_MEDIA[tid].video);
+  var hasPdf=!!(COURSE_MEDIA[tid]&&COURSE_MEDIA[tid].pdf);
+  var syslang=(typeof APP!=='undefined'&&APP.lang)||'pt';
+  var vm=hasVideo?COURSE_MEDIA[tid].video:{};
+  var videoSrc=vm[syslang]||vm['pt']||vm[Object.keys(vm)[0]]||'';
+  var activeLang=vm[syslang]?syslang:(vm['pt']?'pt':Object.keys(vm)[0]||'pt');
+  var videoLangs=hasVideo?Object.keys(vm):[];
+  var langLabels={pt:'🇵🇹 PT',br:'🇧🇷 BR',en:'🇺🇸 EN',fr:'🇫🇷 FR',es:'🇪🇸 ES'};
+  var tabs='<div id="cp-tabs">'+(hasVideo?'<button class="cp-tab active" id="cp-tab-video" onclick="_cpTab(\'video\')">🎬 Vídeo</button>':'')+
+    '<button class="cp-tab'+(hasVideo?'':' active')+'" id="cp-tab-content" onclick="_cpTab(\'content\')">📖 Conteúdo</button>'+
+    '<button class="cp-tab" id="cp-tab-quiz" onclick="_cpTab(\'quiz\')">✅ Quiz</button>'+
+    (hasPdf?'<button class="cp-tab" id="cp-tab-material" onclick="_cpTab(\'material\')">📄 Material</button>':'')+
+  '</div>';
+  var videoPanel='<div id="cp-video-panel" style="flex:1;overflow-y:auto;display:'+(hasVideo?'flex':'none')+';flex-direction:column;align-items:center;justify-content:flex-start;padding:18px 20px;gap:14px;background:#060e1e;">'+(hasVideo?
+    '<video id="cp-video-el" controls preload="metadata" style="width:100%;max-width:780px;border-radius:10px;background:#000;box-shadow:0 8px 32px rgba(0,0,0,.7)"><source src="'+videoSrc+'" type="video/mp4">Seu navegador não suporta HTML5 video.</video>'+
+    '<div style="width:100%;max-width:780px;"><div style="font-size:11px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">Idioma do vídeo</div>'+
+    '<div id="cp-video-langbar" style="display:flex;gap:8px;flex-wrap:wrap;">'+
+      videoLangs.map(function(lc){return '<button class="cp-vlang'+(lc===activeLang?' active':'')+'" onclick="_cpVideoLang(\''+lc+'\')">'+(langLabels[lc]||lc.toUpperCase())+'</button>';}).join('')+
+    '</div></div>'
+  :'')+'</div>';
+  var pdfUrl=hasPdf?COURSE_MEDIA[tid].pdf:'';
+  var materialPanel='<div id="cp-material-panel" style="flex:1;overflow-y:auto;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;gap:20px;background:#060e1e;">'+(hasPdf?
+    '<div style="width:100%;max-width:480px;background:#0C1F3F;border:1px solid rgba(255,255,255,.10);border-radius:16px;padding:28px 32px;text-align:center;">'+
+    '<div style="font-size:3rem;margin-bottom:16px;">📄</div>'+
+    '<div style="font-size:1rem;font-weight:800;margin-bottom:6px;">Material de Apoio</div>'+
+    '<div style="font-size:13px;color:rgba(255,255,255,.45);margin-bottom:24px;line-height:1.6;">Faça o download do material completo do curso em PDF para consulta offline.</div>'+
+    '<a href="'+pdfUrl+'" target="_blank" download style="display:inline-flex;align-items:center;gap:8px;background:#00B4D8;color:#000;padding:12px 28px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;">⬇ Baixar PDF</a>'+
+    '</div>'
+  :'<div style="color:rgba(255,255,255,.3);font-size:14px;">Material não disponível.</div>')+'</div>';
+  var contentPanel='<div id="cp-pl" style="display:none;width:100%;max-width:760px;margin:20px auto;background:#0C1F3F;border-radius:16px;box-shadow:0 24px 64px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,.08);"><div id="cp-pb" class="cp-pb"></div><div class="cp-tw"><div class="cp-tr"><span class="cp-to">0:00</span><div class="cp-tt"><div class="cp-tf" id="cp-tf" style="width:0%"></div></div><span class="cp-tc" id="cp-tc">10:00</span></div><div class="cp-tn"><span>Início</span><span>2:00</span><span>4:00</span><span>6:00</span><span>8:00</span><span>10:00</span></div></div><div class="cp-sl" id="cp-sa"></div><div class="cp-ct"><button class="cpb cpb-g" id="cp-bk" onclick="_cpNav(-1)">← Voltar</button><span class="cp-si" id="cp-si"></span><button class="cpb cpb-p" id="cp-nx" onclick="_cpNav(1)">Continuar →</button></div><div class="cp-ft">BRANDVAKT ACADEMY · SEGURANÇA DA INFORMAÇÃO <span class="cp-iso">🛡 ISO 27001:2022</span></div></div>';
   var ov=document.createElement('div');ov.id='cp-ov';
-  ov.innerHTML='<div id="cp-tb"><div class="cp-brd"><div class="cp-lg">B</div><div><div class="cp-nm">'+title+'</div><div class="cp-mt">Brandvakt Academy · ISO 27001:2022 · '+badge+'</div></div></div><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:.70rem;color:#6b7280;"><kbd style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:2px 7px;font-size:.68rem;">Esc</kbd> para fechar</span><button class="cp-cls" onclick="closeCoursePlayer()">✕ Fechar</button></div></div><div id="cp-bd"><div id="cp-pl"><div id="cp-pb" class="cp-pb"></div><div class="cp-tw"><div class="cp-tr"><span class="cp-to">0:00</span><div class="cp-tt"><div class="cp-tf" id="cp-tf" style="width:0%"></div></div><span class="cp-tc" id="cp-tc">5:00</span></div><div class="cp-tn"><span>Início</span><span>1:00</span><span>2:00</span><span>3:00</span><span>4:00</span><span>5:00</span></div></div><div class="cp-sl" id="cp-sa"></div><div class="cp-ct"><button class="cpb cpb-g" id="cp-bk" onclick="_cpNav(-1)">← Voltar</button><span class="cp-si" id="cp-si"></span><button class="cpb cpb-p" id="cp-nx" onclick="_cpNav(1)">Continuar →</button></div><div class="cp-ft">BRANDVAKT ACADEMY · SEGURANÇA DA INFORMAÇÃO <span class="cp-iso">🛡 ISO 27001:2022</span></div></div></div>';
+  ov.innerHTML='<div id="cp-tb"><div class="cp-brd"><div class="cp-lg">B</div><div><div class="cp-nm">'+title+'</div><div class="cp-mt">Brandvakt Academy · ISO 27001:2022 · '+badge+'</div></div></div><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:.70rem;color:#6b7280;"><kbd style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:2px 7px;font-size:.68rem;">Esc</kbd> para fechar</span><button class="cp-cls" onclick="closeCoursePlayer()">✕ Fechar</button></div></div>'+tabs+'<div id="cp-bd" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#060e1e;">'+videoPanel+contentPanel+materialPanel+'</div>';
   document.body.appendChild(ov);
-  _cpSlide();_cpProg();
+  if(!hasVideo){_cp.tab='content';var vt=document.getElementById('cp-tab-content');if(vt)vt.classList.add('active');_cpSlide();_cpProg();}
   document.addEventListener('keydown',window._cpEsc=function(e){if(e.key==='Escape')closeCoursePlayer();});
 };
 
@@ -185,7 +216,7 @@ window._cpVideoLang=function(lc){
   // Update active style properly
   document.querySelectorAll('.cp-vlang').forEach(function(b){b.classList.remove('active');});
   var btns=document.querySelectorAll('.cp-vlang');
-  var labels={pt:'pt',en:'en',fr:'fr',es:'es'};
+  var labels={pt:'pt',br:'br',en:'en',fr:'fr',es:'es'};
   btns.forEach(function(b){if(b.onclick&&b.getAttribute('onclick').includes("'"+lc+"'"))b.classList.add('active');});
 };
 
