@@ -198,8 +198,8 @@ window.renderPage_assignments = function() {
 
   // ── Inject Admin Local DEMO assignments (Diretoria · DEMO SA) ──
   if (typeof DEMO_STATE !== 'undefined') {
-    const demoTarget = 'Diretoria · DEMO SA';
-    const demoGroup  = 'Diretoria · DEMO SA';
+    const demoTarget = 'Diretoria';
+    const demoGroup  = 'Diretoria';
 
     // Add target group if not already present
     if (!ASSIGN_DATA.groups.includes(demoGroup)) {
