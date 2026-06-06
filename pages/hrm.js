@@ -298,7 +298,9 @@ function userToHRM(u, idx) {
   // Score base por nível de risco
   const scoreBase = u.risk === 'high' ? 75 : u.risk === 'med' ? 48 : 22;
   const score = Math.min(99, scoreBase + Math.round((100 - u.completion) * 0.2));
-  const phishing = u.risk === 'high' ? 70 + Math.round(Math.random()*15) : u.risk === 'med' ? 40 + Math.round(Math.random()*20) : 8 + Math.round(Math.random()*15);
+  // Determinístico por id (evita flicker a cada render)
+  const jitter = (u.id * 17 + (u.name.charCodeAt(0) || 0)) % 16;
+  const phishing = u.risk === 'high' ? 70 + (jitter % 15) : u.risk === 'med' ? 40 + (jitter % 20) : 8 + (jitter % 15);
   const training = Math.round(u.completion * 0.9);
   const certStatus = u.certs > 3 ? 'valid' : u.certs > 0 ? 'expiring' : 'expired';
   return {
@@ -347,12 +349,48 @@ window.renderPage_risk = function() {
       return userToHRM(u, i);
     });
 
-    // Recalcular contagem de membros por dept
-    const deptCount = {};
-    _hrmSource.forEach(u => { deptCount[u.dept] = (deptCount[u.dept] || 0) + 1; });
-    HRM_DATA.depts.forEach(d => {
-      if (deptCount[d.name] !== undefined) d.members = deptCount[d.name];
+    // ── Reconstruir HRM_DATA.depts a partir dos usuários reais ──────
+    // Agrupa usuários HRM por dept
+    const deptMap = {};
+    HRM_DATA.users.forEach(u => {
+      const key = u.dept;
+      if (!deptMap[key]) deptMap[key] = [];
+      deptMap[key].push(u);
     });
+
+    // Ícones padrão por dept (fallback se não existir entrada anterior)
+    const deptIconMap = { 'Diretoria':'🏛️','TI':'💻','Financeiro':'💰','RH':'👥','Marketing':'📣','Vendas':'📈','Operações':'⚙️','Jurídico':'⚖️','Engenharia':'🔧','Produto':'🎯','Design':'🎨','Suporte':'🛠️','Logística':'🚚','Comercial':'🤝','Segurança':'🔒' };
+    const oldDeptIcons = {};
+    HRM_DATA.depts.forEach(d => { oldDeptIcons[d.name] = d.icon; });
+
+    // Fatores disponíveis
+    const factorIds = HRM_DATA.factors.map(f => f.id); // ['phishing','training','password','access','inactivity','certs']
+
+    // Constrói array de depts apenas com usuários reais
+    HRM_DATA.depts = Object.keys(deptMap).map(deptName => {
+      const users = deptMap[deptName];
+      const members = users.length;
+      // Média de cada fator (certs é 'valid'/'expired', converte para score numérico)
+      const factors = {};
+      factorIds.forEach(fid => {
+        const vals = users.map(u => {
+          if (fid === 'certs') return u.certs === 'valid' ? 10 : u.certs === 'expiring' ? 42 : 72;
+          return typeof u[fid] === 'number' ? u[fid] : 50;
+        });
+        factors[fid] = Math.round(vals.reduce((s,v)=>s+v,0)/vals.length);
+      });
+      const scoreAvg = Math.round(users.reduce((s,u)=>s+u.score,0)/users.length);
+      return {
+        name:    deptName,
+        icon:    oldDeptIcons[deptName] || deptIconMap[deptName] || '🏢',
+        members,
+        score:   scoreAvg,
+        ...factors,
+      };
+    });
+
+    // Ordena por score decrescente (mais arriscado primeiro)
+    HRM_DATA.depts.sort((a,b) => b.score - a.score);
 
     // Recalcular score organizacional
     const orgAvg = Math.round(HRM_DATA.users.reduce((s,u) => s + u.score, 0) / HRM_DATA.users.length);
