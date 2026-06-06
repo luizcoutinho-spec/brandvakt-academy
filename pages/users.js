@@ -2,8 +2,15 @@
 //  PAGE: GESTÃO DE USUÁRIOS
 // ══════════════════════════════════════════════════════════════
 
+// Module-level cache so filterUsers can access without re-render
+let _usersAll = [];
+let _usersL   = {};
+let _usersRiskColors = {};
+let _usersRiskLabels = {};
+
 window.renderPage_users = function () {
   const L = usersL[APP.lang] || usersL.pt;
+  _usersL = L;
 
   const users = [
     // ── Admin Local DEMO (injected from DEMO_STATE) ──────────────
@@ -41,11 +48,16 @@ window.renderPage_users = function () {
   ];
 
   const deptStats = {
-    'RH': 46, 'TI': 68, 'Jurídico': 22, 'Financeiro': 38, 'Comercial': 55, 'Operações': 31,
+    'Diretoria': 12, 'RH': 46, 'TI': 68, 'Jurídico': 22, 'Financeiro': 38, 'Comercial': 55, 'Operações': 31,
   };
 
   const riskColors = { low: 'var(--brand-success)', med: 'var(--brand-warning)', high: 'var(--brand-danger)' };
   const riskLabels = { low: L.risk_low, med: L.risk_med, high: L.risk_high };
+
+  // Save to module cache for filterUsers
+  _usersAll = users.filter(Boolean);
+  _usersRiskColors = riskColors;
+  _usersRiskLabels = riskLabels;
 
   return `
   <div style="display:flex;flex-direction:column;gap:22px;">
@@ -241,11 +253,39 @@ function userRow(u, L, riskColors, riskLabels) {
 
 window.filterUsers = function() {
   const search = (document.getElementById('user-search')?.value || '').toLowerCase();
-  const dept   = document.getElementById('user-dept')?.value || '';
+  const dept   = document.getElementById('user-dept')?.value   || '';
   const status = document.getElementById('user-status')?.value || '';
-  const risk   = document.getElementById('user-risk')?.value || '';
-  // Demo: just show toast
-  showToast('Filtros aplicados','info');
+  const risk   = document.getElementById('user-risk')?.value   || '';
+
+  let data = _usersAll.slice();
+
+  if (search) data = data.filter(u =>
+    u.name.toLowerCase().includes(search) ||
+    u.email.toLowerCase().includes(search) ||
+    (u.dept || '').toLowerCase().includes(search) ||
+    (u.company || '').toLowerCase().includes(search)
+  );
+  if (dept)   data = data.filter(u => u.dept === dept);
+  if (status) data = data.filter(u => u.status === status);
+  if (risk)   data = data.filter(u => u.risk === risk);
+
+  const tbody = document.getElementById('users-tbody');
+  const count = document.getElementById('user-count');
+  if (!tbody) return;
+
+  tbody.innerHTML = data.length
+    ? data.map(u => userRow(u, _usersL, _usersRiskColors, _usersRiskLabels)).join('')
+    : `<tr><td colspan="9" style="text-align:center;padding:32px;color:#6b7280;">Nenhum usuário encontrado.</td></tr>`;
+
+  if (count) count.textContent = `(${data.length} de ${_usersAll.length})`;
+
+  // Re-animate progress bars
+  setTimeout(() => {
+    tbody.querySelectorAll('.progress-fill').forEach(el => {
+      const w = el.style.width; el.style.width = '0';
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.style.transition = 'width .7s ease'; el.style.width = w; }));
+    });
+  }, 50);
 };
 
 const usersL = {
