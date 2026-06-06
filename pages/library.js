@@ -282,9 +282,7 @@ window.renderPage_library = function () {
         <h2 style="font-size:1.5rem;font-weight:800;letter-spacing:-0.02em;">${L.title}</h2>
         <p style="color:var(--text-secondary);font-size:0.84rem;margin-top:3px;">${L.sub}</p>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-primary btn-sm" onclick="showModal('modal-new-course')">+ ${L.btn_add}</button>
-      </div>
+      <div style="display:flex;gap:8px;"></div>
     </div>
 
     <!-- Search + Filters -->
