@@ -1013,22 +1013,66 @@ window.dpAiGenerateTrail = function() {
     { pct: 100, msg: '✅ Trilha gerada com sucesso!' },
   ];
 
+  // Inject spinner keyframes once
+  if (!document.getElementById('dp-ai-spin-css')) {
+    const s = document.createElement('style');
+    s.id = 'dp-ai-spin-css';
+    s.textContent = `
+      @keyframes dpAiSpin   { to { transform: rotate(360deg); } }
+      @keyframes dpAiPulse  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.55;transform:scale(0.88)} }
+      @keyframes dpAiDot    { 0%,80%,100%{transform:scale(0);opacity:0} 40%{transform:scale(1);opacity:1} }
+      @keyframes dpAiFadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+      .dp-ai-spinner { width:56px;height:56px;border-radius:50%;border:3px solid rgba(139,92,246,0.18);border-top-color:#8b5cf6;animation:dpAiSpin 0.9s linear infinite; }
+      .dp-ai-dot { width:7px;height:7px;border-radius:50%;background:#8b5cf6;display:inline-block;animation:dpAiDot 1.4s ease-in-out infinite; }
+      .dp-ai-dot:nth-child(2){animation-delay:0.16s}
+      .dp-ai-dot:nth-child(3){animation-delay:0.32s}
+      .dp-ai-log-item { animation:dpAiFadeIn 0.35s ease; }
+    `;
+    document.head.appendChild(s);
+  }
+
   dpShowModal(`
-    <div style="text-align:center;padding:10px 0 6px;">
-      <div style="font-size:2.2rem;margin-bottom:12px;">🤖</div>
-      <div style="font-weight:800;font-size:1.05rem;margin-bottom:6px;">Analisando Human Risk Profile</div>
-      <div id="dp-ai-step-msg" style="font-size:0.80rem;color:#94a3b8;min-height:22px;margin-bottom:18px;">Iniciando análise...</div>
-      <div style="background:rgba(255,255,255,0.06);border-radius:99px;height:8px;overflow:hidden;margin-bottom:8px;">
-        <div id="dp-ai-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#8b5cf6,#00d4ff);border-radius:99px;transition:width 0.6s ease;"></div>
+    <div style="text-align:center;padding:14px 0 10px;">
+
+      <!-- Spinner + orb -->
+      <div style="position:relative;width:80px;height:80px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;">
+        <div class="dp-ai-spinner" style="position:absolute;inset:0;"></div>
+        <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:1.5rem;animation:dpAiPulse 2s ease-in-out infinite;">🤖</div>
       </div>
-      <div id="dp-ai-pct" style="font-size:0.72rem;color:#6b7280;">0%</div>
+
+      <!-- Title -->
+      <div style="font-weight:800;font-size:1.08rem;margin-bottom:6px;letter-spacing:-0.01em;">Gerando sua trilha personalizada com IA</div>
+      <div style="font-size:0.80rem;color:#6b7280;margin-bottom:6px;">Isso pode levar alguns instantes.</div>
+
+      <!-- Animated dots -->
+      <div style="margin-bottom:22px;display:flex;justify-content:center;gap:6px;">
+        <div class="dp-ai-dot"></div>
+        <div class="dp-ai-dot"></div>
+        <div class="dp-ai-dot"></div>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="background:rgba(255,255,255,0.06);border-radius:99px;height:6px;overflow:hidden;margin-bottom:6px;">
+        <div id="dp-ai-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#8b5cf6,#00d4ff);border-radius:99px;transition:width 0.55s ease;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-bottom:20px;">
+        <div id="dp-ai-step-msg" style="font-size:0.74rem;color:#94a3b8;text-align:left;flex:1;">Iniciando análise...</div>
+        <div id="dp-ai-pct" style="font-size:0.74rem;font-weight:700;color:#8b5cf6;margin-left:10px;">0%</div>
+      </div>
+
+      <!-- Step log -->
+      <div id="dp-ai-log" style="text-align:left;display:flex;flex-direction:column;gap:5px;max-height:160px;overflow:hidden;"></div>
+
+      <!-- Non-blocking note -->
+      <div style="margin-top:18px;padding:10px 14px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.15);border-radius:9px;font-size:0.72rem;color:#94a3b8;line-height:1.55;">
+        🧠 A IA está analisando os scores de Human Risk, lacunas de treinamento, simulações de phishing e perfis por departamento para montar uma trilha totalmente personalizada.
+      </div>
     </div>
   `, 'dp-modal');
 
   let i = 0;
   function tick() {
     if (i >= steps.length) {
-      // Build the trail data then show the review modal
       _dpAiTrail = dpAiBuildTrailData();
       dpAiShowReview();
       return;
@@ -1037,12 +1081,25 @@ window.dpAiGenerateTrail = function() {
     const bar = document.getElementById('dp-ai-bar');
     const msg = document.getElementById('dp-ai-step-msg');
     const pct = document.getElementById('dp-ai-pct');
+    const log = document.getElementById('dp-ai-log');
     if (bar) bar.style.width = s.pct + '%';
     if (msg) msg.textContent = s.msg;
     if (pct) pct.textContent = s.pct + '%';
-    setTimeout(tick, i === steps.length ? 700 : 600);
+    if (log) {
+      const isDone = (i === steps.length);
+      const item = document.createElement('div');
+      item.className = 'dp-ai-log-item';
+      item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:5px 10px;border-radius:7px;background:rgba(255,255,255,0.03);font-size:0.72rem;color:#94a3b8;';
+      item.innerHTML = isDone
+        ? `<span style="color:#22c55e;flex-shrink:0;">✅</span><span style="color:#22c55e;font-weight:600;">${s.msg}</span>`
+        : `<span style="color:#8b5cf6;flex-shrink:0;">✓</span><span>${s.msg}</span>`;
+      log.appendChild(item);
+      // Keep scroll at bottom
+      log.scrollTop = log.scrollHeight;
+    }
+    setTimeout(tick, isDone ? 700 : 620);
   }
-  setTimeout(tick, 300);
+  setTimeout(tick, 400);
 };
 
 // ── Build the AI trail object from live HRM + tenant data ─────
