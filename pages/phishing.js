@@ -440,8 +440,26 @@ function companyRisk() {
   return Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
 }
 
+// ── Inject Admin Local into PHISHING_MOCK on every render ─────
+function phInjectDemoUser() {
+  if (typeof DEMO_STATE === 'undefined') return;
+  const ds = DEMO_STATE;
+  const riskScore = ds.getRiskScore();
+  const cliques   = ds.phishing.filter(p => p.action === 'clicked').length;
+  const reportou  = ds.phishing.filter(p => p.action === 'reported').length;
+  const entry = {
+    id: 999, nome: ds.user.name, email: ds.user.email,
+    dept:'TI', cargo:'Super Admin', riskScore, campanhas: ds.phishing.length,
+    cliques, reportou, grupo:'ti', isDemo: true,
+  };
+  const idx = PHISHING_MOCK.usuarios.findIndex(u => u.id === 999);
+  if (idx >= 0) PHISHING_MOCK.usuarios[idx] = entry;
+  else PHISHING_MOCK.usuarios.push(entry);
+}
+
 // ── Main Render ────────────────────────────────────────────────
 window.renderPage_phishing = function () {
+  phInjectDemoUser();
   (function injectPhishingCSS() {
     if (document.getElementById('phishing-css')) return;
     // CSS already injected at top of file
@@ -826,6 +844,20 @@ window.phViewCampaign = function(id) {
         </div>`;
       }).join('')}
     </div>
+    ${typeof DEMO_STATE !== 'undefined' ? `
+    <div style="border-top:1px solid rgba(255,255,255,0.08);margin-top:4px;padding-top:16px;margin-bottom:16px;">
+      <div style="font-size:0.7rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.09em;margin-bottom:10px;">🎭 Simular como Admin Local</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="ph-btn ph-btn-ghost ph-btn-sm" style="border-color:#ef4444;color:#ef4444;flex:1;min-width:120px;"
+          onclick="DEMO_STATE.simulatePhishing(${id},'${c.nome}','clicked');phInjectDemoUser();showToast&&showToast('⚠️ Admin Local clicou no link!','error');phCloseModal();">
+          🎣 Simular Clique
+        </button>
+        <button class="ph-btn ph-btn-ghost ph-btn-sm" style="border-color:#22c55e;color:#22c55e;flex:1;min-width:120px;"
+          onclick="DEMO_STATE.simulatePhishing(${id},'${c.nome}','reported');phInjectDemoUser();showToast&&showToast('🛡 Admin Local reportou o phishing!','success');phCloseModal();">
+          🛡 Simular Reporte
+        </button>
+      </div>
+    </div>` : ''}
     <div style="display:flex;gap:10px">
       <button class="ph-btn ph-btn-ghost" style="flex:1" onclick="phCloseModal()">Fechar</button>
       <button class="ph-btn ph-btn-primary" style="flex:1" onclick="phDuplicateCampaign(${id});phCloseModal()">Duplicar Campanha</button>

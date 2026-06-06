@@ -295,6 +295,13 @@ function avatarBg(name) {
 // ── Main Page Render (overrides certificates.js renderPage_risk) ──
 window.renderPage_risk = function() {
   injectHRMCSS && injectHRMCSS();
+  // Inject / update Admin Local in the user list
+  if (typeof DEMO_STATE !== 'undefined') {
+    const du = DEMO_STATE.asHRMUser();
+    const idx = HRM_DATA.users.findIndex(u => u.id === 999);
+    if (idx >= 0) HRM_DATA.users[idx] = du;
+    else HRM_DATA.users.push(du);
+  }
   return `
 <div id="hrm-module">
   <div class="hrm-tabs">

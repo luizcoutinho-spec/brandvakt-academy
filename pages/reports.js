@@ -171,6 +171,56 @@ const RP_TYPES = ['all','compliance','risk','certs','privacy','cyber','training'
 // ══════════════════════════════════════════════════════════════
 //  MAIN RENDER
 // ══════════════════════════════════════════════════════════════
+function rpDemoActivitySection() {
+  if (typeof DEMO_STATE === 'undefined') return '';
+  const u = DEMO_STATE;
+  if (!u.completions.length && !u.phishing.length) return '';
+  const rm = u.getRiskMeta();
+  const score = u.getRiskScore();
+  const allActivity = [
+    ...u.completions.map(c=>({ date: c.dateISO, displayDate: c.date, icon: c.passed?'✅':'❌', label: c.courseName, sub: (c.passed?'Aprovado':'Reprovado')+' · '+c.score+'%', color: c.passed?'#22c55e':'#ef4444', type:'training' })),
+    ...u.phishing.map(p=>({ date: p.dateISO, displayDate: p.date.split(',')[0], icon: p.action==='clicked'?'🎣':'🛡', label: p.campaignName, sub: p.action==='clicked'?'Clicou no link':'Reportou o phishing', color: p.action==='clicked'?'#ef4444':'#22c55e', type:'phishing' })),
+  ].sort((a,b)=>b.date.localeCompare(a.date));
+  return `
+  <div style="background:linear-gradient(135deg,rgba(0,212,255,0.05),rgba(139,92,246,0.05));border:1px solid rgba(0,212,255,0.18);border-radius:18px;padding:22px;margin-top:8px;margin-bottom:8px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;color:#000;">AL</div>
+        <div>
+          <div style="font-size:1rem;font-weight:800;">Atividade — Admin Local</div>
+          <div style="font-size:0.72rem;color:#6b7280;">admin@empresa.com · TI · Super Admin · Sessão atual</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="padding:4px 12px;border-radius:99px;font-size:0.7rem;font-weight:700;background:${rm.bg};color:${rm.color};">🛡 ${score}/100 — ${rm.label}</span>
+        <button onclick="demoShowProfile()" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:transparent;color:#00d4ff;cursor:pointer;font-size:0.76rem;font-weight:600;font-family:inherit;">Ver Perfil</button>
+      </div>
+    </div>
+    <!-- KPIs row -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+      ${[['📚',u.completions.filter(c=>c.passed).length+' cursos','Treinamentos Concluídos','#22c55e'],['🏆',u.getCertCount()+' certs','Certificados Emitidos','#f59e0b'],['🎣',u.phishing.filter(p=>p.action==='clicked').length+' cliques','Phishing Clicados','#ef4444'],['🛡',u.phishing.filter(p=>p.action==='reported').length+' reportes','Phishing Reportados','#22c55e']].map(([ic,v,l,c])=>`
+        <div style="flex:1;min-width:110px;padding:12px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);text-align:center;">
+          <div style="font-size:0.9rem;">${ic}</div>
+          <div style="font-size:1.1rem;font-weight:800;color:${c};">${v}</div>
+          <div style="font-size:0.62rem;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">${l}</div>
+        </div>`).join('')}
+    </div>
+    <!-- Activity feed -->
+    <div style="font-size:0.65rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Linha do Tempo (${allActivity.length} eventos)</div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      ${allActivity.map(a=>`
+        <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);">
+          <span style="font-size:1.1rem;flex-shrink:0;">${a.icon}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.label}</div>
+            <div style="font-size:0.68rem;color:#6b7280;">${a.sub}</div>
+          </div>
+          <span style="font-size:0.7rem;font-weight:700;padding:3px 9px;border-radius:99px;background:${a.color}18;color:${a.color};flex-shrink:0;">${a.displayDate}</span>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
 window.renderPage_reports = function() {
   injectReportsCSS();
   return `
@@ -212,6 +262,7 @@ window.renderPage_reports = function() {
 
   <div id="rp-body">${rpRenderTab(RP.tab)}</div>
   <div id="rp-modals"></div>
+  ${rpDemoActivitySection()}
 </div>`;
 };
 

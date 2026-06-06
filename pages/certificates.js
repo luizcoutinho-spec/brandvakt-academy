@@ -217,6 +217,27 @@ function getFilteredCerts() {
 // ── Main Render ───────────────────────────────────────────────
 window.renderPage_certificates = function() {
   injectCertCSS();
+  // Inject Admin Local demo certificates
+  if (typeof DEMO_STATE !== 'undefined') {
+    DEMO_STATE.completions.filter(c => c.passed && c.certId).forEach(c => {
+      const exists = CERT_DATA.certificates.find(x => x.id === c.certId);
+      if (!exists) {
+        CERT_DATA.certificates.unshift({
+          id: c.certId,
+          user: DEMO_STATE.user.name,
+          email: DEMO_STATE.user.email,
+          course: c.courseName,
+          category: 'Cybersecurity',
+          dept: DEMO_STATE.user.dept,
+          date: c.dateISO,
+          expires: new Date(new Date(c.dateISO).setFullYear(new Date(c.dateISO).getFullYear()+1)).toISOString().split('T')[0],
+          lang: 'pt', score: c.score, status: 'valid',
+          country: DEMO_STATE.user.country,
+          duration: '6h', issuer: 'Brandvakt Academy', isDemo: true,
+        });
+      }
+    });
+  }
   const total   = CERT_DATA.certificates.length;
   const valid   = CERT_DATA.certificates.filter(c=>c.status==='valid').length;
   const expiring= CERT_DATA.certificates.filter(c=>c.status==='expiring').length;

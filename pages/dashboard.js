@@ -307,6 +307,59 @@ const dbCatBadge  = { 'Cybersecurity':'badge-blue','Privacidade':'badge-purple',
 // ══════════════════════════════════════════════════════════════
 //  MAIN RENDER
 // ══════════════════════════════════════════════════════════════
+function demoProgressWidget() {
+  if (typeof DEMO_STATE === 'undefined') return '';
+  const u = DEMO_STATE;
+  const rm = u.getRiskMeta();
+  const score = u.getRiskScore();
+  const certs = u.getCertCount();
+  const passed = u.completions.filter(c=>c.passed).length;
+  const compPct = u.getCompletionPct();
+  const lastAct = u.getLastActivity();
+  const recentItems = [
+    ...u.completions.slice(-3).reverse().map(c=>({ icon: c.passed?'✅':'❌', label: c.courseName, sub: c.date, color: c.passed?'#22c55e':'#ef4444' })),
+    ...u.phishing.slice(-2).reverse().map(p=>({ icon: p.action==='clicked'?'🎣':'🛡', label: p.campaignName, sub: p.date.split(',')[0], color: p.action==='clicked'?'#ef4444':'#22c55e' })),
+  ].slice(0,4);
+  return `
+  <div style="background:linear-gradient(135deg,rgba(0,212,255,0.06),rgba(139,92,246,0.06));border:1px solid rgba(0,212,255,0.2);border-radius:18px;padding:20px;margin-top:4px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;color:#000;flex-shrink:0;">AL</div>
+        <div>
+          <div style="font-size:0.9rem;font-weight:800;">Meu Progresso — Admin Local</div>
+          <div style="font-size:0.7rem;color:#6b7280;">admin@empresa.com · TI · Super Admin</div>
+        </div>
+      </div>
+      <button onclick="demoShowProfile()" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:transparent;color:#00d4ff;cursor:pointer;font-size:0.76rem;font-weight:600;font-family:inherit;">Ver Perfil Completo →</button>
+    </div>
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+      ${[['🏆',certs,'Certificados','#f59e0b'],['📚',passed,'Concluídos','#22c55e'],['📊',compPct+'%','Conclusão','#00d4ff'],['🛡',score,'Risk Score',rm.color]].map(([ic,v,l,c])=>`
+        <div style="text-align:center;padding:10px;border-radius:10px;background:rgba(255,255,255,0.03);">
+          <div style="font-size:0.85rem;">${ic}</div>
+          <div style="font-size:1.2rem;font-weight:900;color:${c};">${v}</div>
+          <div style="font-size:0.6rem;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;">${l}</div>
+        </div>`).join('')}
+    </div>
+    <!-- Risk bar -->
+    <div style="margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:#6b7280;margin-bottom:4px;"><span>Human Risk Score</span><span style="color:${rm.color};font-weight:700;">${score}/100 — ${rm.label}</span></div>
+      <div style="height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${score}%;background:${rm.color};border-radius:3px;transition:width .8s;"></div></div>
+    </div>
+    <!-- Recent activity -->
+    ${recentItems.length ? `
+    <div style="font-size:0.65rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Atividade Recente</div>
+    <div style="display:flex;flex-direction:column;gap:5px;">
+      ${recentItems.map(r=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:8px;background:rgba(255,255,255,0.02);">
+          <span style="font-size:1rem;">${r.icon}</span>
+          <div style="flex:1;min-width:0;font-size:0.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${r.label}</div>
+          <span style="font-size:0.65rem;color:#6b7280;flex-shrink:0;">${r.sub}</span>
+        </div>`).join('')}
+    </div>` : `<div style="text-align:center;color:#6b7280;font-size:0.78rem;padding:8px;">Nenhuma atividade ainda. Vá à Biblioteca e comece um treinamento!</div>`}
+  </div>`;
+}
+
 window.renderPage_dashboard = function() {
   injectDashCSS();
   const lang = (typeof APP !== 'undefined' && APP.lang) || 'pt';
@@ -606,6 +659,8 @@ window.renderPage_dashboard = function() {
         </div>`).join('')}
     </div>
   </div>
+
+  ${demoProgressWidget()}
 
 </div>`;
 };
