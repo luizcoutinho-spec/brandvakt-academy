@@ -214,14 +214,104 @@ function getFilteredCerts() {
   return data;
 }
 
+// ── Course pool for cert generation ───────────────────────────
+const CERT_COURSES_POOL = [
+  { course:'Phishing Awareness & Simulation',    category:'Cybersecurity',        duration:'8h',  issuer:'Brandvakt Academy'        },
+  { course:'Segurança da Informação Básica',      category:'Information Security', duration:'6h',  issuer:'Brandvakt Academy'        },
+  { course:'LGPD e Proteção de Dados Pessoais',  category:'Privacy',              duration:'16h', issuer:'Brandvakt Academy'        },
+  { course:'Gestão de Senhas e MFA',             category:'Cybersecurity',        duration:'4h',  issuer:'Brandvakt Academy'        },
+  { course:'Compliance e Ética Corporativa',     category:'Compliance',           duration:'8h',  issuer:'Brandvakt Academy'        },
+  { course:'GDPR Compliance Fundamentals',       category:'Privacy',              duration:'12h', issuer:'Brandvakt Academy'        },
+  { course:'ISO/IEC 27001 Fundamentos',          category:'Information Security', duration:'20h', issuer:'PECB · Brandvakt Academy' },
+  { course:'ESG e Sustentabilidade Corporativa', category:'ESG',                  duration:'8h',  issuer:'Brandvakt Academy'        },
+  { course:'Acesso Remoto e VPN Segura',         category:'Cybersecurity',        duration:'6h',  issuer:'Brandvakt Academy'        },
+  { course:'Resposta a Incidentes',              category:'Compliance',           duration:'10h', issuer:'Brandvakt Academy'        },
+  { course:'Segurança em Dispositivos Móveis',   category:'Cybersecurity',        duration:'4h',  issuer:'Brandvakt Academy'        },
+  { course:'Classificação da Informação',        category:'Information Security', duration:'3h',  issuer:'Brandvakt Academy'        },
+];
+
+const CERT_LANG_MAP = { '🇧🇷':'pt','🇺🇸':'en','🇫🇷':'fr','🇪🇸':'es','🇸🇦':'ar','🇩🇪':'de' };
+
+// ── Rebuild CERT_DATA from active tenant users ─────────────────
+function rebuildCertsFromTenant() {
+  if (typeof getActiveTenantUsers !== 'function') return;
+  const tenantUsers = getActiveTenantUsers();
+  if (!tenantUsers.length) return;
+
+  const now = new Date();
+  const generated = [];
+  let seqNum = 1000 + (tenantUsers.length * 17);
+
+  tenantUsers.forEach(u => {
+    const certCount = typeof u.certs === 'number' ? Math.min(u.certs, CERT_COURSES_POOL.length) : 0;
+    if (certCount === 0) return;
+
+    const lang = CERT_LANG_MAP[u.country] || 'pt';
+
+    // Admin Local DEMO: inject from DEMO_STATE (handled separately below)
+    if (u.isDemo) return;
+
+    for (let i = 0; i < certCount; i++) {
+      // Deterministic course selection: each user gets a unique slice of the pool
+      const courseIdx = ((u.id * 7 + i * 3) % CERT_COURSES_POOL.length);
+      const pool = CERT_COURSES_POOL[courseIdx];
+
+      // Stagger issue dates: most recent first (1 month ago), then older
+      const monthsAgo = 1 + i * 2 + Math.floor(((u.id * 13 + i) % 3));
+      const issueDate = new Date(now);
+      issueDate.setMonth(issueDate.getMonth() - monthsAgo);
+      const expireDate = new Date(issueDate);
+      expireDate.setFullYear(expireDate.getFullYear() + 1);
+
+      const daysLeft = Math.ceil((expireDate - now) / (1000*60*60*24));
+      const status = daysLeft < 0 ? 'expired' : daysLeft < 90 ? 'expiring' : 'valid';
+
+      // Score based on completion and slight jitter (deterministic)
+      const jitter = ((u.id * 11 + i * 7) % 10) - 5;
+      const score = Math.max(60, Math.min(100, (u.completion || 75) + jitter));
+
+      seqNum++;
+      const year = issueDate.getFullYear();
+      const certId = `BVA-${year}-${String(seqNum).padStart(6,'0')}`;
+
+      generated.push({
+        id: certId,
+        user: u.name,
+        email: u.email || `${u.name.toLowerCase().replace(/\s+/,'.')}@empresa.com`,
+        course: pool.course,
+        category: pool.category,
+        dept: u.dept,
+        date: issueDate.toISOString().split('T')[0],
+        expires: expireDate.toISOString().split('T')[0],
+        lang,
+        score,
+        status,
+        country: u.country || '🇧🇷',
+        duration: pool.duration,
+        issuer: pool.issuer,
+      });
+    }
+  });
+
+  // Sort by date desc
+  generated.sort((a,b) => b.date.localeCompare(a.date));
+  CERT_DATA.certificates = generated;
+}
+
 // ── Main Render ───────────────────────────────────────────────
 window.renderPage_certificates = function() {
   injectCertCSS();
-  // Inject Admin Local demo certificates
+
+  // ── Rebuild certs from active tenant ──────────────────────
+  rebuildCertsFromTenant();
+
+  // ── Inject Admin Local DEMO real completions ───────────────
   if (typeof DEMO_STATE !== 'undefined') {
     DEMO_STATE.completions.filter(c => c.passed && c.certId).forEach(c => {
       const exists = CERT_DATA.certificates.find(x => x.id === c.certId);
       if (!exists) {
+        const expDate = new Date(c.dateISO);
+        expDate.setFullYear(expDate.getFullYear() + 1);
         CERT_DATA.certificates.unshift({
           id: c.certId,
           user: DEMO_STATE.user.name,
@@ -230,7 +320,7 @@ window.renderPage_certificates = function() {
           category: 'Cybersecurity',
           dept: DEMO_STATE.user.dept,
           date: c.dateISO,
-          expires: new Date(new Date(c.dateISO).setFullYear(new Date(c.dateISO).getFullYear()+1)).toISOString().split('T')[0],
+          expires: expDate.toISOString().split('T')[0],
           lang: 'pt', score: c.score, status: 'valid',
           country: DEMO_STATE.user.country,
           duration: '6h', issuer: 'Brandvakt Academy', isDemo: true,
@@ -238,6 +328,7 @@ window.renderPage_certificates = function() {
       }
     });
   }
+
   const total   = CERT_DATA.certificates.length;
   const valid   = CERT_DATA.certificates.filter(c=>c.status==='valid').length;
   const expiring= CERT_DATA.certificates.filter(c=>c.status==='expiring').length;

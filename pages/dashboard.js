@@ -360,14 +360,83 @@ function demoProgressWidget() {
   </div>`;
 }
 
+// ── Rebuild DASH_DATA from active tenant users ─────────────────
+function rebuildDashFromTenant() {
+  if (typeof getActiveTenantUsers !== 'function') return;
+  const users = getActiveTenantUsers();
+  if (!users.length) return;
+
+  const active   = users.filter(u => u.status === 'active' || !u.status);
+  const inactive = users.filter(u => u.status === 'inactive');
+  const totalCerts = users.reduce((s,u) => s + (typeof u.certs === 'number' ? u.certs : 0), 0);
+  const avgCompletion = Math.round(users.reduce((s,u) => s + (u.completion||0), 0) / users.length);
+  const highRisk = users.filter(u => u.risk === 'high').length;
+  const pendingCount = users.filter(u => (u.completion||0) < 100).length;
+  const estHours = Math.round(users.reduce((s,u) => s + ((u.completion||0)/100)*8, 0));
+
+  // Update KPIs
+  DASH_DATA.kpis[0] = { ...DASH_DATA.kpis[0], value: String(active.length),   numVal: active.length,   spark: [Math.max(0,active.length-5),Math.max(0,active.length-3),Math.max(0,active.length-2),Math.max(0,active.length-1),active.length,active.length] };
+  DASH_DATA.kpis[1] = { ...DASH_DATA.kpis[1], value: String(inactive.length), numVal: inactive.length, spark: [inactive.length+3,inactive.length+2,inactive.length+2,inactive.length+1,inactive.length,inactive.length] };
+  DASH_DATA.kpis[2] = { ...DASH_DATA.kpis[2], value: String(avgCompletion)+'%', numVal: avgCompletion };
+  DASH_DATA.kpis[3] = { ...DASH_DATA.kpis[3], value: String(pendingCount),  numVal: pendingCount  };
+  DASH_DATA.kpis[4] = { ...DASH_DATA.kpis[4], value: String(totalCerts),    numVal: totalCerts    };
+  DASH_DATA.kpis[5] = { ...DASH_DATA.kpis[5], value: estHours+'h',          numVal: estHours      };
+
+  // Update scores — Human Risk from HRM if available
+  const orgRisk = (typeof HRM_DATA !== 'undefined' && HRM_DATA.orgScore) ? HRM_DATA.orgScore : Math.round(users.reduce((s,u) => s + (u.risk==='high'?75:u.risk==='med'?45:20), 0)/users.length);
+  const avgComp2 = avgCompletion;
+  DASH_DATA.scores[3] = { ...DASH_DATA.scores[3], value: orgRisk };
+  DASH_DATA.scores[4] = { ...DASH_DATA.scores[4], value: avgComp2 };
+
+  // Rebuild depts from real users
+  const deptIconMap = { 'Diretoria':'🏛️','TI':'💻','Financeiro':'💰','RH':'👥','Marketing':'📣','Vendas':'📈','Operações':'⚙️','Jurídico':'⚖️','Comercial':'📞','Segurança':'🔒' };
+  const deptMap = {};
+  users.forEach(u => {
+    if (!deptMap[u.dept]) deptMap[u.dept] = [];
+    deptMap[u.dept].push(u);
+  });
+  DASH_DATA.depts = Object.keys(deptMap).map(deptName => {
+    const du = deptMap[deptName];
+    const avgC = Math.round(du.reduce((s,u)=>s+(u.completion||0),0)/du.length);
+    const certCount = du.reduce((s,u)=>s+(typeof u.certs==='number'?u.certs:0),0);
+    const riskVals = du.map(u=>u.risk==='high'?3:u.risk==='med'?2:1);
+    const avgRisk = riskVals.reduce((s,v)=>s+v,0)/riskVals.length;
+    const risk = avgRisk >= 2.5 ? 'high' : avgRisk >= 1.5 ? 'med' : 'low';
+    return { name: deptName, icon: deptIconMap[deptName]||'🏢', completion: avgC, avg: (avgC/10).toFixed(1), certs: certCount, risk };
+  }).sort((a,b) => b.completion - a.completion);
+
+  // Rebuild activity from real user names
+  const riskUsers = users.filter(u=>u.risk==='high');
+  const lowRiskUsers = users.filter(u=>u.risk==='low'&&(u.completion||0)>80);
+  const acts = [];
+  if (lowRiskUsers[0]) acts.push({ icon:'🏆', text:`${lowRiskUsers[0].name} concluiu treinamento e recebeu certificado`, time:'há 5 min', color:'#22c55e' });
+  if (riskUsers[0])    acts.push({ icon:'⚠️', text:`Score de risco de <b>${riskUsers[0].name}</b> está em nível <b>Alto</b>`, time:'há 12 min', color:'#ef4444' });
+  if (lowRiskUsers[1]) acts.push({ icon:'📚', text:`${lowRiskUsers[1].name} iniciou treinamento de Phishing Awareness`, time:'há 18 min', color:'#00d4ff' });
+  if (riskUsers[1])    acts.push({ icon:'📋', text:`Plano de ação criado para <b>${riskUsers[1].name}</b> — ${riskUsers[1].dept}`, time:'há 27 min', color:'#f59e0b' });
+  acts.push({ icon:'✅', text:`Departamento ${users[0]?.dept||'TI'} atingiu ${avgCompletion}% de conclusão`, time:'há 35 min', color:'#22c55e' });
+  if (typeof DEMO_STATE !== 'undefined' && DEMO_STATE.completions.length) {
+    const last = DEMO_STATE.completions[DEMO_STATE.completions.length-1];
+    acts.unshift({ icon: last.passed?'🏆':'❌', text:`<b>Admin Local DEMO</b> ${last.passed?'concluiu':'reprovou'}: <b>${last.courseName}</b> (${last.score}%)`, time:'agora', color: last.passed?'#22c55e':'#ef4444' });
+  }
+  DASH_DATA.activity = acts;
+
+  // Alerts
+  DASH_DATA.alerts[0] = { ...DASH_DATA.alerts[0], count: pendingCount };
+  DASH_DATA.alerts[2] = { ...DASH_DATA.alerts[2], count: highRisk };
+}
+
 window.renderPage_dashboard = function() {
   injectDashCSS();
+
+  // ── Rebuild dashboard from active tenant ──────────────────
+  rebuildDashFromTenant();
+
   const lang = (typeof APP !== 'undefined' && APP.lang) || 'pt';
   const L = DASH_LABELS[lang] || DASH_LABELS.pt;
   const tenantName = (typeof APP !== 'undefined' && APP.tenant && APP.tenant.name) || 'Empresa';
 
   const totalUsers = DASH_DATA.kpis[0].numVal;
-  const avgComp = Math.round(DASH_DATA.depts.reduce((s,d)=>s+d.completion,0)/DASH_DATA.depts.length);
+  const avgComp = Math.round(DASH_DATA.depts.reduce((s,d)=>s+d.completion,0)/(DASH_DATA.depts.length||1));
 
   return `
 <div id="dash-module" style="display:flex;flex-direction:column;gap:22px;">

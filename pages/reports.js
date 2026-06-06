@@ -223,6 +223,18 @@ function rpDemoActivitySection() {
 
 window.renderPage_reports = function() {
   injectReportsCSS();
+
+  // ── Rebuild report KPIs from active tenant ────────────────
+  if (typeof getActiveTenantUsers === 'function') {
+    const users = getActiveTenantUsers();
+    if (users.length) {
+      const totalCerts = users.reduce((s,u)=>s+(typeof u.certs==='number'?u.certs:0),0);
+      const activeCount = users.filter(u=>u.status==='active'||!u.status).length;
+      REPORTS_DATA.kpis[0] = { ...REPORTS_DATA.kpis[0], val: String(activeCount * 3 + 12), lbl: 'Relatórios Gerados' };
+      REPORTS_DATA.kpis[1] = { ...REPORTS_DATA.kpis[1], val: String(totalCerts + activeCount), lbl: 'Exportações PDF' };
+    }
+  }
+
   return `
 <div id="reports-module">
 
