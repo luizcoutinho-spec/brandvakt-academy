@@ -343,9 +343,34 @@ window.renderPage_library = function () {
       `).join('<div style="width:1px;background:var(--bg-border);height:28px;"></div>')}
     </div>
 
+    <!-- ── Cursos Pendentes de Criação ─────────────────────────── -->
+    ${(window.LIBRARY_PENDING_COURSES||[]).length > 0 ? `
+    <div id="lib-pending-section">
+      <!-- Section header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div style="width:4px;height:28px;background:linear-gradient(180deg,#ef4444,#b91c1c);border-radius:2px;flex-shrink:0;"></div>
+          <div>
+            <div style="font-size:1.0rem;font-weight:800;letter-spacing:-0.015em;color:#fca5a5;">Cursos Pendentes de Criação</div>
+            <div style="font-size:0.72rem;color:#6b7280;margin-top:1px;">Identificados pela IA — aguardando cadastro na biblioteca</div>
+          </div>
+        </div>
+        <span style="font-size:0.68rem;font-weight:700;padding:3px 12px;border-radius:99px;background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.28);">${(window.LIBRARY_PENDING_COURSES||[]).length} pendente(s)</span>
+      </div>
+      <!-- Pending grid -->
+      <div id="lib-pending-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+        ${(window.LIBRARY_PENDING_COURSES||[]).map((p,i) => pendingCourseCard(p, L, i)).join('')}
+      </div>
+      <!-- Divider -->
+      <div style="margin:28px 0 6px;display:flex;align-items:center;gap:14px;">
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div>
+        <span style="font-size:0.68rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.08em;">Cursos Disponíveis na Biblioteca</span>
+        <div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div>
+      </div>
+    </div>` : ''}
+
     <!-- Course Grid -->
     <div id="lib-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
-      ${(window.LIBRARY_PENDING_COURSES||[]).map(p => pendingCourseCard(p, L)).join('')}
       ${COURSES.map(c => courseCard(c, L)).join('')}
     </div>
 
@@ -382,47 +407,76 @@ const COURSES = [
 ];
 
 // ── Red card for AI-identified courses not yet in the library ──
-function pendingCourseCard(p, L) {
+function pendingCourseCard(p, L, idx) {
   const catMap = {
     'Cybersecurity':'🛡','Compliance':'📋','Privacidade':'🔒',
-    'Ética':'⚖️','Governança':'🏢','IA':'🤖',
+    'Ética':'⚖️','Governança':'🏢','IA':'🤖','Behavioral Security':'🧠',
   };
   const icon = catMap[p.categoria] || '📚';
   const urgColor = p.urgencia?.includes('Alta') || p.urgencia?.includes('Crítica') ? '#ef4444' : '#f59e0b';
   return `
-  <div class="card" style="padding:0;overflow:hidden;border:2px dashed rgba(239,68,68,0.45);background:rgba(239,68,68,0.04);position:relative;">
-    <!-- Pending banner -->
-    <div style="background:rgba(239,68,68,0.12);border-bottom:1px dashed rgba(239,68,68,0.30);padding:7px 14px;display:flex;align-items:center;gap:7px;">
-      <span style="font-size:0.88rem;">⏳</span>
-      <span style="font-size:0.65rem;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:.07em;">Aguardando criação/publicação</span>
+  <div class="card" id="lib-pending-card-${idx}" style="padding:0;overflow:hidden;border:2px dashed rgba(239,68,68,0.42);background:rgba(239,68,68,0.03);transition:all 0.22s;">
+    <!-- Status banner -->
+    <div style="background:rgba(239,68,68,0.10);border-bottom:1px dashed rgba(239,68,68,0.25);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:7px;">
+        <span style="font-size:0.85rem;">⏳</span>
+        <span style="font-size:0.62rem;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:.08em;">Aguardando criação/publicação</span>
+      </div>
+      <span style="font-size:0.62rem;color:#6b7280;">${p.addedAt||''}</span>
     </div>
     <!-- Header -->
-    <div style="padding:16px 18px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:1.7rem;line-height:1;opacity:0.6;">${icon}</span>
-        <div>
-          <div style="font-size:0.88rem;font-weight:700;line-height:1.3;margin-bottom:4px;color:#fca5a5;">${p.titulo}</div>
-          <div style="display:flex;gap:5px;flex-wrap:wrap;">
-            <span class="badge badge-red" style="font-size:0.6rem;">${p.categoria}</span>
-            <span style="font-size:0.6rem;font-weight:700;color:${urgColor};background:${urgColor}22;padding:2px 8px;border-radius:99px;border:1px solid ${urgColor}44;">${p.urgencia}</span>
-          </div>
+    <div style="padding:16px 18px 10px;display:flex;align-items:flex-start;gap:12px;">
+      <span style="font-size:1.8rem;line-height:1;opacity:0.55;flex-shrink:0;">${icon}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.90rem;font-weight:800;line-height:1.3;margin-bottom:6px;color:#fca5a5;">${p.titulo}</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:0.60rem;font-weight:700;padding:2px 9px;border-radius:99px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.28);">${p.categoria}</span>
+          <span style="font-size:0.60rem;font-weight:700;color:${urgColor};background:${urgColor}18;padding:2px 9px;border-radius:99px;border:1px solid ${urgColor}35;">${p.urgencia}</span>
         </div>
       </div>
     </div>
     <!-- Body -->
-    <div style="padding:10px 18px 14px;display:flex;flex-direction:column;gap:10px;">
-      ${p.descricao ? `<p style="font-size:0.78rem;color:#94a3b8;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.descricao}</p>` : ''}
-      <div style="font-size:0.70rem;color:#6b7280;">📋 Identificado por: <strong style="color:#f59e0b;">${p.campanha||'IA'}</strong> · ${p.addedAt||''}</div>
-      <div style="padding:10px 12px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.18);border-radius:8px;font-size:0.72rem;color:#fca5a5;line-height:1.5;">
-        Este curso foi recomendado pela IA mas ainda não está disponível na biblioteca. Crie e publique o conteúdo para ativá-lo automaticamente nas atribuições pendentes.
+    <div style="padding:0 18px 16px;display:flex;flex-direction:column;gap:10px;">
+      ${p.descricao ? `<p style="font-size:0.78rem;color:#94a3b8;line-height:1.55;margin:0;">${p.descricao}</p>` : ''}
+      <div style="display:flex;align-items:center;gap:6px;font-size:0.70rem;color:#6b7280;">
+        <span>📋</span>
+        <span>Identificado por: <strong style="color:#f59e0b;">${p.campanha||'IA'}</strong></span>
+      </div>
+      <div style="padding:9px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;font-size:0.72rem;color:#fca5a5;line-height:1.55;">
+        Este curso foi recomendado pela IA e ainda não está na biblioteca. Quando publicado, as atribuições pendentes serão ativadas automaticamente.
       </div>
     </div>
-    <!-- Footer -->
-    <div style="padding:10px 18px;border-top:1px dashed rgba(239,68,68,0.20);display:flex;gap:6px;justify-content:flex-end;">
-      <button class="btn btn-sm" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.30);font-weight:700;" onclick="showToast('Crie o conteúdo e publique para ativar este curso nas atribuições.','info')">+ Criar Curso</button>
+    <!-- Footer — only delete button -->
+    <div style="padding:10px 18px 14px;border-top:1px dashed rgba(239,68,68,0.18);display:flex;justify-content:flex-end;">
+      <button class="btn btn-sm" onclick="libDeletePending(${idx})"
+        style="display:flex;align-items:center;gap:6px;background:rgba(239,68,68,0.10);color:#ef4444;border:1px solid rgba(239,68,68,0.28);font-weight:700;font-size:0.76rem;padding:6px 14px;border-radius:8px;cursor:pointer;transition:all 0.18s;"
+        onmouseenter="this.style.background='rgba(239,68,68,0.20)'" onmouseleave="this.style.background='rgba(239,68,68,0.10)'">
+        🗑 Excluir Curso
+      </button>
     </div>
   </div>`;
 }
+
+// Delete a pending course by index and refresh the pending section
+window.libDeletePending = function(idx) {
+  if (!window.LIBRARY_PENDING_COURSES) return;
+  const curso = window.LIBRARY_PENDING_COURSES[idx];
+  if (!curso) return;
+  window.LIBRARY_PENDING_COURSES.splice(idx, 1);
+  // Refresh the library page in-place
+  const grid = document.getElementById('lib-pending-grid');
+  const section = document.getElementById('lib-pending-section');
+  const L = libLabels[APP.lang] || libLabels.pt;
+  if (window.LIBRARY_PENDING_COURSES.length === 0) {
+    if (section) section.remove();
+  } else {
+    if (grid) grid.innerHTML = window.LIBRARY_PENDING_COURSES.map((p,i) => pendingCourseCard(p, L, i)).join('');
+    // Update counter badge
+    const badge = section?.querySelector('span[style*="pendente"]');
+    if (badge) badge.textContent = window.LIBRARY_PENDING_COURSES.length + ' pendente(s)';
+  }
+  showToast && showToast(`🗑 "${curso.titulo}" removido dos cursos pendentes.`, 'info');
+};
 
 function courseCard(c, L) {
   const statusColor = c.status === 'published' ? 'var(--brand-success)' : c.status === 'draft' ? 'var(--brand-warning)' : 'var(--text-muted)';
@@ -569,7 +623,16 @@ window.filterLibrary = function() {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📭</div><div class="empty-title">Nenhum treinamento encontrado</div><div class="empty-sub">Tente ajustar os filtros.</div></div>`;
     return;
   }
-  grid.innerHTML = pendingCourses.map(p => pendingCourseCard(p, L)).join('') + regularCourses.map(c => courseCard(c, L)).join('');
+  // Update pending section visibility during search
+  const pendingSection = document.getElementById('lib-pending-section');
+  const pendingGrid    = document.getElementById('lib-pending-grid');
+  if (pendingSection) {
+    pendingSection.style.display = pendingCourses.length === 0 && regularCourses.length > 0 ? 'none' : '';
+    if (pendingGrid && pendingCourses.length > 0) {
+      pendingGrid.innerHTML = pendingCourses.map((p,i) => pendingCourseCard(p, L, i)).join('');
+    }
+  }
+  grid.innerHTML = regularCourses.map(c => courseCard(c, L)).join('');
   // Re-animate progress bars
   setTimeout(() => {
     grid.querySelectorAll('.progress-fill').forEach(el => {
