@@ -133,16 +133,16 @@ injectAssignCSS();
 // ── Data ─────────────────────────────────────────────────────
 const ASSIGN_DATA = {
   assignments: [
-    { id:1,  course:'Phishing & Engenharia Social',  target:'Todos os usuários',       targetType:'global',  due:'2024-12-31', completion:87, status:'ativa',    mandatory:true,  enviados:342, concluidos:297, pendentes:45,  atrasados:12, created:'2024-10-01', priority:'Alta',  category:'Cybersecurity', notify:true },
+    { id:1,  course:'Phishing & Engenharia Social',  target:'Todos os usuários',       targetType:'global',  due:'2024-12-31', completion:87, status:'ativa',    mandatory:true,  enviados:11, concluidos:10, pendentes:1,  atrasados:1, created:'2024-10-01', priority:'Alta',  category:'Cybersecurity', notify:true },
     { id:2,  course:'LGPD na Prática',               target:'Brasil · RH · Jurídico',  targetType:'group',   due:'2024-12-15', completion:91, status:'ativa',    mandatory:true,  enviados:156, concluidos:142, pendentes:14,  atrasados:8,  created:'2024-09-15', priority:'Alta',  category:'Privacidade',   notify:true },
-    { id:3,  course:'Código de Ética Empresarial',   target:'Todos os usuários',       targetType:'global',  due:'2025-01-31', completion:76, status:'ativa',    mandatory:true,  enviados:342, concluidos:260, pendentes:82,  atrasados:0,  created:'2024-10-15', priority:'Alta',  category:'Compliance',    notify:true },
+    { id:3,  course:'Código de Ética Empresarial',   target:'Todos os usuários',       targetType:'global',  due:'2025-01-31', completion:76, status:'ativa',    mandatory:true,  enviados:11, concluidos:8, pendentes:3,  atrasados:0,  created:'2024-10-15', priority:'Alta',  category:'Compliance',    notify:true },
     { id:4,  course:'Anticorrupção e Antissuborno',  target:'Gestores · Financeiro',   targetType:'group',   due:'2024-12-20', completion:68, status:'ativa',    mandatory:true,  enviados:89,  concluidos:60,  pendentes:29,  atrasados:14, created:'2024-11-01', priority:'Alta',  category:'Compliance',    notify:false },
     { id:5,  course:'Home Office Seguro',            target:'Trabalho Remoto',         targetType:'group',   due:'2025-02-28', completion:55, status:'ativa',    mandatory:false, enviados:78,  concluidos:43,  pendentes:35,  atrasados:0,  created:'2024-11-15', priority:'Média', category:'Cybersecurity', notify:true },
     { id:6,  course:'Cloud Security Awareness',     target:'TI · DevOps',             targetType:'dept',    due:'2025-03-31', completion:42, status:'ativa',    mandatory:false, enviados:48,  concluidos:20,  pendentes:28,  atrasados:0,  created:'2024-12-01', priority:'Média', category:'Cybersecurity', notify:false },
     { id:7,  course:'ESG e Sustentabilidade',        target:'Lideranças',              targetType:'group',   due:'2025-04-30', completion:18, status:'rascunho', mandatory:false, enviados:0,   concluidos:0,   pendentes:0,   atrasados:0,  created:'2024-12-10', priority:'Baixa', category:'ESG',           notify:false },
     { id:8,  course:'ISO 27001 Fundamentos',         target:'TI · Segurança',          targetType:'dept',    due:'2025-02-15', completion:100,status:'concluida',mandatory:true,  enviados:55,  concluidos:55,  pendentes:0,   atrasados:0,  created:'2024-09-01', priority:'Alta',  category:'Information Security', notify:false },
-    { id:9,  course:'Gestão de Senhas e MFA',        target:'Todos os usuários',       targetType:'global',  due:'2025-01-15', completion:63, status:'pausada',  mandatory:true,  enviados:342, concluidos:215, pendentes:127, atrasados:22, created:'2024-10-20', priority:'Alta',  category:'Cybersecurity', notify:true },
-    { id:10, course:'Canal de Denúncias',            target:'Todos os usuários',       targetType:'global',  due:'2025-03-01', completion:34, status:'ativa',    mandatory:true,  enviados:342, concluidos:116, pendentes:226, atrasados:0,  created:'2024-12-05', priority:'Média', category:'Compliance',    notify:true },
+    { id:9,  course:'Gestão de Senhas e MFA',        target:'Todos os usuários',       targetType:'global',  due:'2025-01-15', completion:63, status:'pausada',  mandatory:true,  enviados:11, concluidos:7, pendentes:4, atrasados:2, created:'2024-10-20', priority:'Alta',  category:'Cybersecurity', notify:true },
+    { id:10, course:'Canal de Denúncias',            target:'Todos os usuários',       targetType:'global',  due:'2025-03-01', completion:34, status:'ativa',    mandatory:true,  enviados:11, concluidos:4, pendentes:7, atrasados:0,  created:'2024-12-05', priority:'Média', category:'Compliance',    notify:true },
   ],
 
   groups: ['Todos os usuários','RH','Jurídico','TI','Financeiro','Comercial','Marketing','Operações','Diretoria','Lideranças','Gestores','Trabalho Remoto','TI · DevOps'],
@@ -156,6 +156,25 @@ const ASSIGN_DATA = {
   ],
   categories: ['Cybersecurity','Compliance','Privacidade','Information Security','ESG','RH'],
 };
+
+// ── Tamanho de grupo baseado nos usuários reais (_usersAll de users.js) ──
+function asGroupSize(group) {
+  // Fonte de verdade: array real de usuários (populado em renderPage_users)
+  const all = (typeof _usersAll !== 'undefined' && _usersAll.length) ? _usersAll : [];
+  const total = all.length || 11; // fallback: total real cadastrado
+  if (!group || group === 'Todos os usuários') return total;
+  // Contar por departamento/grupo no array real
+  const byDept = {};
+  all.forEach(u => { byDept[u.dept] = (byDept[u.dept] || 0) + 1; });
+  // Grupos compostos (ex: "TI · DevOps")
+  if (group.includes('·')) {
+    const parts = group.split('·').map(s => s.trim());
+    return parts.reduce((s, p) => s + (byDept[p] || 0), 0) || 1;
+  }
+  return byDept[group] || all.filter(u =>
+    u.dept === group || (u.company||'').includes(group)
+  ).length || 1;
+}
 
 // ── State ─────────────────────────────────────────────────────
 let AS = {
@@ -472,7 +491,7 @@ window.asSort = function(col) {
 
 window.asPublish = function(id) {
   const a = ASSIGN_DATA.assignments.find(x=>x.id===id);
-  if(a){ a.status='ativa'; a.enviados=ASSIGN_DATA.groups[0]?342:0; }
+  if(a){ a.status='ativa'; a.enviados=asGroupSize(a.target||'Todos os usuários'); a.pendentes=a.enviados-a.concluidos; }
   asTab(AS.tab); showToast&&showToast('✅ Atribuição publicada e enviada!','success');
 };
 window.asPause = function(id) {
@@ -559,7 +578,7 @@ function renderAsKanban() {
 //  ANALYTICS
 // ══════════════════════════════════════════════════════════════
 function renderAsAnalytics() {
-  const totalUsers = 342;
+  const totalUsers = asGroupSize('Todos os usuários');
   const byCategory = ASSIGN_DATA.categories.map(cat=>{
     const items = ASSIGN_DATA.assignments.filter(a=>a.category===cat);
     const avg   = items.length ? Math.round(items.reduce((s,a)=>s+a.completion,0)/items.length) : 0;
@@ -831,15 +850,15 @@ function asRenderStep(step) {
       ${stepper}
       <div style="display:flex;flex-direction:column;gap:14px">
         <div><label class="as-label">Grupo / Departamento *</label>
-          <select class="as-select" id="as-nc-target">
+          <select class="as-select" id="as-nc-target" onchange="AS.newData.target=this.value;const el=document.getElementById('as-group-count');if(el)el.textContent=asGroupSize(this.value);">
             ${AS.newData.target && !ASSIGN_DATA.groups.includes(AS.newData.target) ? `<option value="${AS.newData.target}" selected>${AS.newData.target}</option>` : ''}
             ${ASSIGN_DATA.groups.map(g=>`<option value="${g}"${AS.newData.target===g?' selected':''}>${g}</option>`).join('')}
           </select>
         </div>
         <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px">
           <div style="font-size:0.72rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px">Usuários no grupo</div>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="font-size:1.4rem;font-weight:900;color:#00d4ff">342</div>
+          <div style="display:flex;align-items:center;gap:8px" id="as-group-preview">
+            <div style="font-size:1.4rem;font-weight:900;color:#00d4ff" id="as-group-count">${asGroupSize(AS.newData.target)}</div>
             <div style="font-size:0.78rem;color:#6b7280">usuários receberão esta atribuição</div>
           </div>
         </div>
@@ -906,7 +925,7 @@ function asRenderStep(step) {
           ['Prazo',       AS.newData.due?asFmtDate(AS.newData.due):'—'],
           ['Tipo',        AS.newData.mandatory?'Obrigatório':'Opcional'],
           ['Prioridade',  AS.newData.priority||'Média'],
-          ['Destinatários','342 usuários'],
+          ['Destinatários', asGroupSize(AS.newData.target) + ' usuários'],
         ].map(([k,v])=>`<div style="display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="min-width:120px;font-size:0.75rem;color:#6b7280">${k}</span><span style="font-weight:600;font-size:0.88rem">${v}</span></div>`).join('')}
       </div>
       <div style="display:flex;gap:10px">
@@ -944,7 +963,8 @@ window.asSaveAsDraft = function() {
   showToast&&showToast('Rascunho salvo!','info');
 };
 window.asPublishNew = function() {
-  ASSIGN_DATA.assignments.push({ id:Date.now(), course:AS.newData.course, target:AS.newData.target||'Todos', targetType:'global', due:AS.newData.due, completion:0, status:'ativa', mandatory:AS.newData.mandatory, enviados:342, concluidos:0, pendentes:342, atrasados:0, created:new Date().toISOString().split('T')[0], priority:AS.newData.priority||'Média', category:'Compliance', notify:true });
+  const _asPubSize = asGroupSize(AS.newData.target||'Todos os usuários');
+  ASSIGN_DATA.assignments.push({ id:Date.now(), course:AS.newData.course, target:AS.newData.target||'Todos os usuários', targetType:'global', due:AS.newData.due, completion:0, status:'ativa', mandatory:AS.newData.mandatory, enviados:_asPubSize, concluidos:0, pendentes:_asPubSize, atrasados:0, created:new Date().toISOString().split('T')[0], priority:AS.newData.priority||'Média', category:'Compliance', notify:true });
   asCloseModal(); asTab(AS.tab);
   showToast&&showToast('🚀 Atribuição publicada com sucesso!','success');
 };
