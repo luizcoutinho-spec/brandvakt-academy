@@ -868,10 +868,11 @@ function renderHRMMatriz() {
   return `
   <div class="hrm-sh">
     <div class="hrm-sh-title">🔥 Matriz de Risco — Departamento × Factor</div>
-    <div style="display:flex;gap:12px;font-size:0.72rem;align-items:center">
+    <div style="display:flex;gap:12px;font-size:0.72rem;align-items:center;flex-wrap:wrap">
       <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:rgba(34,197,94,0.7);display:inline-block"></span>Baixo (≤30)</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:rgba(245,158,11,0.8);display:inline-block"></span>Médio (31-60)</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:rgba(239,68,68,0.85);display:inline-block"></span>Alto (>60)</span>
+      <span style="color:var(--hrm-muted);font-size:0.68rem;margin-left:8px">💡 Clique em qualquer célula para ver o detalhamento</span>
     </div>
   </div>
 
@@ -880,14 +881,14 @@ function renderHRMMatriz() {
       <thead>
         <tr>
           <th style="text-align:left;padding:8px 12px;font-size:0.68rem;color:var(--hrm-muted)">Departamento</th>
-          ${factors.map(f=>`<th style="text-align:center;padding:8px 6px;font-size:0.68rem;color:var(--hrm-text2);font-weight:600;white-space:nowrap">${f.icon} ${f.label.split(' ').slice(0,2).join(' ')}</th>`).join('')}
+          ${factors.map(f=>`<th style="text-align:center;padding:8px 6px;font-size:0.68rem;color:var(--hrm-text2);font-weight:600;white-space:nowrap;cursor:pointer" title="${f.desc}">${f.icon} ${f.label.split(' ').slice(0,2).join(' ')}</th>`).join('')}
           <th style="text-align:center;padding:8px;font-size:0.68rem;color:var(--hrm-muted)">Score</th>
         </tr>
       </thead>
       <tbody>
         ${depts.map(d=>`
           <tr>
-            <td style="padding:6px 12px">
+            <td style="padding:6px 12px;cursor:pointer" onclick="hrmMatrizDrilldown('${d.name}',null)" title="Ver resumo de ${d.name}">
               <div style="display:flex;align-items:center;gap:8px">
                 <span>${d.icon}</span>
                 <span style="font-size:0.83rem;font-weight:600">${d.name}</span>
@@ -899,12 +900,16 @@ function renderHRMMatriz() {
               const bg = val<=30?`rgba(34,197,94,${0.15+val/200})`:val<=60?`rgba(245,158,11,${0.15+val/200})`:`rgba(239,68,68,${0.15+val/200})`;
               const col = hc(val);
               return `<td style="padding:4px">
-                <div class="hrm-heatmap-cell" style="background:${bg};color:${col};height:38px;border-radius:8px;border:1px solid ${col}22" title="${d.name} — ${f.label}: ${val}/100">
+                <div class="hrm-heatmap-cell" onclick="hrmMatrizDrilldown('${d.name}','${f.id}')"
+                  style="background:${bg};color:${col};height:38px;border-radius:8px;border:1px solid ${col}22;cursor:pointer;transition:transform .15s,box-shadow .15s"
+                  onmouseenter="this.style.transform='scale(1.12)';this.style.boxShadow='0 4px 16px ${col}44'"
+                  onmouseleave="this.style.transform='';this.style.boxShadow=''"
+                  title="Clique para detalhar: ${d.name} — ${f.label} (${val}/100)">
                   ${val}
                 </div>
               </td>`;
             }).join('')}
-            <td style="padding:4px">
+            <td style="padding:4px;cursor:pointer" onclick="hrmMatrizDrilldown('${d.name}',null)">
               <div style="text-align:center;font-size:1rem;font-weight:800;color:${hc(d.score)}">${d.score}</div>
             </td>
           </tr>`).join('')}
@@ -914,7 +919,7 @@ function renderHRMMatriz() {
           <td style="padding:8px 12px;font-size:0.70rem;color:var(--hrm-muted);font-weight:700">Média Org.</td>
           ${factors.map(f=>{
             const avg = Math.round(depts.reduce((s,d)=>s+(d[f.id]||0),0)/depts.length);
-            return `<td style="padding:4px;text-align:center;font-size:0.80rem;font-weight:800;color:${hc(avg)}">${avg}</td>`;
+            return `<td style="padding:4px;text-align:center;font-size:0.80rem;font-weight:800;color:${hc(avg)};cursor:pointer" onclick="hrmMatrizDrilldown(null,'${f.id}')" title="Ver todos os departamentos: ${f.label}">${avg}</td>`;
           }).join('')}
           <td style="padding:4px;text-align:center;font-size:1rem;font-weight:800;color:${hc(HRM_DATA.orgScore)}">${HRM_DATA.orgScore}</td>
         </tr>
@@ -928,6 +933,244 @@ function renderHRMMatriz() {
     <div class="hrm-canvas-wrap" style="height:160px"><canvas id="hrm-matrix-chart"></canvas></div>
   </div>`;
 }
+
+// ── Drilldown modal: dept × factor ──────────────────────────────
+window.hrmMatrizDrilldown = function(deptName, factorId) {
+  const factors = HRM_DATA.factors;
+  const depts   = HRM_DATA.depts;
+
+  // Determine which users to show
+  const allUsers = HRM_DATA.users;
+  const users = deptName
+    ? allUsers.filter(u => u.dept === deptName)
+    : allUsers;
+  const dept  = deptName ? depts.find(d => d.name === deptName) : null;
+  const factor = factorId ? factors.find(f => f.id === factorId) : null;
+
+  // ── Texts & helpers per factor ────────────────────────────────
+  const factorMeta = {
+    phishing: {
+      how: 'Calculado pela taxa de cliques em simulações de phishing. Cada clique aumenta o risco. Reportar uma campanha reduz o score.',
+      userDetail: u => {
+        if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
+          const c = DEMO_STATE.phishing.filter(p=>p.action==='clicked').length;
+          const r = DEMO_STATE.phishing.filter(p=>p.action==='reported').length;
+          const t = DEMO_STATE.phishing.length;
+          return `${c} clique${c!==1?'s':''} • ${r} reporte${r!==1?'s':''} • ${t} campanha${t!==1?'s':''}`;
+        }
+        return `${u.cliques||0} clique${(u.cliques||0)!==1?'s':''} em ${u.campanhas||0} campanhas • ${u.reportou||0} reportado${(u.reportou||0)!==1?'s':''}`;
+      },
+      badge: u => {
+        const v = u.phishing;
+        if (v > 60) return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(239,68,68,.15);color:#ef4444">⚠️ Vulnerável</span>`;
+        if (v > 30) return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">⚡ Moderado</span>`;
+        return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,.15);color:#22c55e">✅ Seguro</span>`;
+      },
+    },
+    training: {
+      how: 'Calculado com base na % de conclusão de treinamentos obrigatórios. Quanto menor a conclusão, maior o score de risco. Reprovações aumentam o peso.',
+      userDetail: u => {
+        if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
+          const p = DEMO_STATE.completions.filter(c=>c.passed).length;
+          const f = DEMO_STATE.completions.filter(c=>!c.passed).length;
+          const pct = DEMO_STATE.getCompletionPct();
+          return `${pct}% concluído • ${p} aprovado${p!==1?'s':''} • ${f} reprovado${f!==1?'s':''}`;
+        }
+        const pending = Math.max(0, 10 - (u.treinamentos||0));
+        return `${u.treinamentos||0} treinamentos • ${pending} pendente${pending!==1?'s':''} • score ${u.training}/100`;
+      },
+      badge: u => {
+        const v = u.training;
+        if (v > 60) return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(239,68,68,.15);color:#ef4444">🔴 Atrasado</span>`;
+        if (v > 30) return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">🟡 Parcial</span>`;
+        return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,.15);color:#22c55e">🟢 Em dia</span>`;
+      },
+    },
+    password: {
+      how: 'Score estimado com base no perfil de risco global do usuário. Reflete a qualidade e reutilização de senhas detectadas na plataforma.',
+      userDetail: u => {
+        if (u.password > 60) return 'Senhas fracas ou reutilizadas detectadas';
+        if (u.password > 30) return 'Algumas senhas abaixo do padrão';
+        return 'Higiene de senhas adequada';
+      },
+      badge: u => {
+        const v = u.password;
+        if (v > 60) return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(239,68,68,.15);color:#ef4444">🔐 Fraca</span>`;
+        if (v > 30) return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">🔑 Regular</span>`;
+        return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,.15);color:#22c55e">🔒 Forte</span>`;
+      },
+    },
+    access: {
+      how: 'Mede violações de controle de acesso: acessos fora do horário, tentativas negadas, privilégios excessivos.',
+      userDetail: u => {
+        if (u.access > 60) return `${Math.ceil(u.access/20)} violações de acesso detectadas`;
+        if (u.access > 30) return `${Math.ceil(u.access/30)} ocorrência${u.access>45?'s':''} de acesso incomum`;
+        return 'Conformidade de acesso: OK';
+      },
+      badge: u => {
+        const v = u.access;
+        if (v > 60) return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(239,68,68,.15);color:#ef4444">🚨 Violação</span>`;
+        if (v > 30) return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">⚡ Atenção</span>`;
+        return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,.15);color:#22c55e">✅ Conforme</span>`;
+      },
+    },
+    inactivity: {
+      how: 'Score calculado pelos dias sem acesso à plataforma. Inatividade > 7 dias = risco médio. > 30 dias = risco alto.',
+      userDetail: u => {
+        const days = u.lastSeen || 0;
+        if (days === 0) return 'Ativo hoje';
+        if (days === 1) return 'Ativo ontem';
+        return `Inativo há ${days} dia${days!==1?'s':''}`;
+      },
+      badge: u => {
+        const days = u.lastSeen || 0;
+        if (days > 14) return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(239,68,68,.15);color:#ef4444">💤 Inativo</span>`;
+        if (days > 7)  return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">⚠️ Ausente</span>`;
+        return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,.15);color:#22c55e">🟢 Ativo</span>`;
+      },
+    },
+    certs: {
+      how: 'Score baseado no status dos certificados. Certificados válidos = baixo risco (10). Vencendo = médio (42). Expirados = alto (72).',
+      userDetail: u => {
+        if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
+          const n = DEMO_STATE.getCertCount();
+          return n > 0 ? `${n} certificado${n!==1?'s':''} válido${n!==1?'s':''}` : 'Nenhum certificado válido';
+        }
+        const status = { valid:'Certificados válidos e atualizados', expiring:'Certificados próximos do vencimento', expired:'Certificados expirados — renovação necessária' };
+        return status[u.certs] || 'Status desconhecido';
+      },
+      badge: u => {
+        const s = typeof u.certs === 'string' ? u.certs : 'expired';
+        if (s === 'valid')    return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(34,197,94,.15);color:#22c55e">📜 Válido</span>`;
+        if (s === 'expiring') return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(245,158,11,.15);color:#f59e0b">⏳ Vencendo</span>`;
+        return `<span style="font-size:.68rem;padding:2px 8px;border-radius:99px;background:rgba(239,68,68,.15);color:#ef4444">❌ Expirado</span>`;
+      },
+    },
+  };
+
+  // ── Title & score ─────────────────────────────────────────────
+  const titleDept   = dept   ? `${dept.icon} ${dept.name}`   : '🏢 Toda a Organização';
+  const titleFactor = factor ? `${factor.icon} ${factor.label}` : '📊 Todos os Factores';
+  const cellScore   = dept && factor ? dept[factorId] : (dept ? dept.score : HRM_DATA.orgScore);
+  const scoreColor  = hc(cellScore);
+
+  // ── Sort users by factor score desc ──────────────────────────
+  const sortedUsers = [...users].sort((a,b) => {
+    const va = factorId ? (a[factorId] === 'valid' ? 10 : a[factorId] === 'expiring' ? 42 : typeof a[factorId]==='number' ? a[factorId] : 72) : a.score;
+    const vb = factorId ? (b[factorId] === 'valid' ? 10 : b[factorId] === 'expiring' ? 42 : typeof b[factorId]==='number' ? b[factorId] : 72) : b.score;
+    return vb - va;
+  });
+
+  // ── Factor rows per factor (for "all factors" view) ──────────
+  const allFactorsRow = u => factors.map(f => {
+    const val = f.id === 'certs'
+      ? (u.certs === 'valid' ? 10 : u.certs === 'expiring' ? 42 : 72)
+      : (typeof u[f.id] === 'number' ? u[f.id] : 50);
+    const col = hc(val);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+      <span style="font-size:.72rem;color:var(--hrm-text2)">${f.icon} ${f.label}</span>
+      <span style="font-size:.80rem;font-weight:800;color:${col}">${val}</span>
+    </div>`;
+  }).join('');
+
+  // ── User cards ────────────────────────────────────────────────
+  const meta = factorId ? factorMeta[factorId] : null;
+  const userCards = sortedUsers.map(u => {
+    const userScore = factorId
+      ? (u.certs === 'valid' && factorId==='certs' ? 10 : u.certs === 'expiring' && factorId==='certs' ? 42 : typeof u[factorId]==='number' ? u[factorId] : 72)
+      : u.score;
+    const col = hc(userScore);
+    const detail  = meta ? meta.userDetail(u) : `Score geral: ${u.score}/100`;
+    const badge   = meta ? meta.badge(u) : '';
+    const initials = (u.avatar || u.name.split(' ').map(w=>w[0]).join('').slice(0,2)).toUpperCase();
+    const bg = u.isDemo
+      ? 'linear-gradient(135deg,#00d4ff,#8b5cf6)'
+      : `#${(((u.id||1)*2654435761)&0xFFFFFF).toString(16).padStart(6,'0').slice(0,2)}3${(u.id||1)*37%9}`;
+
+    const demoTag = u.isDemo ? `<span style="font-size:.58rem;background:linear-gradient(90deg,#00d4ff22,#8b5cf622);border:1px solid #00d4ff44;color:#00d4ff;padding:1px 6px;border-radius:99px;margin-left:4px">DEMO</span>` : '';
+
+    // For "all factors" view show mini grid
+    const factorDetail = !factorId ? `
+      <div style="margin-top:8px;padding:8px;background:rgba(255,255,255,.03);border-radius:8px">
+        ${allFactorsRow(u)}
+      </div>` : '';
+
+    return `
+    <div style="display:flex;align-items:flex-start;gap:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,.03);margin-bottom:8px;border:1px solid rgba(255,255,255,.06)">
+      <div style="width:38px;height:38px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;color:#fff;flex-shrink:0">${initials}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:2px">
+          <span style="font-size:.85rem;font-weight:700">${u.name}</span>${demoTag}
+          ${badge}
+        </div>
+        <div style="font-size:.72rem;color:var(--hrm-text2)">${u.email || ''}</div>
+        <div style="font-size:.75rem;color:var(--hrm-muted);margin-top:3px">${detail}</div>
+        ${factorDetail}
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:1.15rem;font-weight:900;color:${col}">${userScore}</div>
+        <div style="font-size:.60rem;color:var(--hrm-muted)">/100</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // ── How is it calculated ──────────────────────────────────────
+  const howSection = factor ? `
+    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:16px">
+      <div style="font-size:.68rem;font-weight:800;color:var(--hrm-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">⚙️ Como é calculado</div>
+      <div style="font-size:.80rem;color:var(--hrm-text2);line-height:1.5">${factorMeta[factorId].how}</div>
+      <div style="margin-top:10px;display:flex;gap:12px;font-size:.72rem">
+        <span style="color:#22c55e">● ≤30 Baixo</span>
+        <span style="color:#f59e0b">● 31–60 Médio</span>
+        <span style="color:#ef4444">● >60 Alto</span>
+      </div>
+    </div>` : '';
+
+  // ── All factors overview (when no factor selected) ────────────
+  const deptFactorGrid = dept && !factorId ? `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      ${factors.map(f => {
+        const val = dept[f.id] || 0;
+        const col = hc(val);
+        return `<div onclick="hrmMatrizDrilldown('${dept.name}','${f.id}')"
+          style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:12px;cursor:pointer;transition:border-color .2s"
+          onmouseenter="this.style.borderColor='${col}66'" onmouseleave="this.style.borderColor='rgba(255,255,255,.07)'">
+          <div style="font-size:1.1rem;margin-bottom:4px">${f.icon}</div>
+          <div style="font-size:.68rem;color:var(--hrm-text2);margin-bottom:6px">${f.label}</div>
+          <div style="font-size:1.4rem;font-weight:900;color:${col}">${val}</div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  hrmShowModal(`
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div>
+        <div style="font-size:1.1rem;font-weight:800;margin-bottom:2px">${titleDept} × ${titleFactor}</div>
+        <div style="font-size:.72rem;color:var(--hrm-muted)">${sortedUsers.length} usuário${sortedUsers.length!==1?'s':''} • Score: <span style="color:${scoreColor};font-weight:700">${cellScore}/100</span></div>
+      </div>
+      <div style="text-align:center;min-width:70px">
+        ${hrmRing(cellScore, 72, 7)}
+      </div>
+    </div>
+
+    ${howSection}
+    ${deptFactorGrid}
+
+    <!-- User list -->
+    <div style="font-size:.68rem;font-weight:800;color:var(--hrm-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">
+      👤 Usuários — ordenados por risco (maior → menor)
+    </div>
+    ${userCards || '<div style="text-align:center;color:var(--hrm-muted);padding:20px">Nenhum usuário encontrado.</div>'}
+
+    <!-- Actions -->
+    <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+      <button class="hrm-btn hrm-btn-primary" style="flex:1" onclick="showToast&&showToast('Plano de ação criado!','success');hrmCloseModal()">📋 Criar Plano de Ação</button>
+      <button class="hrm-btn" style="flex:1" onclick="showToast&&showToast('Notificação enviada ao gestor!','success');hrmCloseModal()">🔔 Notificar Gestor</button>
+      <button class="hrm-btn" style="flex:1" onclick="hrmCloseModal()">✕ Fechar</button>
+    </div>
+  `, 'hrm-modal hrm-modal-xl');
+};
 
 function initHRMMatrixChart() {
   if (!window.Chart) return;
