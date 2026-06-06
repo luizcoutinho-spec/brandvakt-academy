@@ -175,7 +175,7 @@ const CERT_DATA = {
 // ── State ─────────────────────────────────────────────────────
 let CERT_STATE = {
   tab: 'lista',
-  search: '', filterStatus: '', filterCategory: '', filterDept: '',
+  search: '', filterStatus: '', filterCategory: '', filterDept: '', filterUser: '',
   sortCol: 'date', sortDir: 'desc',
   selected: new Set(),
 };
@@ -210,6 +210,7 @@ function getFilteredCerts() {
   if (CERT_STATE.filterStatus)   data = data.filter(c=>c.status===CERT_STATE.filterStatus);
   if (CERT_STATE.filterCategory) data = data.filter(c=>c.category===CERT_STATE.filterCategory);
   if (CERT_STATE.filterDept)     data = data.filter(c=>c.dept===CERT_STATE.filterDept);
+  if (CERT_STATE.filterUser)     data = data.filter(c=>c.user===CERT_STATE.filterUser);
   data.sort((a,b)=>{
     const av=a[CERT_STATE.sortCol], bv=b[CERT_STATE.sortCol];
     return CERT_STATE.sortDir==='asc'?(av>bv?1:-1):(av<bv?1:-1);
@@ -450,7 +451,15 @@ function renderCertTab(tab) {
 // ══════════════════════════════════════════════════════════════
 function renderCertLista() {
   const data = getFilteredCerts();
-  const depts = [...new Set(CERT_DATA.certificates.map(c=>c.dept))].sort();
+
+  // Depts from ALL registered tenant users (not just certs) — ensures Diretoria always appears
+  const tenantUsers = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
+  const depts = [...new Set(tenantUsers.map(u => u.dept))].filter(Boolean).sort();
+
+  // Users in the selected dept (for sub-filter)
+  const usersInDept = CERT_STATE.filterDept
+    ? tenantUsers.filter(u => u.dept === CERT_STATE.filterDept).map(u => u.name).sort()
+    : [];
 
   return `
   <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
@@ -465,15 +474,22 @@ function renderCertLista() {
       <option value="">Todas as categorias</option>
       ${[...new Set(CERT_DATA.certificates.map(c=>c.category))].sort().map(c=>`<option value="${c}"${CERT_STATE.filterCategory===c?' selected':''}>${c}</option>`).join('')}
     </select>
-    <select class="cert-select" id="cert-fdept" onchange="certFilter()">
+    <select class="cert-select" id="cert-fdept" onchange="certDeptChanged()">
       <option value="">Todos os dept.</option>
       ${depts.map(d=>`<option value="${d}"${CERT_STATE.filterDept===d?' selected':''}>${d}</option>`).join('')}
+    </select>
+    <!-- Sub-filtro de usuário — só aparece quando um dept está selecionado -->
+    <select class="cert-select" id="cert-fuser" onchange="certFilter()"
+      style="display:${CERT_STATE.filterDept?'block':'none'};min-width:160px">
+      <option value="">Todos os usuários</option>
+      ${usersInDept.map(u=>`<option value="${u}"${CERT_STATE.filterUser===u?' selected':''}>${u}</option>`).join('')}
     </select>
     <span id="cert-count" style="font-size:0.78rem;color:#6b7280;white-space:nowrap;min-width:90px">${data.length} certificado${data.length!==1?'s':''}</span>
   </div>
   <!-- Active filter chips -->
-  <div id="cert-filter-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${(CERT_STATE.filterDept||CERT_STATE.filterStatus||CERT_STATE.filterCategory||CERT_STATE.search)?'10px':'0'}">
-    ${CERT_STATE.filterDept     ? `<span class="cert-chip">Dept: <b>${CERT_STATE.filterDept}</b> <a onclick="document.getElementById('cert-fdept').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
+  <div id="cert-filter-chips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:${(CERT_STATE.filterDept||CERT_STATE.filterStatus||CERT_STATE.filterCategory||CERT_STATE.search||CERT_STATE.filterUser)?'10px':'0'}">
+    ${CERT_STATE.filterDept     ? `<span class="cert-chip">Dept: <b>${CERT_STATE.filterDept}</b> <a onclick="document.getElementById('cert-fdept').value='';certDeptChanged()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
+    ${CERT_STATE.filterUser     ? `<span class="cert-chip">Usuário: <b>${CERT_STATE.filterUser}</b> <a onclick="document.getElementById('cert-fuser').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
     ${CERT_STATE.filterStatus   ? `<span class="cert-chip">Status: <b>${{valid:'Válido',expiring:'Vencendo',expired:'Expirado'}[CERT_STATE.filterStatus]}</b> <a onclick="document.getElementById('cert-fstatus').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
     ${CERT_STATE.filterCategory ? `<span class="cert-chip">Cat: <b>${CERT_STATE.filterCategory}</b> <a onclick="document.getElementById('cert-fcat').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
     ${CERT_STATE.search         ? `<span class="cert-chip">Busca: <b>"${CERT_STATE.search}"</b> <a onclick="document.getElementById('cert-search').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>` : ''}
@@ -554,12 +570,31 @@ function certRow(c) {
   </tr>`;
 }
 
+// ── Called when dept changes: rebuild user sub-filter ─────────
+window.certDeptChanged = function() {
+  CERT_STATE.filterDept = document.getElementById('cert-fdept')?.value || '';
+  CERT_STATE.filterUser = ''; // reset user sub-filter when dept changes
+
+  const userSel = document.getElementById('cert-fuser');
+  if (userSel) {
+    const tenantUsers = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
+    const usersInDept = CERT_STATE.filterDept
+      ? tenantUsers.filter(u => u.dept === CERT_STATE.filterDept).map(u => u.name).sort()
+      : [];
+    userSel.style.display = CERT_STATE.filterDept ? 'block' : 'none';
+    userSel.innerHTML = `<option value="">Todos os usuários</option>`
+      + usersInDept.map(u => `<option value="${u}">${u}</option>`).join('');
+  }
+  certFilter();
+};
+
 window.certFilter = function() {
   // Read all filter values from DOM
   CERT_STATE.search         = document.getElementById('cert-search')?.value?.trim()  || '';
   CERT_STATE.filterStatus   = document.getElementById('cert-fstatus')?.value || '';
   CERT_STATE.filterCategory = document.getElementById('cert-fcat')?.value    || '';
   CERT_STATE.filterDept     = document.getElementById('cert-fdept')?.value   || '';
+  CERT_STATE.filterUser     = document.getElementById('cert-fuser')?.value   || '';
 
   try {
     const filtered = getFilteredCerts();
@@ -590,11 +625,12 @@ window.certFilter = function() {
     const chipsEl = document.getElementById('cert-filter-chips');
     if (chipsEl) {
       const chips = [];
-      if (CERT_STATE.filterDept)     chips.push(`<span class="cert-chip">Dept: <b>${CERT_STATE.filterDept}</b> <a onclick="document.getElementById('cert-fdept').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
+      if (CERT_STATE.filterDept)     chips.push(`<span class="cert-chip">🏢 Dept: <b>${CERT_STATE.filterDept}</b> <a onclick="document.getElementById('cert-fdept').value='';certDeptChanged()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
+      if (CERT_STATE.filterUser)     chips.push(`<span class="cert-chip">👤 Usuário: <b>${CERT_STATE.filterUser}</b> <a onclick="document.getElementById('cert-fuser').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
       if (CERT_STATE.filterStatus)   chips.push(`<span class="cert-chip">Status: <b>${{valid:'Válido',expiring:'Vencendo',expired:'Expirado'}[CERT_STATE.filterStatus]}</b> <a onclick="document.getElementById('cert-fstatus').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
       if (CERT_STATE.filterCategory) chips.push(`<span class="cert-chip">Cat: <b>${CERT_STATE.filterCategory}</b> <a onclick="document.getElementById('cert-fcat').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
-      if (CERT_STATE.search)         chips.push(`<span class="cert-chip">Busca: <b>"${CERT_STATE.search}"</b> <a onclick="document.getElementById('cert-search').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
-      chipsEl.innerHTML = chips.length ? chips.join('') + `<a onclick="certClearFilters()" style="font-size:.70rem;color:var(--cert-gold);cursor:pointer;margin-left:6px">Limpar tudo</a>` : '';
+      if (CERT_STATE.search)         chips.push(`<span class="cert-chip">🔍 Busca: <b>"${CERT_STATE.search}"</b> <a onclick="document.getElementById('cert-search').value='';certFilter()" style="cursor:pointer;margin-left:4px">✕</a></span>`);
+      chipsEl.innerHTML = chips.length ? chips.join('') + `<a onclick="certClearFilters()" style="font-size:.70rem;color:var(--cert-gold);cursor:pointer;margin-left:8px">✕ Limpar tudo</a>` : '';
     }
   } catch(e) {
     console.error('certFilter error:', e);
@@ -602,9 +638,11 @@ window.certFilter = function() {
 };
 
 window.certClearFilters = function() {
-  CERT_STATE.search = ''; CERT_STATE.filterStatus = ''; CERT_STATE.filterCategory = ''; CERT_STATE.filterDept = '';
+  CERT_STATE.search = ''; CERT_STATE.filterStatus = ''; CERT_STATE.filterCategory = '';
+  CERT_STATE.filterDept = ''; CERT_STATE.filterUser = '';
   const s = document.getElementById('cert-search');   if(s) s.value = '';
   const d = document.getElementById('cert-fdept');    if(d) d.value = '';
+  const u = document.getElementById('cert-fuser');    if(u) { u.value = ''; u.style.display = 'none'; }
   const st= document.getElementById('cert-fstatus');  if(st) st.value = '';
   const ct= document.getElementById('cert-fcat');     if(ct) ct.value = '';
   certFilter();
