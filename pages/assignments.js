@@ -149,9 +149,10 @@ const ASSIGN_DATA = {
   courses: [
     'Phishing & Engenharia Social','LGPD na Prática','GDPR Fundamentos',
     'Código de Ética Empresarial','Anticorrupção e Antissuborno','Home Office Seguro',
-    'Cloud Security Awareness','ISO 27001 Fundamentos','Gestão de Senhas e MFA',
+    'Cloud Security Awareness','ISO 27001 Fundamentos','Senhas Seguras e MFA',
     'Canal de Denúncias','ESG e Sustentabilidade','CEO Fraud Awareness',
     'Resposta a Incidentes','Assédio Moral e Sexual','Lavagem de Dinheiro (AML)',
+    'Uso Seguro de IA Generativa','Assédio Moral e Sexual',
   ],
   categories: ['Cybersecurity','Compliance','Privacidade','Information Security','ESG','RH'],
 };
@@ -709,6 +710,7 @@ function asRenderStep(step) {
         <div><label class="as-label">Treinamento *</label>
           <select class="as-select" id="as-nc-course">
             <option value="">Selecionar treinamento...</option>
+            ${AS.newData.course && !ASSIGN_DATA.courses.includes(AS.newData.course) ? `<option value="${AS.newData.course}" selected>${AS.newData.course}</option>` : ''}
             ${ASSIGN_DATA.courses.map(c=>`<option value="${c}"${AS.newData.course===c?' selected':''}>${c}</option>`).join('')}
           </select>
         </div>
@@ -733,6 +735,7 @@ function asRenderStep(step) {
       <div style="display:flex;flex-direction:column;gap:14px">
         <div><label class="as-label">Grupo / Departamento *</label>
           <select class="as-select" id="as-nc-target">
+            ${AS.newData.target && !ASSIGN_DATA.groups.includes(AS.newData.target) ? `<option value="${AS.newData.target}" selected>${AS.newData.target}</option>` : ''}
             ${ASSIGN_DATA.groups.map(g=>`<option value="${g}"${AS.newData.target===g?' selected':''}>${g}</option>`).join('')}
           </select>
         </div>
@@ -967,3 +970,19 @@ function asShowModal(html, cls='as-modal') {
 }
 window.asCloseModal = function() { const el=document.getElementById('as-overlay'); if(el) el.remove(); };
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') asCloseModal(); });
+
+// ── Entry points from other modules ──────────────────────────
+// Called from Trilhas (departments) or Biblioteca (library)
+window.asOpenNewPrefilled = function(courseName, targetGroup, isMandatory) {
+  AS.newStep = 1;
+  AS.newData = {
+    course:    courseName   || '',
+    target:    targetGroup  || 'Todos os usuários',
+    mandatory: isMandatory !== undefined ? !!isMandatory : false,
+    notify:    true,
+    priority:  isMandatory ? 'Alta' : 'Média',
+  };
+  // ensure the assignments page is rendered first, then open wizard
+  const render = () => { if (document.getElementById('assign-module')) { asRenderStep(1); } else { setTimeout(render, 80); } };
+  render();
+};

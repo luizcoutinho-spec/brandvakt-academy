@@ -302,7 +302,7 @@ function courseCard(c, L) {
         </button>` : ''}
       <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('Editando ${c.title}','info')">✏️</button>
       <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();showToast('Gerenciando versões','info')">📋</button>
-      <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();showToast('Atribuindo treinamento','info')">${L.btn_assign_card}</button>
+      <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();navTo('assignments',document.querySelector('[data-page=assignments]'));setTimeout(()=>asOpenNewPrefilled&&asOpenNewPrefilled('${c.title.replace(/'/g,"\\'")}','Todos os usuários',${c.mandatory}),220)">${L.btn_assign_card}</button>
     </div>
   </div>`;
 }
@@ -335,7 +335,7 @@ function openCourseDetail(id) {
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="hideModal('modal-course-detail')">Fechar</button>
       <button class="btn btn-secondary" onclick="showToast('Compartilhando link...','success')">🔗 Compartilhar</button>
-      <button class="btn btn-primary" onclick="hideModal('modal-course-detail');showToast('Atribuindo treinamento','info')">Atribuir Treinamento</button>
+      <button class="btn btn-primary" onclick="hideModal('modal-course-detail');navTo('assignments',document.querySelector('[data-page=assignments]'));setTimeout(()=>asOpenNewPrefilled&&asOpenNewPrefilled(c.title,'Todos os usuários',c.mandatory),220)">Atribuir Treinamento</button>
     </div>`;
   showModal('modal-course-detail');
 }

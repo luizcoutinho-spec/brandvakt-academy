@@ -558,7 +558,7 @@ window.dpOpenTrailDetail = function(id) {
     <div style="display:flex;gap:10px;margin-top:20px">
       <button class="dp-btn dp-btn-ghost" style="flex:1" onclick="dpCloseModal()">Fechar</button>
       <button class="dp-btn dp-btn-ghost" style="flex:1" onclick="dpCloseModal();dpOpenEditTrail('${t.id}')">✏️ Editar Trilha</button>
-      <button class="dp-btn dp-btn-primary" style="flex:1" onclick="showToast&&showToast('Atribuindo trilha...','info');dpCloseModal()">📋 Atribuir Trilha</button>
+      <button class="dp-btn dp-btn-primary" style="flex:1" onclick="dpCloseModal();navTo('assignments',document.querySelector('[data-page=assignments]'));setTimeout(()=>asOpenNewPrefilled&&asOpenNewPrefilled('${t.name}','${t.target}',${t.mandatory}),220)">📋 Atribuir Trilha</button>
     </div>
   `, 'dp-modal dp-modal-lg');
 };
