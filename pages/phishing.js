@@ -1899,7 +1899,7 @@ function phAiBuildCampaign() {
     : 'Empresa';
   const total = tenantUsers.length || 1;
 
-  // Enrich with HRM scores (tenant-validated by email)
+  // ── 1. HRM enrichment (tenant-validated by email) ──────────
   const hrmByEmail = {};
   if (typeof HRM_DATA !== 'undefined' && Array.isArray(HRM_DATA.users)) {
     const emails = new Set(tenantUsers.map(u => (u.email||'').toLowerCase()));
@@ -1908,161 +1908,190 @@ function phAiBuildCampaign() {
   const riskMap = { high:75, med:45, low:18 };
   const enriched = tenantUsers.map(u => {
     const h = hrmByEmail[(u.email||'').toLowerCase()];
-    const score = h ? (h.score ?? riskMap[u.risk] ?? 35) : (u.riskScore ?? u.score ?? riskMap[u.risk] ?? 35);
-    const phScore = h ? (h.phishing ?? 50) : (u.risk==='high'?72:u.risk==='med'?40:18);
-    return { ...u, score, phScore };
+    const score    = h ? (h.score    ?? riskMap[u.risk] ?? 35) : (u.riskScore ?? u.score ?? riskMap[u.risk] ?? 35);
+    const phScore  = h ? (h.phishing ?? 50) : (u.risk==='high'?72:u.risk==='med'?40:18);
+    const trScore  = h ? (h.training ?? 50) : (u.risk==='high'?35:u.risk==='med'?55:80);
+    const pwScore  = h ? (h.password ?? 50) : (u.risk==='high'?40:u.risk==='med'?60:85);
+    return { ...u, score, phScore, trScore, pwScore, dept: u.dept||u.department||'Geral' };
   });
 
-  const highRisk   = enriched.filter(u => u.score > 60);
-  const medRisk    = enriched.filter(u => u.score > 30 && u.score <= 60);
-  const avgScore   = Math.round(enriched.reduce((s,u) => s+u.score, 0) / total);
-  const avgPhScore = Math.round(enriched.reduce((s,u) => s+u.phScore, 0) / total);
+  // ── 2. Aggregate stats ──────────────────────────────────────
+  const highRisk    = enriched.filter(u => u.score > 60);
+  const medRisk     = enriched.filter(u => u.score > 30 && u.score <= 60);
+  const lowRisk     = enriched.filter(u => u.score <= 30);
+  const avgScore    = Math.round(enriched.reduce((s,u) => s+u.score,   0) / total);
+  const avgPhScore  = Math.round(enriched.reduce((s,u) => s+u.phScore, 0) / total);
+  const avgTrScore  = Math.round(enriched.reduce((s,u) => s+u.trScore, 0) / total);
+  const avgPwScore  = Math.round(enriched.reduce((s,u) => s+u.pwScore, 0) / total);
 
-  // Top risk depts
+  // ── 3. Phishing campaign history (clicks) ──────────────────
+  const camps = (typeof PHISHING_MOCK !== 'undefined' && PHISHING_MOCK.campanhas) ? PHISHING_MOCK.campanhas : [];
+  const concluded = camps.filter(c => c.status === 'Concluída');
+  const totalSent   = concluded.reduce((s,c) => s+(c.enviados||0), 0);
+  const totalClicks = concluded.reduce((s,c) => s+(c.cliques||0), 0);
+  const totalReport = concluded.reduce((s,c) => s+(c.reportou||0), 0);
+  const clickRate   = totalSent > 0 ? Math.round(totalClicks/totalSent*100) : avgPhScore;
+  const reportRate  = totalSent > 0 ? Math.round(totalReport/totalSent*100) : 12;
+  const campCount   = concluded.length;
+
+  // Dept risk map
   const deptMap = {};
   enriched.forEach(u => {
-    const d = u.dept || u.department || 'Geral';
-    if (!deptMap[d]) deptMap[d] = { score:0, count:0 };
-    deptMap[d].score += u.score; deptMap[d].count++;
+    if (!deptMap[u.dept]) deptMap[u.dept] = { score:0, count:0, phScore:0 };
+    deptMap[u.dept].score   += u.score;
+    deptMap[u.dept].phScore += u.phScore;
+    deptMap[u.dept].count++;
   });
   const topDepts = Object.entries(deptMap)
-    .map(([n,v]) => ({ name:n, avg: Math.round(v.score/v.count) }))
+    .map(([n,v]) => ({ name:n, avg: Math.round(v.score/v.count), phAvg: Math.round(v.phScore/v.count) }))
     .sort((a,b) => b.avg-a.avg).slice(0,3);
   const topDeptStr = topDepts.map(d=>d.name).join(' · ');
 
-  // Determine risk level and theme
   const riskLevel = avgScore > 60 ? 'Crítico' : avgScore > 40 ? 'Elevado' : 'Moderado';
   const riskColor = avgScore > 60 ? '#ef4444' : avgScore > 40 ? '#f59e0b' : '#22c55e';
 
-  // Date helpers
   const today = new Date();
-  const fmt = (d) => d.toLocaleDateString('pt-BR');
-  const addDays = (n) => { const d=new Date(today); d.setDate(d.getDate()+n); return fmt(d); };
+  const fmt = d => d.toLocaleDateString('pt-BR');
+  const addDays = n => { const d=new Date(today); d.setDate(d.getDate()+n); return fmt(d); };
 
   const campName = `${today.toLocaleDateString('pt-BR',{month:'long'}).replace(/^\w/,c=>c.toUpperCase())} — Conscientização ${riskLevel}`;
-  const template = avgScore > 60 ? 'Alerta de Segurança Crítica' : avgScore > 40 ? 'Redefinição de Senha Urgente' : 'Aviso de Política Corporativa';
   const grupo = highRisk.length > 0 ? topDeptStr || 'Todos os Usuários' : 'Todos os Usuários';
+
+  // ── 4. Library catalog ─────────────────────────────────────
+  const catalog = [
+    { id:1,  title:'Phishing & Engenharia Social', category:'Cybersecurity', duration:'45 min', level:'Essencial',     icon:'🎣',  status:'published', mandatory:true  },
+    { id:2,  title:'Senhas Seguras e MFA',          category:'Cybersecurity', duration:'30 min', level:'Essencial',     icon:'🔑',  status:'published', mandatory:true  },
+    { id:3,  title:'Home Office Seguro',            category:'Cybersecurity', duration:'40 min', level:'Intermediário', icon:'🏠',  status:'published', mandatory:false },
+    { id:4,  title:'Uso Seguro de IA Generativa',  category:'IA',            duration:'35 min', level:'Intermediário', icon:'🤖',  status:'published', mandatory:false },
+    { id:5,  title:'Cloud Security Awareness',     category:'Cybersecurity', duration:'50 min', level:'Avançado',      icon:'☁️', status:'published', mandatory:false },
+    { id:6,  title:'Resposta a Incidentes',        category:'Cybersecurity', duration:'60 min', level:'Avançado',      icon:'🚨',  status:'draft',     mandatory:false },
+    { id:7,  title:'LGPD na Prática',              category:'Privacidade',   duration:'60 min', level:'Essencial',     icon:'🔒',  status:'published', mandatory:true  },
+    { id:10, title:'Anticorrupção e Antissuborno', category:'Compliance',    duration:'50 min', level:'Essencial',     icon:'🚫',  status:'published', mandatory:true  },
+    { id:11, title:'Canal de Denúncias',           category:'Compliance',    duration:'25 min', level:'Essencial',     icon:'📢',  status:'published', mandatory:true  },
+    { id:12, title:'Assédio Moral e Sexual',       category:'Compliance',    duration:'40 min', level:'Essencial',     icon:'🤝',  status:'published', mandatory:true  },
+  ];
+
+  // ── 5. Training recommendations — integrated HRM + Phishing ─
+  // Each recommendation carries: indicator source, trigger value, rationale
+  const rec = [];
+
+  // [A] Phishing & Engenharia Social — sempre, reforçado por clickRate alto
+  const phClick_trigger = clickRate > 20 ? `Taxa de clique em phishing de ${clickRate}% (acima do limiar de 20%)` : `Indicador base de conscientização`;
+  const phHRM_trigger   = `Score de Phishing HRM médio: ${avgPhScore}/100`;
+  rec.push({
+    ...catalog.find(c=>c.id===1),
+    prioridade: clickRate > 20 || avgPhScore > 55 ? '🔴 Obrigatório' : '🟡 Recomendado',
+    grupo: 'Todos os usuários',
+    prazo: addDays(14),
+    indicadores: [
+      { fonte:'📧 Cliques em Phishing', valor: `${clickRate}%`, status: clickRate>20?'crítico':clickRate>10?'atenção':'ok' },
+      { fonte:'🧠 Score HRM — Phishing', valor: `${avgPhScore}/100`, status: avgPhScore>60?'crítico':avgPhScore>40?'atenção':'ok' },
+    ],
+    raciocinio: `${phClick_trigger}. ${phHRM_trigger}. Treinamento de reconhecimento de phishing é a contramedida direta para esses dois indicadores.`,
+  });
+
+  // [B] Senhas Seguras e MFA — se pwScore baixo ou clickRate alto (credenciais em risco)
+  if (avgPwScore < 70 || clickRate > 15) {
+    rec.push({
+      ...catalog.find(c=>c.id===2),
+      prioridade: avgPwScore < 50 || clickRate > 25 ? '🔴 Obrigatório' : '🟡 Recomendado',
+      grupo: 'Todos os usuários',
+      prazo: addDays(21),
+      indicadores: [
+        { fonte:'🔑 Score HRM — Senhas/MFA', valor: `${avgPwScore}/100`, status: avgPwScore<50?'crítico':avgPwScore<70?'atenção':'ok' },
+        { fonte:'📧 Cliques em Phishing', valor: `${clickRate}%`, status: clickRate>25?'crítico':clickRate>15?'atenção':'ok' },
+      ],
+      raciocinio: `Score de gestão de senhas de ${avgPwScore}/100 indica vulnerabilidade a credential stuffing. Uma taxa de clique de ${clickRate}% significa que usuários que clicam em links falsos provavelmente também inserem credenciais nessas páginas.`,
+    });
+  }
+
+  // [C] Resposta a Incidentes — se grupo de alto risco expressivo
+  if (highRisk.length > 0 && highRisk.length/total >= 0.15) {
+    rec.push({
+      ...catalog.find(c=>c.id===6),
+      prioridade: highRisk.length/total >= 0.3 ? '🔴 Obrigatório' : '🟡 Recomendado',
+      grupo: topDeptStr || 'Usuários de Alto Risco',
+      prazo: addDays(30),
+      indicadores: [
+        { fonte:'🧠 Score HRM — Alto Risco', valor: `${highRisk.length} usuários (${Math.round(highRisk.length/total*100)}%)`, status: highRisk.length/total>=0.3?'crítico':'atenção' },
+        { fonte:'📢 Taxa de Reporte', valor: `${reportRate}%`, status: reportRate<20?'crítico':reportRate<35?'atenção':'ok' },
+      ],
+      raciocinio: `${highRisk.length} usuários (${Math.round(highRisk.length/total*100)}% do total) estão no grupo de alto risco. Uma taxa de reporte de apenas ${reportRate}% indica que a maioria não sabe como reagir a um incidente real — o treinamento de resposta é essencial.`,
+    });
+  }
+
+  // [D] Home Office Seguro — se score HRM geral elevado (superfície ampliada)
+  if (avgScore > 35) {
+    rec.push({
+      ...catalog.find(c=>c.id===3),
+      prioridade: '🟡 Recomendado',
+      grupo: 'Todos os usuários',
+      prazo: addDays(35),
+      indicadores: [
+        { fonte:'🧠 Score HRM Médio', valor: `${avgScore}/100`, status: avgScore>60?'crítico':avgScore>40?'atenção':'ok' },
+        { fonte:'📧 Campanhas Anteriores', valor: `${campCount} campanha(s) concluída(s)`, status: campCount===0?'atenção':'ok' },
+      ],
+      raciocinio: `Score HRM médio de ${avgScore}/100 indica hábitos de segurança inconsistentes. Colaboradores em home office operam fora do perímetro corporativo — roteadores domésticos, Wi-Fi compartilhado e dispositivos pessoais ampliam a superfície de ataque.`,
+    });
+  }
+
+  // [E] LGPD — se RH/Jurídico/Financeiro nos top depts
+  if (topDepts.some(d=>/(rh|jur|legal|financ|human)/i.test(d.name))) {
+    rec.push({
+      ...catalog.find(c=>c.id===7),
+      prioridade: '🟡 Recomendado',
+      grupo: topDepts.filter(d=>/(rh|jur|legal|financ|human)/i.test(d.name)).map(d=>d.name).join(' · ') || topDeptStr,
+      prazo: addDays(45),
+      indicadores: [
+        { fonte:'🏢 Departamentos Prioritários', valor: topDeptStr, status:'atenção' },
+        { fonte:'🧠 Score HRM — Depts RH/Jurídico', valor: `Média ${topDepts[0]?.avg||avgScore}/100`, status: (topDepts[0]?.avg||avgScore)>50?'atenção':'ok' },
+      ],
+      raciocinio: `Departamentos de ${topDeptStr} lidam com dados pessoais sensíveis e têm obrigações diretas sob a LGPD (Lei 13.709/2018). O nível de risco elevado nesses departamentos indica que colaboradores podem não conhecer suas obrigações legais de proteção de dados.`,
+    });
+  }
+
+  // ── 6. Content gaps ────────────────────────────────────────
+  const lacunas = [];
+  if (clickRate > 25 || avgPhScore > 65)
+    lacunas.push({ icon:'🎭', titulo:'CEO Fraud & BEC Awareness', categoria:'Cybersecurity', nivel:'Avançado', duracao:'40 min',
+      motivo:`Taxa de clique de ${clickRate}% e score de phishing de ${avgPhScore}/100 indicam vulnerabilidade a ataques avançados. Business Email Compromise (BEC) é o vetor de maior prejuízo financeiro e não possui treinamento dedicado na biblioteca.`, urgencia:'🔴 Alta' });
+  if (avgScore > 35)
+    lacunas.push({ icon:'📱', titulo:'Segurança em Dispositivos Móveis', categoria:'Cybersecurity', nivel:'Intermediário', duracao:'30 min',
+      motivo:`Colaboradores acessam e-mail e sistemas corporativos por smartphones. Com score HRM de ${avgScore}/100, dispositivos móveis sem política MDM representam vetor de ataque não coberto pelos treinamentos disponíveis.`, urgencia:'🟡 Média' });
+  if (topDepts.some(d=>/(ti|dev|tech|infra)/i.test(d.name)))
+    lacunas.push({ icon:'💻', titulo:'Segurança no Desenvolvimento (DevSecOps)', categoria:'Cybersecurity', nivel:'Avançado', duracao:'90 min',
+      motivo:`Departamento de TI identificado como grupo de alta prioridade. Ausência de treinamento técnico de segurança no desenvolvimento expõe sistemas internos a vulnerabilidades introduzidas no código.`, urgencia:'🟡 Média' });
+  lacunas.push({ icon:'🧠', titulo:'Psicologia da Segurança — Vieses Cognitivos', categoria:'Behavioral Security', nivel:'Intermediário', duracao:'35 min',
+    motivo:`Uma taxa de clique de ${clickRate}% confirma que usuários cedem a gatilhos psicológicos (urgência, autoridade, medo). Treinamento comportamental sobre vieses cognitivos não existe na biblioteca atual e seria complementar a todos os outros módulos.`, urgencia:'🟢 Baixa' });
+
+  // ── 7. KPIs integrated ─────────────────────────────────────
+  const kpis = [
+    { label:'Conclusão dos treinamentos',  icon:'📚', meta:'>90%',  baseline:'—',           fonte:'Meta de capacitação' },
+    { label:'Taxa de clique em phishing',  icon:'📧', meta:'<10%',  baseline:`${clickRate}%`, fonte:'Histórico de campanhas' },
+    { label:'Taxa de reporte de ameaças',  icon:'📢', meta:'>40%',  baseline:`${reportRate}%`,fonte:'Histórico de campanhas' },
+    { label:'Score HRM médio',             icon:'🧠', meta:`<${Math.round(avgScore*0.75)}/100`, baseline:`${avgScore}/100`, fonte:'Human Risk Module' },
+    { label:'Score Phishing HRM',          icon:'🎣', meta:`<${Math.round(avgPhScore*0.7)}/100`,baseline:`${avgPhScore}/100`,fonte:'Human Risk Module' },
+  ];
 
   return {
     id: Date.now(),
     tenant, generatedAt: fmt(today) + ' às ' + today.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
-    orgRisk: { avgScore, avgPhScore, highRisk: highRisk.length, medRisk: medRisk.length, total },
+    orgRisk: { avgScore, avgPhScore, avgTrScore, avgPwScore, highRisk: highRisk.length, medRisk: medRisk.length, lowRisk: lowRisk.length, total },
+    phishing: { campCount, clickRate, reportRate, totalSent, totalClicks },
     topDepts, topDeptStr, riskLevel, riskColor, enriched,
-    // Campaign fields
-    nome: campName,
-    objetivo: `Elevar a conscientização sobre ameaças de segurança nos ${highRisk.length} usuários de alto risco (score HRM médio: ${avgScore}/100) e reduzir a exposição da organização ${tenant} a incidentes de segurança humana.`,
-    template,
-    grupo,
-    status: 'Rascunho',
-    inicio: addDays(3),
-    fim: addDays(17),
-    enviados: 0, abertos: 0, cliques: 0, reportou: 0,
-    publicoAlvo: {
-      total,
-      highRisk: highRisk.length,
-      medRisk: medRisk.length,
-      depts: topDeptStr,
-      justificativa: `Score HRM médio de ${avgScore}/100 (nível ${riskLevel}). ${highRisk.length} usuário(s) acima de 60 pontos requerem atenção imediata. Departamentos prioritários: ${topDeptStr}.`,
-    },
-    mensagensChave: [
-      `Atenção redobrada com e-mails solicitando credenciais ou ações urgentes.`,
-      `Verificar sempre o remetente antes de clicar em links ou baixar anexos.`,
-      `Reportar imediatamente qualquer e-mail suspeito ao time de segurança.`,
-      `Nunca compartilhar senhas, tokens ou dados sensíveis por e-mail.`,
-    ],
-    conteudo: [
-      { tipo:'📧 E-mail Simulado', desc:`Template "${template}" enviado para ${grupo} — simula cenário de ${riskLevel.toLowerCase()} risco real.` },
-      { tipo:'📱 Notificação Push', desc:`Alerta de conscientização enviado após interação, explicando os sinais de alerta do e-mail simulado.` },
-      { tipo:'📚 Módulo de Aprendizagem', desc:`Acesso automático ao módulo "Reconhecimento de Ameaças" para quem interagir com o e-mail simulado.` },
-      { tipo:'📊 Relatório para Gestores', desc:`Resumo de resultados por departamento enviado ao término da campanha.` },
-    ],
-    acoes: [
-      `Monitorar em tempo real taxa de abertura e interação nos primeiros 48h.`,
-      `Acionar plano de reforço para usuários que clicarem no link simulado.`,
-      `Compartilhar resultados com lideranças de ${topDeptStr}.`,
-      `Repetir a campanha em 90 dias para medir evolução do comportamento.`,
-    ],
-    kpis: [
-      { label:'Taxa de abertura', meta:'>70%', baseline:'—' },
-      { label:'Taxa de clique (simulado)', meta:'<10%', baseline: avgPhScore+'%' },
-      { label:'Taxa de reporte', meta:'>40%', baseline:'—' },
-      { label:'Usuários treinados pós-interação', meta:'100%', baseline:'—' },
-      { label:'Redução de score HRM médio', meta:'< '+(Math.round(avgScore*0.75))+'/100', baseline: avgScore+'/100' },
-    ],
+    nome: campName, grupo, status:'Rascunho',
+    inicio: addDays(3), fim: addDays(45),
+    enviados:0, abertos:0, cliques:0, reportou:0,
+    treinamentosRecomendados: rec,
+    lacunas,
+    kpis,
     cronograma: [
-      { fase:'Preparação', periodo: fmt(today)+' – '+addDays(2), desc:'Configuração do template e segmentação dos destinatários.' },
-      { fase:'Envio da Campanha', periodo: addDays(3)+' – '+addDays(10), desc:'Disparo escalonado do e-mail simulado para os grupos-alvo.' },
-      { fase:'Monitoramento', periodo: addDays(3)+' – '+addDays(14), desc:'Acompanhamento em tempo real das métricas de engajamento.' },
-      { fase:'Reforço', periodo: addDays(10)+' – '+addDays(17), desc:'Módulo de aprendizagem ativado para usuários que interagiram.' },
-      { fase:'Relatório Final', periodo: addDays(17), desc:'Análise de resultados e recomendações para próxima campanha.' },
+      { fase:'Preparação',                  periodo: fmt(today)+' – '+addDays(2),   desc:'Confirmação dos grupos-alvo e atribuição dos treinamentos na plataforma.' },
+      { fase:'Treinamentos Obrigatórios',   periodo: addDays(3)+' – '+addDays(14),  desc:'Módulos marcados como Obrigatório devem ser concluídos neste período.' },
+      { fase:'Treinamentos Recomendados',   periodo: addDays(10)+' – '+addDays(35), desc:'Módulos complementares disponibilizados com prazo flexível.' },
+      { fase:'Monitoramento & Suporte',     periodo: addDays(3)+' – '+addDays(42),  desc:'Acompanhamento de taxa de conclusão — gestores notificados para usuários atrasados.' },
+      { fase:'Relatório de Efetividade',    periodo: addDays(45),                   desc:'Medição do impacto no Score HRM e taxa de clique pós-treinamento.' },
     ],
-
-    // ── Library trainings recommended by AI ──────────────────
-    treinamentosRecomendados: (function() {
-      // All available library courses
-      const catalog = (typeof window !== 'undefined' && window.LIBRARY_COURSES)
-        ? window.LIBRARY_COURSES
-        : [
-          { id:1,  title:'Phishing & Engenharia Social',  category:'Cybersecurity', duration:'45 min', level:'Essencial', icon:'🎣',  status:'published', mandatory:true  },
-          { id:2,  title:'Senhas Seguras e MFA',           category:'Cybersecurity', duration:'30 min', level:'Essencial', icon:'🔑',  status:'published', mandatory:true  },
-          { id:3,  title:'Home Office Seguro',             category:'Cybersecurity', duration:'40 min', level:'Intermediário', icon:'🏠', status:'published', mandatory:false },
-          { id:4,  title:'Uso Seguro de IA Generativa',   category:'IA',            duration:'35 min', level:'Intermediário', icon:'🤖', status:'published', mandatory:false },
-          { id:5,  title:'Cloud Security Awareness',      category:'Cybersecurity', duration:'50 min', level:'Avançado',      icon:'☁️', status:'published', mandatory:false },
-          { id:6,  title:'Resposta a Incidentes',         category:'Cybersecurity', duration:'60 min', level:'Avançado',      icon:'🚨', status:'draft',     mandatory:false },
-          { id:7,  title:'LGPD na Prática',               category:'Privacidade',   duration:'60 min', level:'Essencial',     icon:'🔒', status:'published', mandatory:true  },
-          { id:9,  title:'Código de Ética Empresarial',   category:'Ética',         duration:'45 min', level:'Essencial',     icon:'⚖️', status:'published', mandatory:true  },
-          { id:10, title:'Anticorrupção e Antissuborno',  category:'Compliance',    duration:'50 min', level:'Essencial',     icon:'🚫', status:'published', mandatory:true  },
-          { id:11, title:'Canal de Denúncias',            category:'Compliance',    duration:'25 min', level:'Essencial',     icon:'📢', status:'published', mandatory:true  },
-          { id:12, title:'Assédio Moral e Sexual',        category:'Compliance',    duration:'40 min', level:'Essencial',     icon:'🤝', status:'published', mandatory:true  },
-        ];
-
-      // Score-based selection logic
-      const rec = [];
-
-      // Always recommend phishing training for a phishing awareness campaign
-      const phTrain = catalog.find(c=>c.id===1);
-      if(phTrain) rec.push({ ...phTrain, motivo:'Treinamento principal da campanha — reconhecimento de phishing e engenharia social.', prioridade:'🔴 Obrigatório', grupo:'Todos os usuários', prazo: addDays(17) });
-
-      // Passwords/MFA if avg score > 40
-      if(avgScore > 40) {
-        const pw = catalog.find(c=>c.id===2);
-        if(pw) rec.push({ ...pw, motivo:`Score HRM médio de ${avgScore}/100 indica exposição a ataques de credenciais. MFA reduz risco em +99%.`, prioridade:'🔴 Obrigatório', grupo:'Todos os usuários', prazo: addDays(21) });
-      }
-
-      // Home Office if remote users exist
-      const hasRemote = enriched.some(u=>(u.dept||'').toLowerCase().includes('remot')||(u.role||'').toLowerCase().includes('remot'));
-      if(hasRemote || enriched.length > 0) {
-        const ho = catalog.find(c=>c.id===3);
-        if(ho) rec.push({ ...ho, motivo:'Usuários com acesso remoto representam superfície de ataque ampliada. Boas práticas de Wi-Fi e VPN são essenciais.', prioridade:'🟡 Recomendado', grupo:'Trabalho Remoto', prazo: addDays(30) });
-      }
-
-      // Incident response if high risk group > 20% of total
-      if(highRisk.length / total > 0.2) {
-        const ir = catalog.find(c=>c.id===6);
-        if(ir) rec.push({ ...ir, motivo:`${highRisk.length} usuários de alto risco (${Math.round(highRisk.length/total*100)}% do total). Resposta rápida a incidentes é crítica.`, prioridade:'🟡 Recomendado', grupo: topDeptStr || 'Alto Risco', prazo: addDays(45) });
-      }
-
-      // LGPD if RH/Jurídico are in top depts
-      if(topDepts.some(d=>/(rh|jur|legal|human)/i.test(d.name))) {
-        const lgpd = catalog.find(c=>c.id===7);
-        if(lgpd) rec.push({ ...lgpd, motivo:`Departamentos ${topDeptStr} lidam com dados sensíveis — conformidade com LGPD é obrigatória.`, prioridade:'🟡 Recomendado', grupo: topDeptStr, prazo: addDays(60) });
-      }
-
-      return rec;
-    })(),
-
-    // ── Content gap analysis ──────────────────────────────────
-    lacunas: (function() {
-      const gaps = [];
-      if(avgScore > 55)
-        gaps.push({ icon:'🎭', titulo:'CEO Fraud & BEC Awareness', categoria:'Cybersecurity', nivel:'Avançado', duracao:'40 min', motivo:`Score médio crítico (${avgScore}/100) — Business Email Compromise é o vetor de maior prejuízo financeiro. Não há treinamento específico na biblioteca.`, urgencia:'🔴 Alta' });
-      if(avgScore > 35)
-        gaps.push({ icon:'📱', titulo:'Segurança em Dispositivos Móveis', categoria:'Cybersecurity', nivel:'Intermediário', duracao:'30 min', motivo:'Colaboradores acessam sistemas corporativos por smartphones sem política formal de MDM documentada em treinamento.', urgencia:'🟡 Média' });
-      if(topDepts.some(d=>/(ti|dev|tech|infra)/i.test(d.name)))
-        gaps.push({ icon:'💻', titulo:'Segurança no Desenvolvimento (DevSecOps)', categoria:'Cybersecurity', nivel:'Avançado', duracao:'90 min', motivo:`Departamento de TI identificado como prioridade (score: ${topDepts.find(d=>/(ti|dev)/i.test(d.name))?.avg||'—'}/100). Ausência de treinamento técnico de segurança.`, urgencia:'🟡 Média' });
-      gaps.push({ icon:'🧠', titulo:'Psicologia da Segurança — Vieses Cognitivos', categoria:'Behavioral Security', nivel:'Intermediário', duracao:'35 min', motivo:'Engenharia social explora vieses cognitivos (urgência, autoridade, medo). Treinamento comportamental não existe na biblioteca atual.', urgencia:'🟢 Baixa' });
-      return gaps;
-    })(),
   };
 }
 
@@ -2071,158 +2100,180 @@ function phAiShowReview() {
   const c = _phAiCampaign;
   if (!c) return;
 
+  // Helper: indicator status color
+  const stColor = s => s==='crítico'?'#ef4444':s==='atenção'?'#f59e0b':'#22c55e';
+  const stLabel = s => s==='crítico'?'Crítico':s==='atenção'?'Atenção':'OK';
+
   phShowModal(`
     <div class="ph-modal-header">
       <div style="display:flex;align-items:center;gap:12px;">
         <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">🤖</div>
         <div>
           <div style="font-size:1.0rem;font-weight:800;">${c.nome}</div>
-          <div style="font-size:0.72rem;color:#6b7280;">Gerado em ${c.generatedAt} · ${c.tenant} · Rascunho para revisão</div>
+          <div style="font-size:0.72rem;color:#6b7280;">Gerado em ${c.generatedAt} · ${c.tenant} · Plano de Treinamento — Rascunho para revisão</div>
         </div>
       </div>
       <button class="ph-modal-close" onclick="phCloseModal()">✕</button>
     </div>
 
-    <!-- Risk Diagnostic -->
-    <div style="background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.18);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
-      <div style="font-size:0.68rem;font-weight:800;color:#8b5cf6;text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;">📊 Diagnóstico Human Risk — Base da Análise IA</div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center;margin-bottom:10px;">
+    <!-- ═══ ZONA A: DADOS ANALISADOS ═══ -->
+    <div style="background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.20);border-radius:14px;padding:16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+        <div style="width:28px;height:28px;border-radius:8px;background:rgba(139,92,246,.15);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">📊</div>
+        <div>
+          <div style="font-size:0.76rem;font-weight:800;color:#8b5cf6;text-transform:uppercase;letter-spacing:.08em;">Dados Analisados pela IA</div>
+          <div style="font-size:0.68rem;color:#6b7280;margin-top:1px;">A IA cruzou dois conjuntos de dados para gerar este plano de treinamento</div>
+        </div>
+      </div>
+
+      <!-- Two data sources side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+
+        <!-- Source 1: Phishing History -->
+        <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.18);border-radius:11px;padding:12px;">
+          <div style="font-size:0.68rem;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">📧 Histórico de Phishing</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            ${[
+              ['Campanhas concluídas', c.phishing.campCount+' campanha(s)', c.phishing.campCount===0?'atenção':'ok'],
+              ['Taxa de clique', c.phishing.clickRate+'%', c.phishing.clickRate>20?'crítico':c.phishing.clickRate>10?'atenção':'ok'],
+              ['Taxa de reporte', c.phishing.reportRate+'%', c.phishing.reportRate<20?'crítico':c.phishing.reportRate<35?'atenção':'ok'],
+            ].map(([l,v,s])=>`
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.72rem;">
+                <span style="color:#94a3b8;">${l}</span>
+                <span style="padding:2px 8px;border-radius:99px;background:${stColor(s)}18;color:${stColor(s)};font-weight:700;">${v}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Source 2: HRM Scores -->
+        <div style="background:rgba(139,92,246,.06);border:1px solid rgba(139,92,246,.18);border-radius:11px;padding:12px;">
+          <div style="font-size:0.68rem;font-weight:800;color:#8b5cf6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">🧠 Human Risk (HRM)</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            ${[
+              ['Score geral médio',  c.orgRisk.avgScore+'/100',   c.orgRisk.avgScore>60?'crítico':c.orgRisk.avgScore>40?'atenção':'ok'],
+              ['Score phishing',     c.orgRisk.avgPhScore+'/100', c.orgRisk.avgPhScore>60?'crítico':c.orgRisk.avgPhScore>40?'atenção':'ok'],
+              ['Score senhas/MFA',   c.orgRisk.avgPwScore+'/100', c.orgRisk.avgPwScore<50?'crítico':c.orgRisk.avgPwScore<70?'atenção':'ok'],
+            ].map(([l,v,s])=>`
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.72rem;">
+                <span style="color:#94a3b8;">${l}</span>
+                <span style="padding:2px 8px;border-radius:99px;background:${stColor(s)}18;color:${stColor(s)};font-weight:700;">${v}</span>
+              </div>`).join('')}
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary row -->
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;text-align:center;">
         ${[
-          ['Score HRM Médio', c.orgRisk.avgScore+'/100', c.riskColor],
           ['Nível de Risco', c.riskLevel, c.riskColor],
-          ['Alto Risco', c.orgRisk.highRisk+' usuários', '#ef4444'],
-          ['Risco Moderado', c.orgRisk.medRisk+' usuários', '#f59e0b'],
-          ['Total Usuários', c.orgRisk.total, '#00d4ff'],
+          ['Alto Risco',     c.orgRisk.highRisk+' usuários', '#ef4444'],
+          ['Risco Moderado', c.orgRisk.medRisk+' usuários',  '#f59e0b'],
+          ['Baixo Risco',    c.orgRisk.lowRisk+' usuários',  '#22c55e'],
+          ['Total',          c.orgRisk.total+' usuários',    '#00d4ff'],
         ].map(([l,v,col])=>`
-          <div style="padding:10px 6px;background:rgba(255,255,255,.03);border-radius:9px;">
-            <div style="font-size:1.0rem;font-weight:900;color:${col};">${v}</div>
-            <div style="font-size:0.60rem;color:#6b7280;margin-top:3px;">${l}</div>
+          <div style="padding:8px 4px;background:rgba(255,255,255,.03);border-radius:8px;">
+            <div style="font-size:0.88rem;font-weight:900;color:${col};">${v}</div>
+            <div style="font-size:0.59rem;color:#6b7280;margin-top:2px;">${l}</div>
           </div>`).join('')}
       </div>
-      <div style="font-size:0.72rem;color:#6b7280;">🎯 Departamentos prioritários: <strong style="color:#f1f5f9;">${c.topDeptStr}</strong></div>
+      ${c.topDeptStr ? `<div style="margin-top:10px;font-size:0.71rem;color:#6b7280;">🏢 Departamentos com maior exposição: <strong style="color:#f1f5f9;">${c.topDeptStr}</strong></div>` : ''}
     </div>
 
-    <!-- Campaign Overview -->
-    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">✉️ Visão Geral da Campanha</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;font-size:0.78rem;">
-      <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;"><span style="color:#6b7280;">🏷 Template: </span><strong>${c.template}</strong></div>
-      <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;"><span style="color:#6b7280;">👥 Grupo-alvo: </span><strong>${c.grupo}</strong></div>
-      <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;"><span style="color:#6b7280;">📅 Início: </span><strong>${c.inicio}</strong></div>
-      <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:9px;"><span style="color:#6b7280;">📅 Término: </span><strong>${c.fim}</strong></div>
-    </div>
-
-    <!-- Objective -->
-    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">🎯 Objetivo</div>
-    <div style="padding:10px 14px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.10);border-radius:9px;font-size:0.80rem;color:#94a3b8;line-height:1.6;margin-bottom:14px;">${c.objetivo}</div>
-
-    <!-- Público-alvo -->
-    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">👥 Público-Alvo e Justificativa</div>
-    <div style="padding:10px 14px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.07);border-radius:9px;font-size:0.78rem;color:#94a3b8;line-height:1.6;margin-bottom:14px;">
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">
-        <span>👤 <strong style="color:#f1f5f9;">${c.publicoAlvo.total}</strong> usuários total</span>
-        <span>🔴 <strong style="color:#ef4444;">${c.publicoAlvo.highRisk}</strong> alto risco</span>
-        <span>🟡 <strong style="color:#f59e0b;">${c.publicoAlvo.medRisk}</strong> risco moderado</span>
+    <!-- ═══ ZONA B: PLANO DE TREINAMENTO ═══ -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <div style="width:28px;height:28px;border-radius:8px;background:rgba(0,212,255,.12);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">📚</div>
+      <div>
+        <div style="font-size:0.76rem;font-weight:800;color:#00d4ff;text-transform:uppercase;letter-spacing:.08em;">Plano de Treinamento Recomendado</div>
+        <div style="font-size:0.68rem;color:#6b7280;margin-top:1px;">${c.treinamentosRecomendados.length} treinamento(s) da biblioteca selecionados pela IA · Apenas capacitação, sem simulações</div>
       </div>
-      <div style="color:#8b5cf6;font-weight:700;font-size:0.70rem;margin-bottom:3px;">🧠 Justificativa IA:</div>
-      ${c.publicoAlvo.justificativa}
     </div>
 
-    <!-- Mensagens-chave -->
-    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">💬 Mensagens-Chave</div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
-      ${c.mensagensChave.map((m,i)=>`
-        <div style="display:flex;gap:10px;padding:8px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:8px;font-size:0.78rem;color:#94a3b8;">
-          <span style="color:#8b5cf6;font-weight:700;flex-shrink:0;">${i+1}.</span>${m}
-        </div>`).join('')}
-    </div>
-
-    <!-- Conteúdo -->
-    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">📦 Conteúdo da Campanha</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
-      ${c.conteudo.map(ct=>`
-        <div style="padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:9px;">
-          <div style="font-weight:700;font-size:0.78rem;margin-bottom:4px;">${ct.tipo}</div>
-          <div style="font-size:0.72rem;color:#94a3b8;line-height:1.5;">${ct.desc}</div>
-        </div>`).join('')}
-    </div>
-
-    <!-- Ações recomendadas -->
-    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">⚡ Recomendações de Ações</div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;">
-      ${c.acoes.map((a,i)=>`
-        <div style="display:flex;gap:10px;padding:8px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:8px;font-size:0.78rem;color:#94a3b8;">
-          <span style="color:#22c55e;font-weight:700;flex-shrink:0;">→</span>${a}
-        </div>`).join('')}
-    </div>
-
-    <!-- KPIs -->
-    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">📈 Indicadores de Sucesso (KPIs)</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:14px;">
-      ${c.kpis.map(k=>`
-        <div style="padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:9px;">
-          <div style="font-size:0.68rem;color:#6b7280;margin-bottom:5px;">${k.label}</div>
-          <div style="display:flex;align-items:baseline;gap:8px;">
-            ${k.baseline!=='—'?`<span style="font-size:0.78rem;color:#6b7280;text-decoration:line-through;">${k.baseline}</span>`:''}
-            <span style="font-size:1.0rem;font-weight:800;color:#22c55e;">→ ${k.meta}</span>
-          </div>
-        </div>`).join('')}
-    </div>
-
-    <!-- Cronograma -->
-    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;">🗓 Cronograma Sugerido</div>
-    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;">
-      ${c.cronograma.map((fase,i)=>`
-        <div style="display:flex;gap:12px;align-items:flex-start;padding:9px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:9px;">
-          <div style="width:6px;height:6px;border-radius:50%;background:#8b5cf6;margin-top:5px;flex-shrink:0;"></div>
-          <div style="flex:1;">
-            <div style="font-size:0.78rem;font-weight:700;">${fase.fase} <span style="font-weight:400;color:#6b7280;font-size:0.72rem;">· ${fase.periodo}</span></div>
-            <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">${fase.desc}</div>
-          </div>
-        </div>`).join('')}
-    </div>
-
-    <!-- Library Trainings -->
-    <div style="font-size:0.68rem;font-weight:800;color:#00d4ff;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">📚 Treinamentos da Biblioteca Recomendados pela IA</div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
-      ${c.treinamentosRecomendados.map(t=>`
-        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:11px 14px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.14);border-radius:11px;">
-          <div style="width:38px;height:38px;border-radius:10px;background:rgba(0,212,255,.10);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">${t.icon}</div>
-          <div>
-            <div style="font-weight:700;font-size:0.82rem;">${t.title} <span style="font-size:0.68rem;color:#6b7280;font-weight:400;">· ${t.category} · ${t.duration}</span></div>
-            <div style="font-size:0.71rem;color:#94a3b8;margin-top:2px;line-height:1.45;">🧠 ${t.motivo}</div>
-            <div style="margin-top:5px;display:flex;gap:6px;flex-wrap:wrap;">
-              <span style="padding:2px 8px;border-radius:99px;background:rgba(0,212,255,.10);color:#00d4ff;font-size:0.63rem;font-weight:700;">📅 Prazo: ${t.prazo}</span>
-              <span style="padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06);color:#94a3b8;font-size:0.63rem;">👥 ${t.grupo}</span>
-              <span style="padding:2px 8px;border-radius:99px;font-size:0.63rem;font-weight:700;${t.prioridade.includes('Obrig')?'background:rgba(239,68,68,.12);color:#ef4444;':'background:rgba(245,158,11,.12);color:#f59e0b;'}">${t.prioridade}</span>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+      ${c.treinamentosRecomendados.map((t,i)=>`
+        <div style="border:1px solid rgba(255,255,255,.08);border-radius:13px;overflow:hidden;">
+          <!-- Training header -->
+          <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:rgba(255,255,255,.03);">
+            <div style="width:36px;height:36px;border-radius:10px;background:rgba(0,212,255,.10);border:1px solid rgba(0,212,255,.18);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">${t.icon}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-weight:800;font-size:0.84rem;">${t.title}</span>
+                <span style="padding:2px 8px;border-radius:99px;font-size:0.63rem;font-weight:700;${t.prioridade.includes('Obrig')?'background:rgba(239,68,68,.14);color:#ef4444;':'background:rgba(245,158,11,.14);color:#f59e0b;'}">${t.prioridade}</span>
+                <span style="padding:2px 7px;border-radius:99px;background:rgba(34,197,94,.10);color:#22c55e;font-size:0.63rem;font-weight:700;">✅ Na Biblioteca</span>
+              </div>
+              <div style="font-size:0.68rem;color:#6b7280;margin-top:2px;">${t.category} · ${t.level} · ${t.duration} · 👥 ${t.grupo} · 📅 Prazo: ${t.prazo}</div>
             </div>
           </div>
-          <span style="padding:3px 10px;border-radius:99px;background:rgba(34,197,94,.12);color:#22c55e;font-size:0.70rem;font-weight:700;white-space:nowrap;">✅ Disponível</span>
+          <!-- Why this training -->
+          <div style="padding:10px 14px;background:rgba(139,92,246,.04);border-top:1px solid rgba(255,255,255,.05);">
+            <div style="font-size:0.64rem;font-weight:800;color:#8b5cf6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">🧠 Por que a IA recomendou este treinamento</div>
+            <!-- Indicators that triggered this -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;">
+              ${t.indicadores.map(ind=>`
+                <div style="display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;background:${stColor(ind.status)}10;border:1px solid ${stColor(ind.status)}30;">
+                  <span style="font-size:0.65rem;color:#94a3b8;">${ind.fonte}:</span>
+                  <span style="font-size:0.70rem;font-weight:800;color:${stColor(ind.status)};">${ind.valor}</span>
+                  <span style="font-size:0.60rem;color:${stColor(ind.status)};opacity:.8;">[${stLabel(ind.status)}]</span>
+                </div>`).join('')}
+            </div>
+            <div style="font-size:0.72rem;color:#94a3b8;line-height:1.5;">${t.raciocinio}</div>
+          </div>
         </div>`).join('')}
     </div>
 
-    <!-- Content Gaps -->
-    <div style="font-size:0.68rem;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">⚠️ Lacunas de Conteúdo — Novos Treinamentos Sugeridos para a Biblioteca</div>
-    <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:18px;">
-      ${c.lacunas.map(g=>`
-        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:11px 14px;background:rgba(245,158,11,.04);border:1px dashed rgba(245,158,11,.25);border-radius:11px;">
-          <div style="width:38px;height:38px;border-radius:10px;background:rgba(245,158,11,.10);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">${g.icon}</div>
+    <!-- ═══ KPIs ═══ -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">📈 Metas de Efetividade</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:7px;margin-bottom:16px;">
+      ${c.kpis.map(k=>`
+        <div style="padding:10px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;">
+          <div style="font-size:0.64rem;color:#6b7280;margin-bottom:4px;">${k.icon} ${k.label}</div>
+          ${k.baseline!=='—'?`<div style="font-size:0.72rem;color:#6b7280;text-decoration:line-through;margin-bottom:2px;">${k.baseline}</div>`:''}
+          <div style="font-size:0.95rem;font-weight:800;color:#22c55e;">→ ${k.meta}</div>
+          <div style="font-size:0.60rem;color:#6b7280;margin-top:3px;opacity:.7;">${k.fonte}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- ═══ Cronograma ═══ -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;">🗓 Cronograma Sugerido</div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:16px;">
+      ${c.cronograma.map((f,i)=>`
+        <div style="display:flex;gap:10px;align-items:flex-start;padding:8px 12px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:9px;">
+          <div style="width:5px;height:5px;border-radius:50%;background:#8b5cf6;margin-top:6px;flex-shrink:0;"></div>
           <div>
-            <div style="font-weight:700;font-size:0.82rem;">${g.titulo} <span style="font-size:0.68rem;color:#6b7280;font-weight:400;">· ${g.categoria} · ${g.nivel} · ${g.duracao}</span></div>
-            <div style="font-size:0.71rem;color:#94a3b8;margin-top:2px;line-height:1.45;">🧠 ${g.motivo}</div>
-          </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
-            <span style="padding:2px 8px;border-radius:99px;font-size:0.63rem;font-weight:700;${g.urgencia.includes('Alta')?'background:rgba(239,68,68,.12);color:#ef4444;':g.urgencia.includes('Média')?'background:rgba(245,158,11,.12);color:#f59e0b;':'background:rgba(34,197,94,.12);color:#22c55e;'}">${g.urgencia}</span>
-            <span style="padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06);color:#6b7280;font-size:0.63rem;white-space:nowrap;">❌ Não disponível</span>
+            <div style="font-size:0.76rem;font-weight:700;">${f.fase} <span style="font-weight:400;color:#6b7280;font-size:0.70rem;">· ${f.periodo}</span></div>
+            <div style="font-size:0.70rem;color:#94a3b8;margin-top:2px;">${f.desc}</div>
           </div>
         </div>`).join('')}
-      <div style="padding:9px 12px;background:rgba(245,158,11,.05);border-radius:9px;font-size:0.72rem;color:#f59e0b;">
-        💡 Esses treinamentos podem ser criados e cadastrados na <strong>Biblioteca</strong> para enriquecer futuras campanhas de conscientização.
+    </div>
+
+    <!-- ═══ ZONA C: LACUNAS ═══ -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <div style="width:28px;height:28px;border-radius:8px;background:rgba(245,158,11,.12);display:flex;align-items:center;justify-content:center;font-size:0.9rem;">⚠️</div>
+      <div>
+        <div style="font-size:0.76rem;font-weight:800;color:#f59e0b;text-transform:uppercase;letter-spacing:.08em;">Lacunas de Conteúdo Identificadas</div>
+        <div style="font-size:0.68rem;color:#6b7280;margin-top:1px;">Treinamentos que a IA recomenda criar na biblioteca para cobrir riscos não endereçados</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:18px;">
+      ${c.lacunas.map(g=>`
+        <div style="display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:11px 14px;background:rgba(245,158,11,.04);border:1px dashed rgba(245,158,11,.22);border-radius:11px;">
+          <div style="width:34px;height:34px;border-radius:9px;background:rgba(245,158,11,.10);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">${g.icon}</div>
+          <div>
+            <div style="font-weight:700;font-size:0.80rem;">${g.titulo} <span style="font-size:0.66rem;color:#6b7280;font-weight:400;">· ${g.categoria} · ${g.nivel} · ${g.duracao}</span></div>
+            <div style="font-size:0.70rem;color:#94a3b8;margin-top:3px;line-height:1.45;">${g.motivo}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            <span style="padding:2px 8px;border-radius:99px;font-size:0.62rem;font-weight:700;${g.urgencia.includes('Alta')?'background:rgba(239,68,68,.12);color:#ef4444;':g.urgencia.includes('Média')?'background:rgba(245,158,11,.12);color:#f59e0b;':'background:rgba(34,197,94,.12);color:#22c55e;'}">${g.urgencia}</span>
+            <span style="padding:2px 7px;border-radius:99px;background:rgba(255,255,255,.05);color:#6b7280;font-size:0.60rem;white-space:nowrap;">❌ Não disponível</span>
+          </div>
+        </div>`).join('')}
+      <div style="padding:8px 12px;background:rgba(245,158,11,.04);border-radius:9px;font-size:0.71rem;color:#f59e0b;">
+        💡 Esses treinamentos podem ser cadastrados na <strong>Biblioteca</strong> para enriquecer futuras campanhas de conscientização.
       </div>
     </div>
 
     <!-- Warning -->
-    <div style="padding:10px 14px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.15);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:18px;">
-      ⚠️ Revise todas as informações antes de aprovar. Ao atribuir, os treinamentos recomendados serão automaticamente incluídos na lista de Atribuições.
+    <div style="padding:10px 14px;background:rgba(139,92,246,.05);border:1px solid rgba(139,92,246,.18);border-radius:9px;font-size:0.72rem;color:#8b5cf6;margin-bottom:18px;">
+      📚 Este plano recomenda <strong>exclusivamente treinamentos de capacitação</strong>. Não inclui simulações de phishing. Para criar uma simulação, use o botão <strong>"🎯 Simulação de Phishing IA"</strong>. Ao atribuir, os treinamentos serão automaticamente criados na lista de Atribuições.
     </div>
 
     <!-- Actions -->
@@ -2234,6 +2285,7 @@ function phAiShowReview() {
     </div>
   `, 'ph-modal ph-modal-lg');
 }
+
 
 window.phAiRegenerateCampaign = function() {
   phCloseModal();
