@@ -6,6 +6,28 @@ window.renderPage_users = function () {
   const L = usersL[APP.lang] || usersL.pt;
 
   const users = [
+    // ── Admin Local DEMO (injected from DEMO_STATE) ──────────────
+    (function() {
+      if (typeof DEMO_STATE === 'undefined') return null;
+      const u = DEMO_STATE;
+      const rm = u.getRiskMeta();
+      return {
+        id: 999,
+        name: u.user.name,
+        email: u.user.email,
+        dept: u.user.dept,
+        company: u.user.company,
+        role: u.user.role,
+        status: 'active',
+        risk: rm.cls === 'low' ? 'low' : rm.cls === 'med' ? 'med' : 'high',
+        completion: u.getCompletionPct(),
+        certs: u.getCertCount(),
+        lastLogin: 'Agora',
+        avatar: u.user.avatar,
+        country: u.user.country,
+        isDemo: true,
+      };
+    })(),
     { id:1, name:'Ana Oliveira',    email:'ana.oliveira@empresa.com',    dept:'RH',         role:'Admin',       status:'active', risk:'low',  completion:98, certs:8, lastLogin:'Hoje',        avatar:'AO', country:'🇧🇷' },
     { id:2, name:'Carlos Mendes',   email:'carlos.mendes@empresa.com',   dept:'TI',         role:'Manager',     status:'active', risk:'low',  completion:92, certs:6, lastLogin:'Ontem',       avatar:'CM', country:'🇧🇷' },
     { id:3, name:'Sarah Johnson',   email:'sarah.johnson@empresa.com',   dept:'Jurídico',   role:'User',        status:'active', risk:'low',  completion:100,certs:9, lastLogin:'Hoje',        avatar:'SJ', country:'🇺🇸' },
@@ -109,7 +131,7 @@ window.renderPage_users = function () {
             </tr>
           </thead>
           <tbody id="users-tbody">
-            ${users.map(u => userRow(u, L, riskColors, riskLabels)).join('')}
+            ${users.filter(Boolean).map(u => userRow(u, L, riskColors, riskLabels)).join('')}
           </tbody>
         </table>
       </div>
@@ -173,15 +195,19 @@ window.renderPage_users = function () {
 
 function userRow(u, L, riskColors, riskLabels) {
   const statusColor = u.status === 'active' ? 'var(--brand-success)' : 'var(--text-muted)';
+  const avatarBg = u.isDemo
+    ? 'linear-gradient(135deg,#00d4ff,#8b5cf6)'
+    : 'linear-gradient(135deg,var(--brand-accent),var(--brand-purple))';
+  const avatarColor = u.isDemo ? '#000' : '#fff';
   return `
-  <tr>
+  <tr style="${u.isDemo ? 'background:linear-gradient(90deg,rgba(0,212,255,0.04),rgba(139,92,246,0.04));border-left:3px solid #00d4ff;' : ''}">
     <td><input type="checkbox" /></td>
     <td>
       <div style="display:flex;align-items:center;gap:10px;">
-        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--brand-accent),var(--brand-purple));display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:#fff;flex-shrink:0;">${u.avatar}</div>
+        <div style="width:32px;height:32px;border-radius:50%;background:${avatarBg};display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;color:${avatarColor};flex-shrink:0;">${u.avatar}</div>
         <div>
-          <div style="font-weight:600;font-size:0.84rem;">${u.name} <span style="font-size:0.8rem;">${u.country}</span></div>
-          <div style="font-size:0.72rem;color:var(--text-muted);">${u.email}</div>
+          <div style="font-weight:600;font-size:0.84rem;">${u.name} <span style="font-size:0.8rem;">${u.country}</span>${u.isDemo ? ' <span style="font-size:0.6rem;font-weight:700;padding:1px 6px;border-radius:99px;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(139,92,246,0.2));color:#00d4ff;border:1px solid rgba(0,212,255,0.3);">DEMO</span>' : ''}</div>
+          <div style="font-size:0.72rem;color:var(--text-muted);">${u.email}${u.company ? ' · <strong style="color:#94a3b8">'+u.company+'</strong>' : ''}</div>
         </div>
       </div>
     </td>

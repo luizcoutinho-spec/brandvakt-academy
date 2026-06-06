@@ -6,14 +6,15 @@
 
 window.DEMO_STATE = {
   user: {
-    id:      'u-admin-001',
-    name:    'Admin Local',
-    email:   'admin@empresa.com',
-    dept:    'TI',
-    deptId:  'ti',
+    id:      'u-demo-001',
+    name:    'Admin Local DEMO',
+    email:   'admin@demo-sa.com',
+    dept:    'Diretoria',
+    deptId:  'dir',
+    company: 'DEMO SA',
     role:    'Super Admin',
     avatar:  'AL',
-    country: '🇵🇹',
+    country: '🇧🇷',
   },
 
   // Populated when quizzes are completed via the course player
@@ -199,8 +200,8 @@ window.demoShowProfile = function() {
         <div style="display:flex;align-items:center;gap:12px">
           <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#000;flex-shrink:0">AL</div>
           <div>
-            <div style="font-size:1rem;font-weight:800">Admin Local</div>
-            <div style="font-size:.72rem;color:#6b7280">admin@empresa.com · TI · Super Admin</div>
+            <div style="font-size:1rem;font-weight:800">Admin Local DEMO</div>
+            <div style="font-size:.72rem;color:#6b7280">admin@demo-sa.com · Diretoria · DEMO SA</div>
           </div>
         </div>
         <button onclick="document.getElementById('demo-profile-ov').remove()"

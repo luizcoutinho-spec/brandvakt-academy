@@ -326,8 +326,8 @@ function demoProgressWidget() {
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;color:#000;flex-shrink:0;">AL</div>
         <div>
-          <div style="font-size:0.9rem;font-weight:800;">Meu Progresso — Admin Local</div>
-          <div style="font-size:0.7rem;color:#6b7280;">admin@empresa.com · TI · Super Admin</div>
+          <div style="font-size:0.9rem;font-weight:800;">Meu Progresso — ${u.user.name}</div>
+          <div style="font-size:0.7rem;color:#6b7280;">${u.user.email} · ${u.user.dept} · ${u.user.company || 'DEMO SA'}</div>
         </div>
       </div>
       <button onclick="demoShowProfile()" style="padding:6px 14px;border-radius:8px;border:1px solid rgba(0,212,255,0.3);background:transparent;color:#00d4ff;cursor:pointer;font-size:0.76rem;font-weight:600;font-family:inherit;">Ver Perfil Completo →</button>

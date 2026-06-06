@@ -187,8 +187,8 @@ function rpDemoActivitySection() {
       <div style="display:flex;align-items:center;gap:10px;">
         <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#00d4ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:800;color:#000;">AL</div>
         <div>
-          <div style="font-size:1rem;font-weight:800;">Atividade — Admin Local</div>
-          <div style="font-size:0.72rem;color:#6b7280;">admin@empresa.com · TI · Super Admin · Sessão atual</div>
+          <div style="font-size:1rem;font-weight:800;">Atividade — ${u.user.name}</div>
+          <div style="font-size:0.72rem;color:#6b7280;">${u.user.email} · ${u.user.dept} · ${u.user.company || 'DEMO SA'} · Sessão atual</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:8px;">

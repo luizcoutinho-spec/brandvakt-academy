@@ -195,6 +195,67 @@ function asSortArrow(col) {
 // ── Main Render ───────────────────────────────────────────────
 window.renderPage_assignments = function() {
   injectAssignCSS();
+
+  // ── Inject Admin Local DEMO assignments (Diretoria · DEMO SA) ──
+  if (typeof DEMO_STATE !== 'undefined') {
+    const demoTarget = 'Diretoria · DEMO SA';
+    const demoGroup  = 'Diretoria · DEMO SA';
+
+    // Add target group if not already present
+    if (!ASSIGN_DATA.groups.includes(demoGroup)) {
+      ASSIGN_DATA.groups.push(demoGroup);
+    }
+
+    // Remove stale demo assignments so we can re-inject fresh ones
+    ASSIGN_DATA.assignments = ASSIGN_DATA.assignments.filter(a => !a.isDemo);
+
+    // One assignment record per completed/attempted course
+    DEMO_STATE.completions.forEach(c => {
+      ASSIGN_DATA.assignments.unshift({
+        id: 'demo-' + c.courseId,
+        course: c.courseName,
+        target: demoTarget,
+        targetType: 'dept',
+        due: new Date(new Date(c.dateISO).setMonth(new Date(c.dateISO).getMonth() + 3)).toISOString().split('T')[0],
+        completion: c.passed ? 100 : Math.round(c.score),
+        status: c.passed ? 'concluida' : 'ativa',
+        mandatory: true,
+        enviados: 1,
+        concluidos: c.passed ? 1 : 0,
+        pendentes: c.passed ? 0 : 1,
+        atrasados: 0,
+        created: c.dateISO,
+        priority: 'Alta',
+        category: 'Cybersecurity',
+        notify: false,
+        isDemo: true,
+      });
+    });
+
+    // If no activity yet: show one pending assignment so user is visible
+    if (DEMO_STATE.completions.length === 0) {
+      ASSIGN_DATA.assignments.unshift({
+        id: 'demo-pending',
+        course: 'Home Office Seguro',
+        target: demoTarget,
+        targetType: 'dept',
+        due: new Date(Date.now() + 30 * 864e5).toISOString().split('T')[0],
+        completion: 0,
+        status: 'ativa',
+        mandatory: true,
+        enviados: 1,
+        concluidos: 0,
+        pendentes: 1,
+        atrasados: 0,
+        created: new Date().toISOString().split('T')[0],
+        priority: 'Alta',
+        category: 'Cybersecurity',
+        notify: false,
+        isDemo: true,
+      });
+    }
+  }
+
   const total    = ASSIGN_DATA.assignments.length;
   const ativas   = ASSIGN_DATA.assignments.filter(a=>a.status==='ativa').length;
   const concl    = ASSIGN_DATA.assignments.filter(a=>a.status==='concluida').length;
@@ -357,12 +418,12 @@ function asRow(a) {
   const daysLabel = days < 0 ? `${Math.abs(days)}d atrasado` : days === 0 ? 'Hoje!' : days < 7 ? `${days}d restantes` : asFmtDate(a.due);
   const daysColor = days < 0 ? '#ef4444' : days < 7 ? '#f59e0b' : '#6b7280';
   const pc = asProgColor(a.completion);
-  return `<tr onclick="asOpenDetail(${a.id})" style="cursor:pointer">
+  return `<tr onclick="asOpenDetail('${a.id}')" style="cursor:pointer">
     <td>
       <div style="font-weight:700;font-size:0.85rem;margin-bottom:2px">${a.course}</div>
       <div style="font-size:0.70rem;color:#6b7280">${a.category} · ${a.enviados} enviados</div>
     </td>
-    <td style="font-size:0.80rem;color:#94a3b8">${a.target}</td>
+    <td style="font-size:0.80rem;color:#94a3b8">${a.target}${a.isDemo ? ' <span style="font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:99px;background:linear-gradient(135deg,rgba(0,212,255,0.15),rgba(139,92,246,0.15));color:#00d4ff;border:1px solid rgba(0,212,255,0.3);">DEMO</span>' : ''}</td>
     <td>
       <div style="font-size:0.80rem;font-weight:600;color:${daysColor}">${daysLabel}</div>
       ${days>=7?`<div style="font-size:0.68rem;color:#6b7280">${asFmtDate(a.due)}</div>`:''}
@@ -385,10 +446,10 @@ function asRow(a) {
       <div style="display:flex;gap:4px">
         <button class="as-btn as-btn-ghost as-btn-icon" onclick="asOpenDetail(${a.id})" title="Ver detalhes">👁</button>
         <button class="as-btn as-btn-ghost as-btn-icon" onclick="asOpenEdit(${a.id})"   title="Editar">✏️</button>
-        <button class="as-btn as-btn-ghost as-btn-icon" onclick="asNotifyGroup(${a.id})"title="Notificar">🔔</button>
-        ${a.status==='rascunho'?`<button class="as-btn as-btn-ghost as-btn-icon" onclick="asPublish(${a.id})" title="Publicar" style="color:#22c55e">▶</button>`:''}
-        ${a.status==='ativa'   ?`<button class="as-btn as-btn-ghost as-btn-icon" onclick="asPause(${a.id})"   title="Pausar"   style="color:#f59e0b">⏸</button>`:''}
-        <button class="as-btn as-btn-ghost as-btn-icon" onclick="asConfirmDelete(${a.id})" title="Excluir" style="color:#ef4444">🗑</button>
+        <button class="as-btn as-btn-ghost as-btn-icon" onclick="asNotifyGroup('${a.id}')"title="Notificar">🔔</button>
+        ${a.status==='rascunho'?`<button class="as-btn as-btn-ghost as-btn-icon" onclick="asPublish('${a.id}')" title="Publicar" style="color:#22c55e">▶</button>`:''}
+        ${a.status==='ativa'   ?`<button class="as-btn as-btn-ghost as-btn-icon" onclick="asPause('${a.id}')"   title="Pausar"   style="color:#f59e0b">⏸</button>`:''}
+        <button class="as-btn as-btn-ghost as-btn-icon" onclick="asConfirmDelete('${a.id}')" title="Excluir" style="color:#ef4444">🗑</button>
       </div>
     </td>
   </tr>`;
@@ -437,7 +498,7 @@ window.asConfirmDelete = function(id) {
             style="flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#94a3b8;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">
             Cancelar
           </button>
-          <button onclick="asDelete(${id})"
+          <button onclick="asDelete('${id}')"
             style="flex:1;padding:10px;border-radius:10px;border:none;background:rgba(239,68,68,.15);color:#ef4444;font-size:13px;font-weight:700;cursor:pointer;border:1px solid rgba(239,68,68,.30);font-family:inherit">
             🗑 Excluir
           </button>
@@ -705,10 +766,10 @@ window.asOpenDetail = function(id) {
     <!-- Actions -->
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:20px">
       <button class="as-btn as-btn-ghost" style="flex:1" onclick="asCloseModal()">Fechar</button>
-      <button class="as-btn as-btn-ghost" style="flex:1" onclick="asNotifyGroup(${a.id});asCloseModal()">🔔 Notificar Grupo</button>
-      <button class="as-btn as-btn-ghost" style="flex:1" onclick="asCloseModal();asOpenEdit(${a.id})">✏️ Editar</button>
-      ${a.status==='rascunho'?`<button class="as-btn as-btn-primary" style="flex:1" onclick="asPublish(${a.id});asCloseModal()">▶ Publicar</button>`:''}
-      ${a.status==='ativa'   ?`<button class="as-btn as-btn-danger"  style="flex:1" onclick="asPause(${a.id});asCloseModal()">⏸ Pausar</button>`:''}
+      <button class="as-btn as-btn-ghost" style="flex:1" onclick="asNotifyGroup('${a.id}');asCloseModal()">🔔 Notificar Grupo</button>
+      <button class="as-btn as-btn-ghost" style="flex:1" onclick="asCloseModal();asOpenEdit('${a.id}')">✏️ Editar</button>
+      ${a.status==='rascunho'?`<button class="as-btn as-btn-primary" style="flex:1" onclick="asPublish('${a.id}');asCloseModal()">▶ Publicar</button>`:''}
+      ${a.status==='ativa'   ?`<button class="as-btn as-btn-danger"  style="flex:1" onclick="asPause('${a.id}');asCloseModal()">⏸ Pausar</button>`:''}
     </div>
   `, 'as-modal as-modal-lg');
 };
