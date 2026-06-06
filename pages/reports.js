@@ -398,6 +398,7 @@ function rpReportRows(list) {
              <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpOpenDetail('${r.id}')">👁 Ver</button>
              <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpExportReport('${r.id}')">📤</button>
              <button class="rp-btn rp-btn-ghost rp-btn-sm" onclick="rpCopyShareLink('${r.id}')">🔗</button>
+             <button class="rp-btn rp-btn-danger rp-btn-sm" onclick="rpDeleteReport('${r.id}')">🗑</button>
            </div>`}
     </div>`).join('');
 }
@@ -1227,6 +1228,17 @@ window.rpExportReport = function(id) {
   win.document.close();
   win.onload = () => { win.focus(); win.print(); };
   setTimeout(() => showToast&&showToast(`✅ "${r.name}" exportado como PDF!`, 'success'), 800);
+};
+
+// ── Delete report ─────────────────────────────────────────────
+window.rpDeleteReport = function(id) {
+  const r = REPORTS_DATA.reports.find(x=>x.id===id);
+  if (!r) return;
+  if (!confirm(`Excluir o relatório "${r.name}"? Esta ação não pode ser desfeita.`)) return;
+  const idx = REPORTS_DATA.reports.findIndex(x=>x.id===id);
+  if (idx > -1) REPORTS_DATA.reports.splice(idx, 1);
+  rpRefreshList();
+  showToast&&showToast(`🗑 Relatório "${r.name}" excluído.`, 'info');
 };
 
 // ── Copy share link ───────────────────────────────────────────
