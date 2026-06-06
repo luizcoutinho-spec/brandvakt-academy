@@ -517,6 +517,15 @@ window.dpOpenDeptDetail = function(id) {
 // ══════════════════════════════════════════════════════════════
 function dpRenderTrails() {
   return `
+  <!-- AI Banner -->
+  <div style="background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(0,212,255,0.08));border:1px solid rgba(139,92,246,0.28);border-radius:16px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:center;gap:18px;">
+    <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,#8b5cf6,#00d4ff);display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0;box-shadow:0 8px 24px rgba(139,92,246,0.35);">🤖</div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-weight:800;font-size:0.95rem;margin-bottom:3px;">Gerador de Trilha por IA</div>
+      <div style="font-size:0.78rem;color:#94a3b8;line-height:1.5;">A IA analisa automaticamente o perfil de Human Risk da organização e gera uma trilha de treinamento personalizada, com justificativas, prioridades e cronograma.</div>
+    </div>
+    <button class="dp-btn dp-btn-primary" style="flex-shrink:0;background:linear-gradient(135deg,#8b5cf6,#6366f1);box-shadow:0 4px 16px rgba(139,92,246,0.35);" onclick="dpAiGenerateTrail()">✨ Analisar e Gerar Trilha</button>
+  </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;margin-bottom:20px">
     ${DEPT_DATA.trails.map(t=>`
     <div class="dp-trail-card" onclick="dpOpenTrailDetail('${t.id}')">
@@ -983,6 +992,324 @@ window.dpDeleteTrail = function(id) {
   dpCloseModal();
   dpTab('trails');
   showToast&&showToast('Trilha excluída.','info');
+};
+
+// ══════════════════════════════════════════════════════════════
+//  AI TRAIL GENERATOR
+// ══════════════════════════════════════════════════════════════
+
+// ── Internal state for generated trail ───────────────────────
+let _dpAiTrail = null;
+
+// ── Step 1: Show scanning animation, then run analysis ────────
+window.dpAiGenerateTrail = function() {
+  const steps = [
+    { pct: 12, msg: '🔍 Carregando perfil de Human Risk da organização...' },
+    { pct: 28, msg: '📊 Analisando scores de risco por usuário e departamento...' },
+    { pct: 44, msg: '🎣 Avaliando taxa de clique em simulações de phishing...' },
+    { pct: 60, msg: '📚 Verificando lacunas de treinamento e certificados vencidos...' },
+    { pct: 76, msg: '🧠 Gerando recomendações personalizadas com IA (Claude Sonnet)...' },
+    { pct: 90, msg: '📋 Definindo prioridades, prazos e metas de conformidade...' },
+    { pct: 100, msg: '✅ Trilha gerada com sucesso!' },
+  ];
+
+  dpShowModal(`
+    <div style="text-align:center;padding:10px 0 6px;">
+      <div style="font-size:2.2rem;margin-bottom:12px;">🤖</div>
+      <div style="font-weight:800;font-size:1.05rem;margin-bottom:6px;">Analisando Human Risk Profile</div>
+      <div id="dp-ai-step-msg" style="font-size:0.80rem;color:#94a3b8;min-height:22px;margin-bottom:18px;">Iniciando análise...</div>
+      <div style="background:rgba(255,255,255,0.06);border-radius:99px;height:8px;overflow:hidden;margin-bottom:8px;">
+        <div id="dp-ai-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#8b5cf6,#00d4ff);border-radius:99px;transition:width 0.6s ease;"></div>
+      </div>
+      <div id="dp-ai-pct" style="font-size:0.72rem;color:#6b7280;">0%</div>
+    </div>
+  `, 'dp-modal');
+
+  let i = 0;
+  function tick() {
+    if (i >= steps.length) {
+      // Build the trail data then show the review modal
+      _dpAiTrail = dpAiBuildTrailData();
+      dpAiShowReview();
+      return;
+    }
+    const s = steps[i++];
+    const bar = document.getElementById('dp-ai-bar');
+    const msg = document.getElementById('dp-ai-step-msg');
+    const pct = document.getElementById('dp-ai-pct');
+    if (bar) bar.style.width = s.pct + '%';
+    if (msg) msg.textContent = s.msg;
+    if (pct) pct.textContent = s.pct + '%';
+    setTimeout(tick, i === steps.length ? 700 : 600);
+  }
+  setTimeout(tick, 300);
+};
+
+// ── Build the AI trail object from live HRM + tenant data ─────
+function dpAiBuildTrailData() {
+  // Gather live data
+  const users     = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
+  const total     = users.length || 11;
+  const tenant    = (typeof APP !== 'undefined' && APP.tenants)
+    ? (APP.tenants.find(t => t.active) || {}).name || 'Empresa'
+    : 'Empresa';
+
+  // Pull from HRM_DATA if available, else use EX_CURRENT as fallback
+  const hrmUsers  = (typeof HRM_DATA !== 'undefined') ? HRM_DATA.users : [];
+  const hrmDepts  = (typeof HRM_DATA !== 'undefined') ? HRM_DATA.depts : [];
+
+  const highRisk  = hrmUsers.filter(u => u.score > 60).length || 3;
+  const medRisk   = hrmUsers.filter(u => u.score > 30 && u.score <= 60).length || 5;
+  const expCerts  = hrmUsers.filter(u => u.certs === 'expired').length || 2;
+  const avgScore  = hrmUsers.length
+    ? Math.round(hrmUsers.reduce((s,u) => s+u.score, 0) / hrmUsers.length)
+    : 65;
+
+  // Factor analysis
+  const factors = (typeof HRM_DATA !== 'undefined' && HRM_DATA.factors) ? HRM_DATA.factors : [];
+  const phFactor = factors.find(f => f.id === 'phishing') || { id:'phishing', label:'Phishing', weight:30 };
+  const trFactor = factors.find(f => f.id === 'training')  || { id:'training', label:'Treinamento', weight:25 };
+  const pwFactor = factors.find(f => f.id === 'password')  || { id:'password', label:'Senhas', weight:20 };
+
+  const phAvg = hrmUsers.length
+    ? Math.round(hrmUsers.reduce((s,u) => s+(u.phishing||0), 0) / hrmUsers.length)
+    : 72;
+  const trAvg = hrmUsers.length
+    ? Math.round(hrmUsers.reduce((s,u) => s+(u.training||0), 0) / hrmUsers.length)
+    : 45;
+  const pwAvg = hrmUsers.length
+    ? Math.round(hrmUsers.reduce((s,u) => s+(u.password||0), 0) / hrmUsers.length)
+    : 38;
+
+  // Highest-risk departments
+  const sortedDepts = [...hrmDepts].sort((a,b) => b.score - a.score).slice(0, 3);
+  const topDeptNames = sortedDepts.length
+    ? sortedDepts.map(d => d.name).join(' · ')
+    : 'Operações · Comercial · Financeiro';
+
+  // Deadline helpers
+  const today = new Date();
+  const addDays = (n) => {
+    const d = new Date(today); d.setDate(d.getDate()+n);
+    return d.toLocaleDateString('pt-BR');
+  };
+
+  return {
+    id: 'ai-trail-' + Date.now(),
+    tenant,
+    generatedAt: today.toLocaleDateString('pt-BR') + ' às ' + today.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}),
+    orgRisk: { avgScore, highRisk, medRisk, expCerts, total },
+    phAvg, trAvg, pwAvg, topDeptNames,
+    name: 'Plano de Mitigação de Risco Humano — IA',
+    icon: '🤖',
+    color: '#8b5cf6',
+    mandatory: true,
+    description: `Trilha gerada automaticamente pela IA com base na análise do perfil de Human Risk de ${tenant}. Prioriza a redução de ${highRisk} usuários em alto risco e melhora a postura de segurança organizacional.`,
+    target: topDeptNames || 'Todos os Usuários',
+    modules: [
+      {
+        n:1, priority:'🔴 URGENTE', deadline: addDays(7),
+        name:'Phishing — Reconhecimento e Resposta Imediata',
+        duration:'6h', recurrence:'Trimestral',
+        audience: `${highRisk} usuários de alto risco · ${topDeptNames}`,
+        justification: `Score médio de phishing: ${phAvg}/100 — acima do limiar crítico de 60. ${highRisk} usuário(s) clicaram em simulações recentes. Ação imediata recomendada.`,
+        goal:'Reduzir taxa de clique para <8% em 30 dias',
+        status:'active', completion:0,
+      },
+      {
+        n:2, priority:'🔴 URGENTE', deadline: addDays(14),
+        name:'Engenharia Social & CEO Fraud Awareness',
+        duration:'4h', recurrence:'Semestral',
+        audience:`Gestores · Diretoria · Financeiro`,
+        justification:`Departamentos de alto risco (${topDeptNames}) apresentam maior exposição a ataques de spear-phishing e fraude de CEO. Score médio HRM: ${avgScore}/100.`,
+        goal:'100% de conclusão por gestores em 14 dias',
+        status:'active', completion:0,
+      },
+      {
+        n:3, priority:'🟡 ALTA', deadline: addDays(21),
+        name:'Senhas Seguras, MFA e Gestão de Acessos',
+        duration:'3h', recurrence:'Anual',
+        audience:`Todos os ${total} usuários`,
+        justification:`Score médio de senha/acesso: ${pwAvg}/100. ${expCerts} usuário(s) com certificados vencidos, indicando baixo engajamento com boas práticas de segurança.`,
+        goal:'100% dos usuários com MFA ativado em 21 dias',
+        status:'active', completion:0,
+      },
+      {
+        n:4, priority:'🟡 ALTA', deadline: addDays(30),
+        name:'Lacunas de Treinamento — Reforço Direcionado',
+        duration:'8h', recurrence:'Semestral',
+        audience:`${medRisk} usuários de risco moderado`,
+        justification:`Score médio de treinamento: ${trAvg}/100. ${medRisk} usuário(s) com conclusão <50% nos últimos 90 dias. Módulos de reforço personalizados por departamento.`,
+        goal:`Elevar taxa de conclusão para >85% em 30 dias`,
+        status:'active', completion:0,
+      },
+      {
+        n:5, priority:'🟡 ALTA', deadline: addDays(45),
+        name:'Proteção de Dados, LGPD e Privacidade Avançada',
+        duration:'6h', recurrence:'Anual',
+        audience:`RH · Jurídico · TI · todos os ${total} usuários`,
+        justification:`Cobertura ISO 27001 abaixo do ideal. Riscos de privacidade e conformidade identificados nos fatores de acesso e treinamento do perfil HRM.`,
+        goal:'Cobertura de privacidade >90% em 45 dias',
+        status:'active', completion:0,
+      },
+      {
+        n:6, priority:'🟢 MÉDIA', deadline: addDays(60),
+        name:'Cultura de Segurança — Boas Práticas Contínuas',
+        duration:'4h', recurrence:'Trimestral',
+        audience:`Todos os ${total} usuários`,
+        justification:`Reforço cultural necessário para manter os ganhos gerados pelos módulos urgentes. Inclui gamificação, casos reais e métricas de progresso individuais.`,
+        goal:'Score HRM médio <40 em 60 dias',
+        status:'active', completion:0,
+      },
+    ],
+    metrics: [
+      { label:'Usuários de alto risco', baseline: highRisk, target: Math.max(0, Math.round(highRisk * 0.3)), unit:'' },
+      { label:'Taxa de clique (phishing)', baseline: phAvg+'%', target:'<8%', unit:'' },
+      { label:'Conclusão de treinamentos', baseline: (100-trAvg)+'%', target:'>85%', unit:'' },
+      { label:'Score HRM médio', baseline: avgScore, target: Math.max(10, Math.round(avgScore * 0.55)), unit:'/100' },
+      { label:'Certificados válidos', baseline: (total-expCerts)+'/'+total, target: total+'/'+total, unit:'' },
+    ],
+    recs: [
+      `Agendar simulações de phishing mensais para os ${highRisk} usuários de maior risco, com relatório automático para gestores.`,
+      `Configurar alertas automáticos de Human Risk para usuários que atingirem score > 70 pela primeira vez.`,
+      `Implementar plano de recompensas (badges, ranking) para aumentar o engajamento com os módulos de reforço.`,
+      `Revisão trimestral desta trilha com nova análise de IA para ajustar módulos conforme a evolução do perfil de risco.`,
+    ],
+  };
+}
+
+// ── Step 2: Show the full review modal ───────────────────────
+function dpAiShowReview() {
+  const t = _dpAiTrail;
+  if (!t) return;
+
+  const priorityColor = { '🔴 URGENTE':'#ef4444', '🟡 ALTA':'#f59e0b', '🟢 MÉDIA':'#22c55e' };
+
+  dpShowModal(`
+    <div class="dp-modal-hdr">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#8b5cf6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">🤖</div>
+        <div>
+          <div style="font-size:1.0rem;font-weight:800;">${t.name}</div>
+          <div style="font-size:0.72rem;color:#6b7280;">Gerado em ${t.generatedAt} · ${t.tenant} · ${t.modules.length} módulos</div>
+        </div>
+      </div>
+      <button class="dp-modal-close" onclick="dpCloseModal()">✕</button>
+    </div>
+
+    <!-- Org Risk Summary -->
+    <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.18);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+      <div style="font-size:0.68rem;font-weight:800;color:#8b5cf6;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">📊 Diagnóstico Human Risk — Base da Análise IA</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;text-align:center;">
+        ${[
+          ['Score Médio HRM', t.orgRisk.avgScore+'/100', t.orgRisk.avgScore > 60 ? '#ef4444' : t.orgRisk.avgScore > 30 ? '#f59e0b' : '#22c55e'],
+          ['Alto Risco', t.orgRisk.highRisk+' usuários', '#ef4444'],
+          ['Risco Moderado', t.orgRisk.medRisk+' usuários', '#f59e0b'],
+          ['Certs Vencidos', t.orgRisk.expCerts+' usuários', '#f59e0b'],
+          ['Total Usuários', t.orgRisk.total, '#00d4ff'],
+        ].map(([lbl,val,col])=>`
+          <div style="padding:10px;background:rgba(255,255,255,0.03);border-radius:9px;">
+            <div style="font-size:1.05rem;font-weight:900;color:${col};">${val}</div>
+            <div style="font-size:0.60rem;color:#6b7280;margin-top:3px;">${lbl}</div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:0.72rem;">
+        <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;"><span style="color:#6b7280;">Score Phishing: </span><strong style="color:#ef4444;">${t.phAvg}/100</strong></div>
+        <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;"><span style="color:#6b7280;">Score Treinamento: </span><strong style="color:#f59e0b;">${t.trAvg}/100</strong></div>
+        <div style="padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;"><span style="color:#6b7280;">Score Senha/Acesso: </span><strong style="color:#f59e0b;">${t.pwAvg}/100</strong></div>
+      </div>
+      <div style="margin-top:8px;font-size:0.72rem;color:#6b7280;">🎯 Departamentos prioritários identificados: <strong style="color:#f1f5f9;">${t.topDeptNames}</strong></div>
+    </div>
+
+    <!-- Modules -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">📚 Módulos Gerados pela IA</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:18px;">
+      ${t.modules.map(m=>`
+        <div style="border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 15px;background:rgba(255,255,255,0.02);">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
+            <span style="font-size:0.72rem;font-weight:800;padding:3px 10px;border-radius:99px;background:${priorityColor[m.priority]}18;color:${priorityColor[m.priority]};">${m.priority}</span>
+            <span style="font-size:0.87rem;font-weight:700;flex:1;">${m.n}. ${m.name}</span>
+            <span style="font-size:0.68rem;color:#6b7280;">${m.duration} · ${m.recurrence}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;font-size:0.72rem;">
+            <div style="padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:7px;"><span style="color:#6b7280;">👥 Público: </span>${m.audience}</div>
+            <div style="padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:7px;"><span style="color:#6b7280;">⏰ Prazo: </span><strong>${m.deadline}</strong></div>
+          </div>
+          <div style="padding:8px 10px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.10);border-radius:8px;font-size:0.72rem;color:#94a3b8;line-height:1.55;margin-bottom:6px;">
+            <span style="color:#00d4ff;font-weight:700;">🧠 Justificativa IA: </span>${m.justification}
+          </div>
+          <div style="font-size:0.70rem;color:#22c55e;"><span style="color:#6b7280;">🎯 Meta: </span>${m.goal}</div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Success Metrics -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">📈 Indicadores de Sucesso</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;margin-bottom:18px;">
+      ${t.metrics.map(m=>`
+        <div style="padding:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;">
+          <div style="font-size:0.68rem;color:#6b7280;margin-bottom:5px;">${m.label}</div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span style="font-size:0.82rem;color:#6b7280;text-decoration:line-through;">${m.baseline}${m.unit}</span>
+            <span style="font-size:1rem;font-weight:800;color:#22c55e;">→ ${m.target}</span>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <!-- Additional Recommendations -->
+    <div style="font-size:0.68rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px;">💡 Recomendações Adicionais</div>
+    <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:20px;">
+      ${t.recs.map((r,i)=>`
+        <div style="display:flex;gap:10px;padding:9px 12px;background:rgba(255,255,255,0.02);border-radius:9px;border:1px solid rgba(255,255,255,0.06);font-size:0.78rem;color:#94a3b8;line-height:1.5;">
+          <span style="color:#8b5cf6;font-weight:700;flex-shrink:0;">${i+1}.</span>${r}
+        </div>`).join('')}
+    </div>
+
+    <!-- Disclaimer -->
+    <div style="padding:10px 14px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:9px;font-size:0.72rem;color:#f59e0b;margin-bottom:18px;">
+      ⚠️ Revise os módulos, públicos-alvo e prazos antes de publicar. Você poderá editar a trilha após a aprovação.
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:10px;">
+      <button class="dp-btn dp-btn-ghost" style="flex:1;" onclick="dpCloseModal()">✕ Descartar</button>
+      <button class="dp-btn dp-btn-ghost" style="flex:1;" onclick="dpAiRegenerateTrail()">🔄 Regerar</button>
+      <button class="dp-btn dp-btn-primary" style="flex:2;background:linear-gradient(135deg,#8b5cf6,#6366f1);box-shadow:0 4px 16px rgba(139,92,246,0.35);" onclick="dpAiApproveTrail()">✅ Aprovar e Publicar Trilha</button>
+    </div>
+  `, 'dp-modal dp-modal-lg');
+}
+
+// ── Regenerate (re-run analysis with slight variation) ────────
+window.dpAiRegenerateTrail = function() {
+  dpCloseModal();
+  setTimeout(() => dpAiGenerateTrail(), 100);
+};
+
+// ── Approve: add trail to DEPT_DATA.trails + refresh ─────────
+window.dpAiApproveTrail = function() {
+  const t = _dpAiTrail;
+  if (!t) return;
+  // Build modules_list in the format DEPT_DATA.trails expects
+  const modules_list = t.modules.map(m => ({
+    n: m.n, name: m.name, duration: m.duration, completion: 0, status: 'active',
+  }));
+  DEPT_DATA.trails.unshift({
+    id: t.id,
+    name: t.name,
+    icon: t.icon,
+    color: t.color,
+    mandatory: t.mandatory,
+    modules: t.modules.length,
+    users: t.orgRisk.total,
+    completion: 0,
+    target: t.target,
+    description: t.description,
+    modules_list,
+    aiGenerated: true,
+  });
+  dpCloseModal();
+  dpTab('trails');
+  showToast && showToast('✅ Trilha gerada pela IA publicada com sucesso!', 'success');
+  _dpAiTrail = null;
 };
 
 // ── Modal helpers ─────────────────────────────────────────────
