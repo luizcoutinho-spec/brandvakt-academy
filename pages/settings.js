@@ -189,10 +189,16 @@ function stRenderPanel(idx) {
 //  PANEL 0 — EMPRESA
 // ══════════════════════════════════════════════════════════════
 function stPanelEmpresa() {
+  const tenant = (typeof APP !== 'undefined' && APP.tenants)
+    ? (APP.tenants.find(t => t.active) || {})
+    : {};
+  const tenantName = tenant.name || 'Empresa';
+  const tenantPlan = tenant.plan || 'Enterprise';
+  const tenantUsers = tenant.users || 0;
   return `
   <div class="st-section-title">🏢 Informações da Empresa</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-    <div class="st-field"><label class="st-label">Nome da Empresa</label><input class="st-input" value="Empresa Demo S.A." id="st-co-name"></div>
+    <div class="st-field"><label class="st-label">Nome da Empresa</label><input class="st-input" value="${tenantName}" id="st-co-name"></div>
     <div class="st-field"><label class="st-label">CNPJ / Tax ID</label><input class="st-input" value="00.000.000/0001-00" id="st-co-cnpj"></div>
     <div class="st-field"><label class="st-label">Setor / Indústria</label>
       <select class="st-select" id="st-co-sector">
@@ -230,10 +236,10 @@ function stPanelEmpresa() {
 
   <div class="st-section-title" style="margin-top:22px;">🖼 Logotipo & Identidade Visual</div>
   <div style="display:flex;align-items:center;gap:16px;padding:16px;background:rgba(255,255,255,0.02);border:2px dashed rgba(255,255,255,0.10);border-radius:12px;margin-bottom:14px;">
-    <div style="width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#00d4ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:1.5rem;">🛡</div>
+    <div style="width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#00d4ff,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#000;">${tenantName.slice(0,2).toUpperCase()}</div>
     <div>
-      <div style="font-weight:600;font-size:0.88rem;">Brandvakt Academy</div>
-      <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">PNG ou SVG · 512×512px recomendado</div>
+      <div style="font-weight:600;font-size:0.88rem;">${tenantName}</div>
+      <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">Plano ${tenantPlan} · ${tenantUsers} usuários · PNG ou SVG · 512×512px recomendado</div>
     </div>
     <button class="st-btn st-btn-ghost st-btn-sm" style="margin-left:auto;" onclick="showToast&&showToast('Upload de logo em breve','info')">📤 Alterar</button>
   </div>
@@ -257,25 +263,32 @@ function stPanelEmpresa() {
 //  PANEL 1 — CONTA
 // ══════════════════════════════════════════════════════════════
 function stPanelConta() {
+  const ds = (typeof DEMO_STATE !== 'undefined') ? DEMO_STATE : null;
+  const userName  = ds ? ds.user.name  : 'Admin Local';
+  const userEmail = ds ? ds.user.email : 'admin@empresa.com';
+  const userRole  = ds ? ds.user.role  : 'Administrador de Plataforma';
+  const userDept  = ds ? ds.user.dept  : 'TI';
+  const userAvatar= ds ? ds.user.avatar : 'AL';
+  const rm = ds ? ds.getRiskMeta() : { color:'#00d4ff', label:'Super Admin' };
   return `
   <div class="st-section-title">👤 Meu Perfil</div>
   <div style="display:flex;align-items:center;gap:16px;padding:16px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.08);border-radius:12px;margin-bottom:20px;">
-    <div class="st-avatar">AL</div>
+    <div class="st-avatar">${userAvatar}</div>
     <div>
-      <div style="font-weight:700;font-size:0.95rem;">Admin Local</div>
-      <div style="font-size:0.74rem;color:#6b7280;margin-top:2px;">admin@empresa.com</div>
+      <div style="font-weight:700;font-size:0.95rem;">${userName}</div>
+      <div style="font-size:0.74rem;color:#6b7280;margin-top:2px;">${userEmail}</div>
       <div style="margin-top:6px;"><span class="st-badge" style="background:rgba(0,212,255,0.12);color:#00d4ff;">Super Admin</span></div>
     </div>
     <button class="st-btn st-btn-ghost st-btn-sm" style="margin-left:auto;" onclick="showToast&&showToast('Upload de foto em breve','info')">📷 Alterar Foto</button>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-    <div class="st-field"><label class="st-label">Nome Completo</label><input class="st-input" value="Admin Local" id="st-ac-name"></div>
-    <div class="st-field"><label class="st-label">E-mail</label><input class="st-input" type="email" value="admin@empresa.com" id="st-ac-email"></div>
-    <div class="st-field"><label class="st-label">Cargo / Função</label><input class="st-input" value="Administrador de Plataforma" id="st-ac-role"></div>
+    <div class="st-field"><label class="st-label">Nome Completo</label><input class="st-input" value="${userName}" id="st-ac-name"></div>
+    <div class="st-field"><label class="st-label">E-mail</label><input class="st-input" type="email" value="${userEmail}" id="st-ac-email"></div>
+    <div class="st-field"><label class="st-label">Cargo / Função</label><input class="st-input" value="${userRole}" id="st-ac-role"></div>
     <div class="st-field"><label class="st-label">Departamento</label>
       <select class="st-select" id="st-ac-dept">
-        <option>TI</option><option>RH</option><option>Compliance</option><option>Gestão</option>
+        ${['TI','RH','Compliance','Gestão','Diretoria','Financeiro','Comercial','Marketing','Jurídico','Operações'].map(d=>`<option${d===userDept?' selected':''}>${d}</option>`).join('')}
       </select>
     </div>
     <div class="st-field"><label class="st-label">Telefone</label><input class="st-input" value="+55 11 9999-0000" id="st-ac-phone"></div>
@@ -650,16 +663,20 @@ window.stSetAccent = function(color, el) {
 //  PANEL 6 — E-MAIL
 // ══════════════════════════════════════════════════════════════
 function stPanelEmail() {
+  const tName = (typeof APP!=='undefined' && APP.tenants)
+    ? (APP.tenants.find(t=>t.active)||{}).name || 'empresa'
+    : 'empresa';
+  const tDomain = tName.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') + '.com.br';
   return `
   <div class="st-section-title">📤 Configuração SMTP</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
-    <div class="st-field"><label class="st-label">Servidor SMTP</label><input class="st-input" value="smtp.empresa.com.br" id="st-em-host"></div>
+    <div class="st-field"><label class="st-label">Servidor SMTP</label><input class="st-input" value="smtp.${tDomain}" id="st-em-host"></div>
     <div class="st-field"><label class="st-label">Porta</label>
       <select class="st-select" id="st-em-port">
         <option>25</option><option selected>587 (TLS)</option><option>465 (SSL)</option>
       </select>
     </div>
-    <div class="st-field"><label class="st-label">Usuário SMTP</label><input class="st-input" value="noreply@empresa.com.br" id="st-em-user"></div>
+    <div class="st-field"><label class="st-label">Usuário SMTP</label><input class="st-input" value="noreply@${tDomain}" id="st-em-user"></div>
     <div class="st-field"><label class="st-label">Senha SMTP</label><input class="st-input" type="password" placeholder="••••••••••" id="st-em-pass"></div>
     <div class="st-field"><label class="st-label">Criptografia</label>
       <select class="st-select" id="st-em-enc">
@@ -673,9 +690,9 @@ function stPanelEmail() {
 
   <div class="st-section-title">✉️ Identidade do Remetente</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;">
-    <div class="st-field"><label class="st-label">Nome do Remetente</label><input class="st-input" value="Brandvakt Academy" id="st-em-sname"></div>
-    <div class="st-field"><label class="st-label">E-mail Remetente</label><input class="st-input" value="noreply@empresa.com.br" id="st-em-semail"></div>
-    <div class="st-field"><label class="st-label">E-mail de Resposta (Reply-To)</label><input class="st-input" value="suporte@empresa.com.br" id="st-em-reply"></div>
+    <div class="st-field"><label class="st-label">Nome do Remetente</label><input class="st-input" value="${tName} — Brandvakt Academy" id="st-em-sname"></div>
+    <div class="st-field"><label class="st-label">E-mail Remetente</label><input class="st-input" value="noreply@${tDomain}" id="st-em-semail"></div>
+    <div class="st-field"><label class="st-label">E-mail de Resposta (Reply-To)</label><input class="st-input" value="suporte@${tDomain}" id="st-em-reply"></div>
     <div class="st-field"><label class="st-label">BCC Global (cópia oculta)</label><input class="st-input" placeholder="cco@empresa.com (opcional)" id="st-em-bcc"></div>
   </div>
 
@@ -931,12 +948,17 @@ function stPanelPlano() {
   <!-- Usage meters -->
   <div class="st-section-title">📊 Uso Consolidado</div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:22px;">
-    ${[
-      { label:'Usuários Ativos',   used:340,  total:500,      color:'#00d4ff', pct:68 },
-      { label:'Campanhas Phishing',used:8,    total:'∞',      color:'#ef4444', pct:null },
-      { label:'Armazenamento',     used:'6.4 GB', total:'20 GB', color:'#8b5cf6', pct:32 },
-      { label:'API Calls / mês',   used:'12.400', total:'50.000', color:'#f59e0b', pct:24 },
-    ].map(u=>`
+    ${(function(){
+      const activeUsers = (typeof getActiveTenantUsers==='function') ? getActiveTenantUsers().filter(u=>u.status==='active'||!u.status).length : 340;
+      const totalUsers  = (typeof APP!=='undefined' && APP.tenants) ? (APP.tenants.find(t=>t.active)||{users:500}).users : 500;
+      const capacityMax = Math.max(totalUsers, 500);
+      return [
+        { label:'Usuários Ativos',   used:activeUsers,  total:capacityMax,  color:'#00d4ff', pct:Math.round(activeUsers/capacityMax*100) },
+        { label:'Campanhas Phishing',used:8,    total:'∞',      color:'#ef4444', pct:null },
+        { label:'Armazenamento',     used:'6.4 GB', total:'20 GB', color:'#8b5cf6', pct:32 },
+        { label:'API Calls / mês',   used:'12.400', total:'50.000', color:'#f59e0b', pct:24 },
+      ];
+    })().map(u=>`
       <div style="padding:13px 15px;border-radius:11px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
         <div style="display:flex;justify-content:space-between;font-size:0.76rem;margin-bottom:6px;">
           <span style="color:#94a3b8;">${u.label}</span>
@@ -1036,19 +1058,36 @@ window.stToggleProduct = function(id) {
 //  PANEL 9 — AUDITORIA
 // ══════════════════════════════════════════════════════════════
 function stPanelAuditoria() {
+  // Build audit events using real tenant users
+  const tenantUsers = (typeof getActiveTenantUsers==='function') ? getActiveTenantUsers() : [];
+  const adminUser   = (typeof DEMO_STATE!=='undefined') ? DEMO_STATE.user : { email:'admin@empresa.com' };
+  const tName = (typeof APP!=='undefined'&&APP.tenants) ? (APP.tenants.find(t=>t.active)||{}).name||'empresa' : 'empresa';
+  const tDomain = tName.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')+'.com';
+
+  // Pick 2-3 random real users for event variety
+  const pick = (arr, n) => arr.slice().sort(()=>Math.random()-.5).slice(0,n);
+  const sample = pick(tenantUsers.filter(u=>!u.isDemo), 4);
+  const u1 = sample[0] ? sample[0].email : 'user1@'+tDomain;
+  const u2 = sample[1] ? sample[1].email : 'user2@'+tDomain;
+  const u3 = sample[2] ? sample[2].email : 'user3@'+tDomain;
+  const highRiskUser = tenantUsers.find(u=>u.risk==='high'&&!u.isDemo);
+  const highRiskEmail = highRiskUser ? highRiskUser.email : 'risco@'+tDomain;
+  const newUser = tenantUsers.find(u=>u.status==='active'&&!u.isDemo);
+  const newUserName = newUser ? newUser.name : 'Novo Usuário';
+
   const events = [
-    { type:'auth',     color:'#22c55e', icon:'🔐', user:'admin@empresa.com',    action:'Login bem-sucedido',                    ip:'189.10.x.x',  time:'Hoje 09:14' },
-    { type:'config',   color:'#00d4ff', icon:'⚙️', user:'admin@empresa.com',    action:'Configurações de segurança atualizadas', ip:'189.10.x.x',  time:'Hoje 09:10' },
-    { type:'user',     color:'#8b5cf6', icon:'👤', user:'admin@empresa.com',    action:'Usuário Ana Lima criado',               ip:'189.10.x.x',  time:'Hoje 08:50' },
-    { type:'training', color:'#14b8a6', icon:'📚', user:'m.teles@empresa.com',  action:'Treinamento "LGPD" concluído',          ip:'201.x.x.x',   time:'Hoje 08:30' },
-    { type:'cert',     color:'#f59e0b', icon:'🏆', user:'r.neto@empresa.com',   action:'Certificado Cybersecurity emitido',     ip:'177.x.x.x',   time:'Ontem 17:45' },
-    { type:'alert',    color:'#ef4444', icon:'⚠️', user:'r.lima@empresa.com',   action:'Risk Score crítico — 85 pontos',        ip:'201.x.x.x',   time:'Ontem 16:20' },
-    { type:'export',   color:'#00d4ff', icon:'📤', user:'admin@empresa.com',    action:'Relatório Executivo exportado (PDF)',   ip:'189.10.x.x',  time:'Ontem 15:00' },
-    { type:'phishing', color:'#ef4444', icon:'📧', user:'c.mendes@empresa.com', action:'Clicou em link de phishing (Campanha Q2)', ip:'201.x.x.x', time:'Ontem 14:10' },
-    { type:'auth',     color:'#f59e0b', icon:'🔒', user:'b.alves@empresa.com',  action:'Tentativa de login falhou (3/5)',       ip:'x.x.x.x',     time:'Ontem 13:00' },
-    { type:'config',   color:'#00d4ff', icon:'🔌', user:'admin@empresa.com',    action:'Integração Microsoft Teams ativada',    ip:'189.10.x.x',  time:'Ontem 11:30' },
-    { type:'user',     color:'#8b5cf6', icon:'🗑', user:'admin@empresa.com',    action:'Usuário desativado: j.silva@empresa',   ip:'189.10.x.x',  time:'04 Jun 09:00'},
-    { type:'training', color:'#22c55e', icon:'🛤', user:'admin@empresa.com',    action:'Nova trilha "Liderança Ética" criada',  ip:'189.10.x.x',  time:'04 Jun 08:20'},
+    { type:'auth',     color:'#22c55e', icon:'🔐', user:adminUser.email,    action:'Login bem-sucedido',                    ip:'189.10.x.x',  time:'Hoje 09:14' },
+    { type:'config',   color:'#00d4ff', icon:'⚙️', user:adminUser.email,    action:'Configurações de segurança atualizadas', ip:'189.10.x.x',  time:'Hoje 09:10' },
+    { type:'user',     color:'#8b5cf6', icon:'👤', user:adminUser.email,    action:`Usuário ${newUserName} criado`,          ip:'189.10.x.x',  time:'Hoje 08:50' },
+    { type:'training', color:'#14b8a6', icon:'📚', user:u1,                 action:'Treinamento "LGPD" concluído',          ip:'201.x.x.x',   time:'Hoje 08:30' },
+    { type:'cert',     color:'#f59e0b', icon:'🏆', user:u2,                 action:'Certificado Cybersecurity emitido',     ip:'177.x.x.x',   time:'Ontem 17:45' },
+    { type:'alert',    color:'#ef4444', icon:'⚠️', user:highRiskEmail,      action:'Risk Score crítico — 85 pontos',        ip:'201.x.x.x',   time:'Ontem 16:20' },
+    { type:'export',   color:'#00d4ff', icon:'📤', user:adminUser.email,    action:'Relatório Executivo exportado (PDF)',   ip:'189.10.x.x',  time:'Ontem 15:00' },
+    { type:'phishing', color:'#ef4444', icon:'📧', user:highRiskEmail,      action:'Clicou em link de phishing (Campanha Q2)', ip:'201.x.x.x', time:'Ontem 14:10' },
+    { type:'auth',     color:'#f59e0b', icon:'🔒', user:u3,                 action:'Tentativa de login falhou (3/5)',       ip:'x.x.x.x',     time:'Ontem 13:00' },
+    { type:'config',   color:'#00d4ff', icon:'🔌', user:adminUser.email,    action:'Integração Microsoft Teams ativada',    ip:'189.10.x.x',  time:'Ontem 11:30' },
+    { type:'user',     color:'#8b5cf6', icon:'🗑', user:adminUser.email,    action:`Usuário desativado: ${u2}`,             ip:'189.10.x.x',  time:'04 Jun 09:00'},
+    { type:'training', color:'#22c55e', icon:'🛤', user:adminUser.email,    action:'Nova trilha "Liderança Ética" criada',  ip:'189.10.x.x',  time:'04 Jun 08:20'},
   ];
 
   const typeColors = { auth:'#22c55e', config:'#00d4ff', user:'#8b5cf6', training:'#14b8a6', cert:'#f59e0b', alert:'#ef4444', export:'#00d4ff', phishing:'#ef4444' };
@@ -1090,12 +1129,17 @@ function stPanelAuditoria() {
 
   <!-- Stats -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px;">
-    ${[
-      ['🔐','42','Logins',     '#22c55e'],
-      ['⚙️','18','Configurações','#00d4ff'],
-      ['👤','11','Usuários',   '#8b5cf6'],
-      ['⚠️','7', 'Alertas',    '#ef4444'],
-    ].map(([icon,val,lbl,col])=>`
+    ${(function(){
+      const tUsers = (typeof getActiveTenantUsers==='function') ? getActiveTenantUsers() : [];
+      const highRiskCount = tUsers.filter(u=>u.risk==='high').length;
+      const activeCount   = tUsers.filter(u=>u.status==='active'||!u.status).length;
+      return [
+        ['🔐', String(activeCount * 2 + 12), 'Logins',        '#22c55e'],
+        ['⚙️', '18',                          'Configurações', '#00d4ff'],
+        ['👤', String(Math.max(1, Math.round(activeCount * 0.3))), 'Usuários', '#8b5cf6'],
+        ['⚠️', String(highRiskCount),         'Alertas',       '#ef4444'],
+      ];
+    })().map(([icon,val,lbl,col])=>`
       <div style="text-align:center;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);">
         <div style="font-size:1.1rem;">${icon}</div>
         <div style="font-size:1.2rem;font-weight:900;color:${col};margin-top:4px;">${val}</div>
