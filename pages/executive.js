@@ -311,8 +311,8 @@ function exRenderReports() {
         ${r.status!=='generating'?`
           <div style="display:flex;gap:5px;">
             <button class="ex-btn ex-btn-ghost ex-btn-sm" onclick="exTab('view')" title="Visualizar">👁</button>
-            <button class="ex-btn ex-btn-ghost ex-btn-sm" onclick="showToast&&showToast('Baixando ${r.period}.pdf...','info')" title="Download">📥</button>
-            <button class="ex-btn ex-btn-ghost ex-btn-sm" onclick="exResendEmail('${r.id}')" title="Reenviar">📧</button>
+            <button class="ex-btn ex-btn-ghost ex-btn-sm" onclick="exDownloadPDF('${r.id}')" title="Gerar PDF (Abrir Imediatamente)">📥</button>
+            <button class="ex-btn ex-btn-ghost ex-btn-sm" onclick="exSendToAdmin('${r.id}')" title="Enviar para Administrador Local">📧</button>
           </div>`:''
         }
       </div>`).join('')}
@@ -598,8 +598,180 @@ window.exRegenerateNarrative = function() {
 };
 
 window.exResendEmail = function(id) {
-  showToast&&showToast('Reenviando relatório por e-mail...', 'info');
-  setTimeout(()=>showToast&&showToast('✅ E-mail reenviado com sucesso!', 'success'), 1500);
+  exSendToAdmin(id);
+};
+
+window.exDownloadPDF = function(id) {
+  const r = EX_REPORTS.find(x => x.id === id);
+  if (!r) return;
+  const tenant = (typeof APP !== 'undefined' && APP.tenants)
+    ? (APP.tenants.find(t => t.active) || {}).name || 'Empresa'
+    : 'Empresa';
+  const maturity = r.maturity || EX_CURRENT.maturity;
+  const deltaStr = (r.delta !== null && r.delta !== undefined)
+    ? `<span style="color:${r.delta >= 0 ? '#22c55e' : '#ef4444'}">${r.delta >= 0 ? '+' : ''}${r.delta} vs mês anterior</span>`
+    : '';
+  const d = EX_CURRENT;
+
+  const html = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+  <title>Relatório Executivo — ${r.period} — ${tenant}</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:'Segoe UI', Arial, sans-serif; color:#1a1a2e; background:#fff; padding:32px; font-size:13px; }
+    h1 { font-size:22px; color:#000; margin-bottom:4px; }
+    .subtitle { color:#555; font-size:13px; margin-bottom:28px; }
+    .header { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:3px solid #00b4d8; padding-bottom:16px; margin-bottom:24px; }
+    .logo { font-size:18px; font-weight:900; letter-spacing:-0.03em; color:#00b4d8; }
+    .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+    .kpi { border:1px solid #e5e7eb; border-radius:10px; padding:16px; }
+    .kpi-val { font-size:26px; font-weight:900; color:#00b4d8; }
+    .kpi-lbl { font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:0.06em; margin-top:4px; }
+    .kpi-delta { font-size:11px; font-weight:700; margin-top:6px; }
+    .section-title { font-size:11px; font-weight:800; color:#6b7280; text-transform:uppercase; letter-spacing:0.1em; margin:20px 0 10px; border-bottom:1px solid #e5e7eb; padding-bottom:6px; }
+    .rec-row { display:flex; gap:10px; align-items:flex-start; margin-bottom:8px; padding:10px 12px; border-radius:8px; background:#f9fafb; border:1px solid #e5e7eb; }
+    .rec-num { font-size:12px; font-weight:900; color:#00b4d8; min-width:20px; }
+    table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:14px; }
+    th { text-align:left; padding:7px 10px; background:#f3f4f6; font-size:10px; text-transform:uppercase; color:#6b7280; letter-spacing:0.06em; }
+    td { padding:8px 10px; border-bottom:1px solid #f3f4f6; }
+    .badge { display:inline-flex; padding:2px 8px; border-radius:99px; font-size:10px; font-weight:700; }
+    .badge-green { background:#d1fae5; color:#059669; }
+    .badge-red   { background:#fee2e2; color:#dc2626; }
+    .badge-yellow{ background:#fef9c3; color:#ca8a04; }
+    .footer { margin-top:32px; border-top:1px solid #e5e7eb; padding-top:14px; display:flex; justify-content:space-between; font-size:11px; color:#9ca3af; }
+    @media print { body { padding:16px; } button { display:none !important; } }
+  </style></head><body>
+  <div class="header">
+    <div>
+      <div class="logo">🛡 Brandvakt Academy</div>
+      <div style="font-size:11px;color:#9ca3af;margin-top:2px;">Plataforma de Segurança e Conformidade</div>
+    </div>
+    <div style="text-align:right;">
+      <h1>Relatório Executivo Mensal</h1>
+      <div class="subtitle">${r.period} &nbsp;·&nbsp; ${tenant} &nbsp;·&nbsp; Período: ${r.start} – ${r.end}</div>
+    </div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="kpi-val">${maturity}</div>
+      <div class="kpi-lbl">Maturity Score</div>
+      <div class="kpi-delta">${deltaStr}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">${d.training.rate}%</div>
+      <div class="kpi-lbl">Conclusão de Treinamentos</div>
+      <div class="kpi-delta" style="color:#22c55e;">▲ +${d.training.deltaRate}% vs anterior</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">${d.phishing.clickRate}%</div>
+      <div class="kpi-lbl">Taxa de Clique Phishing</div>
+      <div class="kpi-delta" style="color:#22c55e;">▼ ${Math.abs(d.phishing.deltaClick)}% vs anterior</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-val">${d.iso.coverage}%</div>
+      <div class="kpi-lbl">Cobertura ISO 27001</div>
+      <div class="kpi-delta" style="color:#3b82f6;">${d.iso.covered}/${d.iso.total} controles</div>
+    </div>
+  </div>
+
+  <div class="section-title">📚 Treinamentos</div>
+  <table>
+    <tr><th>Métrica</th><th>Valor</th></tr>
+    <tr><td>Conclusões no período</td><td><strong>${d.training.completions.toLocaleString('pt-BR')}</strong></td></tr>
+    <tr><td>Taxa de conclusão</td><td><strong>${d.training.rate}%</strong></td></tr>
+    <tr><td>Pontuação média</td><td><strong>${d.training.avgScore} / 10</strong></td></tr>
+    <tr><td>Certificados emitidos</td><td><strong>${d.training.certs}</strong></td></tr>
+  </table>
+
+  <div class="section-title">🎣 Simulação de Phishing</div>
+  <table>
+    <tr><th>Métrica</th><th>Valor</th></tr>
+    <tr><td>E-mails enviados</td><td><strong>${d.phishing.sent.toLocaleString('pt-BR')}</strong></td></tr>
+    <tr><td>Taxa de clique</td><td><strong>${d.phishing.clickRate}%</strong> <span class="badge badge-yellow">Atenção</span></td></tr>
+    <tr><td>Taxa de reporte</td><td><strong>${d.phishing.reportRate}%</strong> <span class="badge badge-green">Bom</span></td></tr>
+  </table>
+
+  <div class="section-title">⚠️ Risco Humano</div>
+  <table>
+    <tr><th>Nível</th><th>Usuários</th></tr>
+    <tr><td><span class="badge badge-red">Alto Risco</span></td><td><strong>${d.humanRisk.high}</strong></td></tr>
+    <tr><td><span class="badge badge-yellow">Médio Risco</span></td><td><strong>${d.humanRisk.medium}</strong></td></tr>
+    <tr><td><span class="badge badge-green">Baixo Risco</span></td><td><strong>${d.humanRisk.low}</strong></td></tr>
+  </table>
+
+  <div class="section-title">🏆 Recomendações Prioritárias</div>
+  ${d.recs.map((rec,i)=>`<div class="rec-row"><div class="rec-num">${rec.icon}</div><div>${rec.text}</div></div>`).join('')}
+
+  <div class="footer">
+    <span>Gerado automaticamente pela plataforma Brandvakt Academy</span>
+    <span>Período: ${r.start} – ${r.end} &nbsp;·&nbsp; ${new Date().toLocaleDateString('pt-BR')}</span>
+  </div>
+
+  <script>window.onload = function() { window.print(); };<\/script>
+  </body></html>`;
+
+  const win = window.open('', '_blank', 'width=900,height=700');
+  if (!win) {
+    showToast&&showToast('⚠️ Pop-up bloqueado. Permita pop-ups para este site.', 'warning');
+    return;
+  }
+  win.document.write(html);
+  win.document.close();
+};
+
+window.exSendToAdmin = function(id) {
+  const r = EX_REPORTS.find(x => x.id === id);
+  if (!r) return;
+  const recips = (EX_CONFIG && EX_CONFIG.recipients && EX_CONFIG.recipients.length)
+    ? EX_CONFIG.recipients
+    : [];
+
+  const recipHtml = recips.length
+    ? recips.map(rc => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);margin-bottom:7px;">
+          <div style="width:34px;height:34px;border-radius:50%;background:rgba(0,212,255,0.12);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">👤</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:700;font-size:0.85rem;">${rc.name}</div>
+            <div style="font-size:0.72rem;color:#6b7280;">${rc.email} · <span style="color:#00d4ff;">${rc.role}</span></div>
+          </div>
+          <span style="font-size:0.65rem;padding:3px 8px;border-radius:99px;background:rgba(34,197,94,0.12);color:#22c55e;font-weight:700;">✓ Admin Local</span>
+        </div>`).join('')
+    : `<div style="color:#f59e0b;font-size:0.83rem;padding:12px;background:rgba(245,158,11,0.08);border-radius:9px;">⚠️ Nenhum destinatário configurado. Adicione destinatários na aba <strong>Configuração</strong>.</div>`;
+
+  exShowModal(`
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+      <div>
+        <div style="font-weight:800;font-size:1.0rem;">📧 Enviar Relatório por E-mail</div>
+        <div style="font-size:0.75rem;color:#6b7280;margin-top:3px;">${r.period} &nbsp;·&nbsp; Maturity Score: ${r.maturity}</div>
+      </div>
+      <button class="ex-btn ex-btn-ghost ex-btn-sm" onclick="exCloseModal()">✕</button>
+    </div>
+
+    <div style="padding:12px;border-radius:10px;background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.12);margin-bottom:16px;font-size:0.80rem;color:#94a3b8;line-height:1.6;">
+      📎 O PDF do relatório de <strong style="color:#f1f5f9;">${r.period}</strong> será anexado e enviado para os destinatários registrados como Administrador Local abaixo.
+    </div>
+
+    <div style="font-size:0.70rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Destinatários Administrador Local</div>
+    ${recipHtml}
+
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="ex-btn ex-btn-ghost" style="flex:1;" onclick="exCloseModal()">Cancelar</button>
+      <button class="ex-btn ex-btn-primary" style="flex:1;" onclick="exConfirmSend('${id}')" ${!recips.length ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>
+        📧 Enviar Agora
+      </button>
+    </div>
+  `);
+};
+
+window.exConfirmSend = function(id) {
+  const r = EX_REPORTS.find(x => x.id === id);
+  exCloseModal();
+  if (!r) return;
+  const nRecips = (EX_CONFIG && EX_CONFIG.recipients) ? EX_CONFIG.recipients.length : 0;
+  showToast&&showToast(`📤 Enviando relatório de ${r.period} para ${nRecips} destinatário(s)...`, 'info');
+  setTimeout(()=>{
+    showToast&&showToast(`✅ Relatório de ${r.period} enviado com sucesso para ${nRecips} Administrador(es) Local!`, 'success');
+  }, 2000);
 };
 
 window.exSendTest = function() {
