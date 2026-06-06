@@ -292,15 +292,74 @@ function avatarBg(name) {
   return colors[(name.charCodeAt(0) + name.charCodeAt(1)) % colors.length];
 }
 
+// ── Converte usuário de users.js para formato HRM ────────────────
+function userToHRM(u, idx) {
+  const deptMap = { Diretoria:'dir', RH:'rh', TI:'ti', Jurídico:'jur', Financeiro:'fin', Comercial:'com', Operações:'ops', Marketing:'mkt' };
+  // Score base por nível de risco
+  const scoreBase = u.risk === 'high' ? 75 : u.risk === 'med' ? 48 : 22;
+  const score = Math.min(99, scoreBase + Math.round((100 - u.completion) * 0.2));
+  const phishing = u.risk === 'high' ? 70 + Math.round(Math.random()*15) : u.risk === 'med' ? 40 + Math.round(Math.random()*20) : 8 + Math.round(Math.random()*15);
+  const training = Math.round(u.completion * 0.9);
+  const certStatus = u.certs > 3 ? 'valid' : u.certs > 0 ? 'expiring' : 'expired';
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    dept: u.dept,
+    deptId: deptMap[u.dept] || 'ops',
+    avatar: u.avatar,
+    score,
+    phishing,
+    training,
+    password: Math.round(score * 0.85),
+    access:   Math.round(score * 0.75),
+    inactivity: u.status === 'inactive' ? 30 : (u.lastLogin === 'Hoje' || u.lastLogin === 'Agora') ? 0 : 5,
+    certs: certStatus,
+    lastSeen: u.lastLogin === 'Hoje' || u.lastLogin === 'Agora' ? 0 : u.lastLogin === 'Ontem' ? 1 : parseInt(u.lastLogin) || 7,
+    cliques: u.risk === 'high' ? 3 : u.risk === 'med' ? 1 : 0,
+    campanhas: 3,
+    reportou: u.risk === 'low' ? 2 : u.risk === 'med' ? 1 : 0,
+    treinamentos: Math.round(u.completion / 10),
+    planos: u.risk === 'high' ? 2 : u.risk === 'med' ? 1 : 0,
+    trend: u.risk === 'low' ? 'up' : u.risk === 'med' ? 'stable' : 'down',
+    isDemo: u.isDemo || false,
+  };
+}
+
 // ── Main Page Render (overrides certificates.js renderPage_risk) ──
 window.renderPage_risk = function() {
   injectHRMCSS && injectHRMCSS();
-  // Inject / update Admin Local in the user list
-  if (typeof DEMO_STATE !== 'undefined') {
-    const du = DEMO_STATE.asHRMUser();
-    const idx = HRM_DATA.users.findIndex(u => u.id === 999);
-    if (idx >= 0) HRM_DATA.users[idx] = du;
-    else HRM_DATA.users.push(du);
+
+  // ── Substituir HRM_DATA.users pelos usuários reais da empresa ativa ──
+  if (typeof _usersAll !== 'undefined' && _usersAll.length > 0) {
+    // Reconstrói a lista a partir dos usuários reais
+    HRM_DATA.users = _usersAll.map((u, i) => {
+      // Admin Local DEMO: usa DEMO_STATE para dados precisos
+      if (u.isDemo && typeof DEMO_STATE !== 'undefined') {
+        return DEMO_STATE.asHRMUser();
+      }
+      return userToHRM(u, i);
+    });
+
+    // Recalcular contagem de membros por dept
+    const deptCount = {};
+    _usersAll.forEach(u => { deptCount[u.dept] = (deptCount[u.dept] || 0) + 1; });
+    HRM_DATA.depts.forEach(d => {
+      if (deptCount[d.name] !== undefined) d.members = deptCount[d.name];
+    });
+
+    // Recalcular score organizacional
+    const orgAvg = Math.round(HRM_DATA.users.reduce((s,u) => s + u.score, 0) / HRM_DATA.users.length);
+    HRM_DATA.orgScore = orgAvg;
+    HRM_DATA.orgLabel = orgAvg <= 30 ? 'Baixo Risco' : orgAvg <= 60 ? 'Risco Moderado' : 'Alto Risco';
+  } else {
+    // Fallback: só injeta o demo
+    if (typeof DEMO_STATE !== 'undefined') {
+      const du = DEMO_STATE.asHRMUser();
+      const idx = HRM_DATA.users.findIndex(u => u.id === 999);
+      if (idx >= 0) HRM_DATA.users[idx] = du;
+      else HRM_DATA.users.push(du);
+    }
   }
   return `
 <div id="hrm-module">
