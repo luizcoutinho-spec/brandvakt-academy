@@ -47,12 +47,6 @@ window.renderPage_users = function () {
     { id:10,name:'Claire Martin',   email:'claire.martin@empresa.com',   dept:'Jurídico',   role:'Compliance',  status:'active', risk:'low',  completion:99, certs:10,lastLogin:'Hoje',       avatar:'CM', country:'🇫🇷' },
   ];
 
-  // Totais por departamento — soma exata: 340 usuários
-  // Diretoria(12) + TI(68) + Comercial(85) + Operações(80) + Financeiro(42) + RH(35) + Jurídico(18) = 340
-  const deptStats = {
-    'Diretoria': 12, 'TI': 68, 'Comercial': 85, 'Operações': 80, 'Financeiro': 42, 'RH': 35, 'Jurídico': 18,
-  };
-
   const riskColors = { low: 'var(--brand-success)', med: 'var(--brand-warning)', high: 'var(--brand-danger)' };
   const riskLabels = { low: L.risk_low, med: L.risk_med, high: L.risk_high };
 
@@ -60,6 +54,17 @@ window.renderPage_users = function () {
   _usersAll = users.filter(Boolean);
   _usersRiskColors = riskColors;
   _usersRiskLabels = riskLabels;
+
+  // ── KPIs calculados dinamicamente a partir dos usuários reais ──
+  const totalUsers   = _usersAll.length;
+  const activeUsers  = _usersAll.filter(u => u.status === 'active').length;
+  const inactiveUsers= _usersAll.filter(u => u.status === 'inactive').length;
+  const highRiskUsers= _usersAll.filter(u => u.risk === 'high').length;
+  const avgCompletion= Math.round(_usersAll.reduce((s,u) => s + u.completion, 0) / totalUsers);
+
+  // ── Contagem por departamento calculada a partir dos usuários reais ──
+  const deptStats = {};
+  _usersAll.forEach(u => { deptStats[u.dept] = (deptStats[u.dept] || 0) + 1; });
 
   return `
   <div style="display:flex;flex-direction:column;gap:22px;">
@@ -80,11 +85,11 @@ window.renderPage_users = function () {
     <!-- KPI strip -->
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;" class="stagger">
       ${[
-        { icon:'👥', val:'340', label:L.kpi_total,   color:'var(--brand-accent)' },
-        { icon:'🟢', val:'312', label:L.kpi_active,  color:'var(--brand-success)' },
-        { icon:'💤', val:'28',  label:L.kpi_inactive,color:'var(--brand-warning)' },
-        { icon:'🔴', val:'12',  label:L.kpi_risk,    color:'var(--brand-danger)' },
-        { icon:'🏆', val:'89%', label:L.kpi_avg_comp,color:'var(--brand-teal)' },
+        { icon:'👥', val: totalUsers,          label:L.kpi_total,   color:'var(--brand-accent)' },
+        { icon:'🟢', val: activeUsers,         label:L.kpi_active,  color:'var(--brand-success)' },
+        { icon:'💤', val: inactiveUsers,       label:L.kpi_inactive,color:'var(--brand-warning)' },
+        { icon:'🔴', val: highRiskUsers,       label:L.kpi_risk,    color:'var(--brand-danger)' },
+        { icon:'🏆', val: avgCompletion + '%', label:L.kpi_avg_comp,color:'var(--brand-teal)' },
       ].map(k => `
         <div class="card" style="padding:14px;display:flex;align-items:center;gap:10px;">
           <span style="font-size:1.3rem;">${k.icon}</span>
@@ -123,7 +128,7 @@ window.renderPage_users = function () {
     <!-- Users Table -->
     <div class="card" style="padding:0;overflow:hidden;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--bg-border);">
-        <h4>${L.table_title} <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400;" id="user-count">(${users.length} de 340)</span></h4>
+        <h4>${L.table_title} <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400;" id="user-count">(${totalUsers} ${L.of} ${totalUsers})</span></h4>
         <div style="display:flex;gap:6px;">
           <button class="btn btn-ghost btn-sm" onclick="showToast('Notificando usuários selecionados','info')">🔔 ${L.btn_notify}</button>
           <button class="btn btn-ghost btn-sm" onclick="showToast('Atribuindo treinamentos','info')">📋 ${L.btn_bulk_assign}</button>
@@ -150,7 +155,7 @@ window.renderPage_users = function () {
         </table>
       </div>
       <div style="padding:14px 20px;border-top:1px solid var(--bg-border);display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:0.78rem;color:var(--text-muted);">${L.showing} 1-10 ${L.of} 340</span>
+        <span style="font-size:0.78rem;color:var(--text-muted);">${L.showing} 1-${totalUsers} ${L.of} ${totalUsers}</span>
         <div style="display:flex;gap:4px;">
           ${['←','1','2','3','...','34','→'].map((p,i) => `<button class="btn btn-sm ${p==='1'?'btn-primary':'btn-ghost'}" style="min-width:32px;" onclick="showToast('Página ${p}','info')">${p}</button>`).join('')}
         </div>
