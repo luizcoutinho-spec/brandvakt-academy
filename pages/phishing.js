@@ -2431,7 +2431,26 @@ window.phAiExecuteAssign = function() {
       });
       nPending++;
     });
+
+    // Persist all new assignments to the active tenant pool so they survive navigation
+    if (typeof window.asSaveTenantPool === 'function') window.asSaveTenantPool();
   }
+
+  // 3b. Persist pending courses to global library list so library.js can render red cards
+  if (!window.LIBRARY_PENDING_COURSES) window.LIBRARY_PENDING_COURSES = [];
+  (c.lacunas || []).forEach(g => {
+    // Avoid duplicates by titulo
+    if (!window.LIBRARY_PENDING_COURSES.find(x => x.titulo === g.titulo)) {
+      window.LIBRARY_PENDING_COURSES.push({
+        titulo:    g.titulo,
+        categoria: g.categoria || 'Cybersecurity',
+        urgencia:  g.urgencia  || 'Média',
+        descricao: g.descricao || '',
+        campanha:  c.nome,
+        addedAt:   new Date().toISOString().slice(0,10),
+      });
+    }
+  });
 
   // 4. Audit log
   if (!window._phAuditLog) window._phAuditLog = [];

@@ -310,6 +310,7 @@ window.renderPage_library = function () {
         <option value="published">${L.status_published}</option>
         <option value="draft">${L.status_draft}</option>
         <option value="archived">${L.status_archived}</option>
+        <option value="pending">⏳ Aguardando criação</option>
       </select>
     </div>
 
@@ -344,6 +345,7 @@ window.renderPage_library = function () {
 
     <!-- Course Grid -->
     <div id="lib-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+      ${(window.LIBRARY_PENDING_COURSES||[]).map(p => pendingCourseCard(p, L)).join('')}
       ${COURSES.map(c => courseCard(c, L)).join('')}
     </div>
 
@@ -378,6 +380,49 @@ const COURSES = [
   { id: 13, title: 'Lavagem de Dinheiro (AML)', category: 'compliance', catLabel: 'Compliance', langs: ['pt','en'], duration: '55 min', completions: 134, rate: 87, status: 'published', level: 'Intermediário', mandatory: false, version: '1.0', icon: '💸', desc: 'Identificação de sinais de alerta e prevenção à lavagem de dinheiro.' },
   { id: 14, title: 'ESG e Sustentabilidade', category: 'governanca', catLabel: 'Governança', langs: ['pt','en','es'], duration: '35 min', completions: 98, rate: 88, status: 'draft', level: 'Intermediário', mandatory: false, version: '0.8', icon: '🌱', desc: 'Responsabilidade ambiental, social e governança: papel do colaborador.' },
 ];
+
+// ── Red card for AI-identified courses not yet in the library ──
+function pendingCourseCard(p, L) {
+  const catMap = {
+    'Cybersecurity':'🛡','Compliance':'📋','Privacidade':'🔒',
+    'Ética':'⚖️','Governança':'🏢','IA':'🤖',
+  };
+  const icon = catMap[p.categoria] || '📚';
+  const urgColor = p.urgencia?.includes('Alta') || p.urgencia?.includes('Crítica') ? '#ef4444' : '#f59e0b';
+  return `
+  <div class="card" style="padding:0;overflow:hidden;border:2px dashed rgba(239,68,68,0.45);background:rgba(239,68,68,0.04);position:relative;">
+    <!-- Pending banner -->
+    <div style="background:rgba(239,68,68,0.12);border-bottom:1px dashed rgba(239,68,68,0.30);padding:7px 14px;display:flex;align-items:center;gap:7px;">
+      <span style="font-size:0.88rem;">⏳</span>
+      <span style="font-size:0.65rem;font-weight:800;color:#ef4444;text-transform:uppercase;letter-spacing:.07em;">Aguardando criação/publicação</span>
+    </div>
+    <!-- Header -->
+    <div style="padding:16px 18px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.7rem;line-height:1;opacity:0.6;">${icon}</span>
+        <div>
+          <div style="font-size:0.88rem;font-weight:700;line-height:1.3;margin-bottom:4px;color:#fca5a5;">${p.titulo}</div>
+          <div style="display:flex;gap:5px;flex-wrap:wrap;">
+            <span class="badge badge-red" style="font-size:0.6rem;">${p.categoria}</span>
+            <span style="font-size:0.6rem;font-weight:700;color:${urgColor};background:${urgColor}22;padding:2px 8px;border-radius:99px;border:1px solid ${urgColor}44;">${p.urgencia}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Body -->
+    <div style="padding:10px 18px 14px;display:flex;flex-direction:column;gap:10px;">
+      ${p.descricao ? `<p style="font-size:0.78rem;color:#94a3b8;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${p.descricao}</p>` : ''}
+      <div style="font-size:0.70rem;color:#6b7280;">📋 Identificado por: <strong style="color:#f59e0b;">${p.campanha||'IA'}</strong> · ${p.addedAt||''}</div>
+      <div style="padding:10px 12px;background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.18);border-radius:8px;font-size:0.72rem;color:#fca5a5;line-height:1.5;">
+        Este curso foi recomendado pela IA mas ainda não está disponível na biblioteca. Crie e publique o conteúdo para ativá-lo automaticamente nas atribuições pendentes.
+      </div>
+    </div>
+    <!-- Footer -->
+    <div style="padding:10px 18px;border-top:1px dashed rgba(239,68,68,0.20);display:flex;gap:6px;justify-content:flex-end;">
+      <button class="btn btn-sm" style="background:rgba(239,68,68,0.12);color:#ef4444;border:1px solid rgba(239,68,68,0.30);font-weight:700;" onclick="showToast('Crie o conteúdo e publique para ativar este curso nas atribuições.','info')">+ Criar Curso</button>
+    </div>
+  </div>`;
+}
 
 function courseCard(c, L) {
   const statusColor = c.status === 'published' ? 'var(--brand-success)' : c.status === 'draft' ? 'var(--brand-warning)' : 'var(--text-muted)';
@@ -496,6 +541,7 @@ window.filterLibrary = function() {
   const status = document.getElementById('lib-filter-status')?.value || '';
   const L = libLabels[APP.lang] || libLabels.pt;
 
+  // Regular courses
   const filtered = COURSES.filter(c => {
     if (search && !c.title.toLowerCase().includes(search) && !c.desc.toLowerCase().includes(search)) return false;
     if (cat && c.category !== cat) return false;
@@ -504,13 +550,26 @@ window.filterLibrary = function() {
     return true;
   });
 
+  // Pending courses (from AI gaps)
+  // – hidden when filtering by published/draft/archived
+  // – exclusively shown when filtering by "pending"
+  const showPending = status !== 'published' && status !== 'draft' && status !== 'archived';
+  const pendingCourses = showPending ? (window.LIBRARY_PENDING_COURSES || []).filter(p => {
+    if (search && !p.titulo.toLowerCase().includes(search)) return false;
+    if (cat && p.categoria.toLowerCase() !== cat) return false;
+    return true;
+  }) : [];
+
+  // When status === 'pending', only show pending; hide regular courses
+  const regularCourses = status === 'pending' ? [] : filtered;
+
   const grid = document.getElementById('lib-grid');
   if (!grid) return;
-  if (!filtered.length) {
+  if (!regularCourses.length && !pendingCourses.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><div class="empty-icon">📭</div><div class="empty-title">Nenhum treinamento encontrado</div><div class="empty-sub">Tente ajustar os filtros.</div></div>`;
     return;
   }
-  grid.innerHTML = filtered.map(c => courseCard(c, L)).join('');
+  grid.innerHTML = pendingCourses.map(p => pendingCourseCard(p, L)).join('') + regularCourses.map(c => courseCard(c, L)).join('');
   // Re-animate progress bars
   setTimeout(() => {
     grid.querySelectorAll('.progress-fill').forEach(el => {

@@ -243,6 +243,8 @@ function asSaveTenantPool() {
   const tid = asGetActiveTenantId();
   _AS_POOLS[tid] = ASSIGN_DATA.assignments.filter(a => !a.isDemo).map(a => ({ ...a }));
 }
+// Expose so external modules (phishing.js, hrm.js) can persist after modifying ASSIGN_DATA
+window.asSaveTenantPool = asSaveTenantPool;
 
 // ── Tamanho de grupo baseado nos usuários reais (_usersAll de users.js) ──
 function asGroupSize(group) {
