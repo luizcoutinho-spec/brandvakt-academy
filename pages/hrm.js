@@ -865,14 +865,65 @@ window.hrmOpenProfile = function(userId) {
 function renderHRMMatriz() {
   const factors = HRM_DATA.factors;
   const depts   = HRM_DATA.depts;
+
+  // ── Factor details (shown only on hover) ────────────────────
+  const factorDetails = {
+    phishing:   { detail:'Taxa de cliques em simulações de phishing enviadas pela plataforma. Cada clique aumenta o score. Reportar uma campanha reduz o risco.', badge:'Quanto maior → mais vulnerável a ataques reais', users:'Usuários que clicaram / reportaram / ignoraram campanhas' },
+    training:   { detail:'Atraso e incompletude de treinamentos obrigatórios. Calculado pela % de conclusão de cada colaborador. Reprovações em quiz aumentam o peso.', badge:'Quanto maior → mais treinamentos obrigatórios em atraso', users:'Lista de cursos: Aprovado / Reprovado / Atrasado / Pendente' },
+    password:   { detail:'Qualidade e higiene das senhas detectadas na plataforma. Considera reutilização, força, 2FA, rotação e padrões previsíveis.', badge:'Quanto maior → senhas mais fracas ou vulneráveis', users:'Vulnerabilidades: reutilização, força insuficiente, 2FA off, senha expirada' },
+    access:     { detail:'Violações de política de controle de acesso: logins fora do horário, IPs suspeitos, tentativas negadas, downloads em massa, escalada de privilégio.', badge:'Quanto maior → mais violações de acesso detectadas', users:'Cada violação com sistema, data e severidade (Crítico/Médio/Baixo)' },
+    inactivity: { detail:'Dias sem acesso à plataforma. Inatividade >7 dias = risco médio; >14 dias = risco alto. Calculado por módulo (Dashboard, Treinamentos, Phishing…).', badge:'Quanto maior → mais dias sem uso da plataforma', users:'Alerta com dias exatos + último acesso por módulo' },
+    certs:      { detail:'Status dos certificados emitidos. Certificados válidos = score 10 (baixo risco). Vencendo em <90 dias = 42. Expirados = 72 (alto risco).', badge:'Quanto maior → mais certificados vencidos ou expirados', users:'Cada certificado com nome, emissão, vencimento e status' },
+  };
+
   return `
+  <style>
+    .hrm-factor-legend-row { position:relative; display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); cursor:default; transition:border-color .2s; }
+    .hrm-factor-legend-row:hover { border-color:rgba(255,255,255,.16); background:rgba(255,255,255,.05); }
+    .hrm-factor-legend-row:hover .hrm-factor-tooltip { opacity:1; pointer-events:auto; transform:translateY(0); }
+    .hrm-factor-tooltip { position:absolute; left:0; top:calc(100% + 8px); z-index:200; width:340px; background:#1a1a2e; border:1px solid rgba(255,255,255,.14); border-radius:12px; padding:14px 16px; opacity:0; pointer-events:none; transform:translateY(-6px); transition:opacity .22s, transform .22s; box-shadow:0 12px 40px rgba(0,0,0,.6); }
+    .hrm-factor-tooltip::before { content:''; position:absolute; top:-6px; left:22px; width:10px; height:10px; background:#1a1a2e; border-left:1px solid rgba(255,255,255,.14); border-top:1px solid rgba(255,255,255,.14); transform:rotate(45deg); }
+  </style>
+
   <div class="hrm-sh">
     <div class="hrm-sh-title">🔥 Matriz de Risco — Departamento × Factor</div>
     <div style="display:flex;gap:12px;font-size:0.72rem;align-items:center;flex-wrap:wrap">
       <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:rgba(34,197,94,0.7);display:inline-block"></span>Baixo (≤30)</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:rgba(245,158,11,0.8);display:inline-block"></span>Médio (31-60)</span>
       <span style="display:flex;align-items:center;gap:5px"><span style="width:14px;height:14px;border-radius:4px;background:rgba(239,68,68,0.85);display:inline-block"></span>Alto (>60)</span>
-      <span style="color:var(--hrm-muted);font-size:0.68rem;margin-left:8px">💡 Clique em qualquer célula para ver o detalhamento</span>
+      <span style="color:var(--hrm-muted);font-size:0.68rem;margin-left:8px">💡 Clique em qualquer célula para detalhar • Passe o mouse nos factores para ver a explicação</span>
+    </div>
+  </div>
+
+  <!-- ── Factor Legend (hover to reveal details) ─────────────── -->
+  <div class="hrm-card" style="padding:14px 16px;margin-bottom:4px">
+    <div style="font-size:.65rem;font-weight:800;color:var(--hrm-muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px">📖 Legenda dos Factores — passe o mouse para ver detalhes</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px">
+      ${factors.map(f => {
+        const d = factorDetails[f.id] || {};
+        return `
+        <div class="hrm-factor-legend-row">
+          <span style="font-size:1.2rem;flex-shrink:0">${f.icon}</span>
+          <div style="min-width:0;flex:1">
+            <div style="font-size:.80rem;font-weight:700">${f.label}</div>
+            <div style="font-size:.65rem;color:var(--hrm-muted);margin-top:1px">Peso: ${Math.round(f.weight*100)}% do score total</div>
+          </div>
+          <span style="font-size:.62rem;color:var(--hrm-muted)">ℹ️</span>
+          <!-- Tooltip (visible only on hover via CSS) -->
+          <div class="hrm-factor-tooltip">
+            <div style="font-size:.70rem;font-weight:800;color:var(--hrm-text2);margin-bottom:8px;display:flex;align-items:center;gap:6px">${f.icon} ${f.label}</div>
+            <div style="font-size:.78rem;color:var(--hrm-text2);line-height:1.55;margin-bottom:10px">${d.detail||f.desc||''}</div>
+            <div style="font-size:.68rem;padding:6px 10px;border-radius:7px;background:rgba(255,255,255,.05);color:var(--hrm-muted);margin-bottom:6px">📊 ${d.badge||''}</div>
+            <div style="font-size:.68rem;padding:6px 10px;border-radius:7px;background:rgba(255,255,255,.05);color:var(--hrm-muted)">👤 No detalhamento: ${d.users||''}</div>
+            <div style="margin-top:10px;display:flex;gap:8px;font-size:.65rem">
+              <span style="color:#22c55e">● ≤30 Baixo</span>
+              <span style="color:#f59e0b">● 31–60 Médio</span>
+              <span style="color:#ef4444">● >60 Alto</span>
+              <span style="color:var(--hrm-muted);margin-left:auto">Peso: ${Math.round(f.weight*100)}%</span>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
     </div>
   </div>
 
