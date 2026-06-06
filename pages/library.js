@@ -19,6 +19,11 @@ var COURSE_MEDIA = {
     },
     pdf: 'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Home_Office_Seguro_Cybersecurity_Curso.pdf'
   },
+  2: {
+    video: {
+      pt: 'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Senhas.fortes.e.MFA.-.PT.mp4'
+    }
+  },
   10: {
     video: {
       pt: 'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Anticorrupo.e.Antissuborno_.Conceitos.Essenciais.em.3.Minutos.mp4'
