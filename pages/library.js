@@ -329,7 +329,7 @@ window.renderPage_library = function () {
       <span class="chip" onclick="filterChip(this,'governanca')">🏢 Governança</span>
       <span class="chip" onclick="filterChip(this,'ia')">🤖 IA</span>
       <span class="chip lib-chip-pending" onclick="filterChip(this,'__pending__')"
-        style="background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.35);color:#ef4444;display:${(window.LIBRARY_PENDING_COURSES||[]).length>0?'inline-flex':'none'};">
+        style="background:rgba(239,68,68,0.10);border-color:rgba(239,68,68,0.35);color:#ef4444;display:inline-flex;">
         ⏳ Aguardando criação/publicação
         <span style="margin-left:5px;font-size:0.60rem;font-weight:800;background:rgba(239,68,68,0.20);padding:1px 6px;border-radius:99px;">${(window.LIBRARY_PENDING_COURSES||[]).length}</span>
       </span>
@@ -423,11 +423,17 @@ function pendingCourseCard(p, L, idx) {
     <div style="padding:0 18px 16px;display:flex;flex-direction:column;gap:10px;">
       ${p.descricao ? `<p style="font-size:0.78rem;color:#94a3b8;line-height:1.55;margin:0;">${p.descricao}</p>` : ''}
       <div style="display:flex;align-items:center;gap:6px;font-size:0.70rem;color:#6b7280;">
-        <span>📋</span>
-        <span>Identificado por: <strong style="color:#f59e0b;">${p.campanha||'IA'}</strong></span>
+        <span>${p.suggested ? '👤' : '📋'}</span>
+        <span>${p.suggested
+          ? `Sugerido por: <strong style="color:#a78bfa;">${p.suggestedBy||'Usuário'}</strong>`
+          : `Identificado por: <strong style="color:#f59e0b;">${p.campanha||'IA'}</strong>`
+        }</span>
       </div>
       <div style="padding:9px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;font-size:0.72rem;color:#fca5a5;line-height:1.55;">
-        Este curso foi recomendado pela IA e ainda não está na biblioteca. Quando publicado, as atribuições pendentes serão ativadas automaticamente.
+        ${p.suggested
+          ? 'Este curso foi sugerido por um usuário e aguarda análise e criação pela equipe de treinamento.'
+          : 'Este curso foi recomendado pela IA e ainda não está na biblioteca. Quando publicado, as atribuições pendentes serão ativadas automaticamente.'
+        }
       </div>
     </div>
     <!-- Footer — only delete button -->
@@ -449,23 +455,143 @@ window.libDeletePending = function(idx) {
   window.LIBRARY_PENDING_COURSES.splice(idx, 1);
 
   const n = window.LIBRARY_PENDING_COURSES.length;
-  // Update or hide the chip
+  // Update chip badge (chip is always visible)
   const chip = document.querySelector('#lib-chips .lib-chip-pending');
   if (chip) {
+    const badge = chip.querySelector('span');
+    if (badge) badge.textContent = n;
     if (n === 0) {
-      chip.style.display = 'none';
-      // If we just deleted the last one, switch back to "Todos"
+      // No more pending — switch back to "Todos" view but keep chip visible
       _libPendingActive = false;
+      chip.classList.remove('active');
+      chip.style.background = 'rgba(239,68,68,0.10)';
+      chip.style.borderColor = 'rgba(239,68,68,0.35)';
+      chip.style.color = '#ef4444';
       const allChip = document.querySelector('#lib-chips .chip');
-      if (allChip) { allChip.classList.add('active'); chip.classList.remove('active'); }
-    } else {
-      const badge = chip.querySelector('span');
-      if (badge) badge.textContent = n;
+      if (allChip) allChip.classList.add('active');
     }
   }
   // Re-render the grid
   filterLibrary();
   showToast && showToast(`🗑 "${curso.titulo}" removido dos cursos pendentes.`, 'info');
+};
+
+// ── Modal: Sugerir Criação de Curso ───────────────────────────
+window.libOpenSuggestModal = function() {
+  const userName = (typeof DEMO_STATE !== 'undefined' && DEMO_STATE.name) ? DEMO_STATE.name : 'Admin Local';
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Build modal using showModal if available, else inline overlay
+  const html = `
+    <div id="lib-suggest-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)libCloseSuggestModal()">
+      <div style="background:#1a1f2e;border:1px solid rgba(139,92,246,0.35);border-radius:16px;width:100%;max-width:480px;padding:0;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,0.5);">
+        <!-- Header -->
+        <div style="padding:20px 24px 16px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:1.05rem;font-weight:800;color:#f1f5f9;">✨ Sugerir Criação de Curso</div>
+            <div style="font-size:0.74rem;color:#6b7280;margin-top:3px;">O curso será adicionado à lista de pendentes para análise</div>
+          </div>
+          <button onclick="libCloseSuggestModal()" style="background:none;border:none;color:#6b7280;font-size:1.3rem;cursor:pointer;line-height:1;padding:4px;">✕</button>
+        </div>
+        <!-- Body -->
+        <div style="padding:24px;">
+          <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:0.76rem;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Nome do curso *</label>
+            <input id="lib-suggest-name" type="text" placeholder="Ex: Segurança em IA Generativa" maxlength="100"
+              style="width:100%;box-sizing:border-box;background:#0f1219;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:0.88rem;outline:none;transition:border-color 0.18s;"
+              onfocus="this.style.borderColor='rgba(139,92,246,0.60)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'">
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:0.76rem;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Categoria</label>
+            <select id="lib-suggest-cat" style="width:100%;box-sizing:border-box;background:#0f1219;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:0.88rem;outline:none;">
+              <option value="Cybersecurity">🛡 Cybersecurity</option>
+              <option value="Compliance">📋 Compliance</option>
+              <option value="Privacidade">🔒 Privacidade</option>
+              <option value="Ética">⚖️ Ética</option>
+              <option value="Governança">🏢 Governança</option>
+              <option value="IA">🤖 IA</option>
+              <option value="Behavioral Security">🧠 Behavioral Security</option>
+            </select>
+          </div>
+          <div style="margin-bottom:16px;">
+            <label style="display:block;font-size:0.76rem;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Urgência</label>
+            <select id="lib-suggest-urgencia" style="width:100%;box-sizing:border-box;background:#0f1219;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:0.88rem;outline:none;">
+              <option value="Baixa">Baixa</option>
+              <option value="Média" selected>Média</option>
+              <option value="Alta">Alta</option>
+            </select>
+          </div>
+          <div style="margin-bottom:20px;">
+            <label style="display:block;font-size:0.76rem;font-weight:700;color:#94a3b8;margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;">Justificativa (opcional)</label>
+            <textarea id="lib-suggest-desc" placeholder="Descreva brevemente por que este curso é necessário..." rows="3" maxlength="300"
+              style="width:100%;box-sizing:border-box;background:#0f1219;border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:#f1f5f9;font-size:0.84rem;outline:none;resize:vertical;font-family:inherit;transition:border-color 0.18s;"
+              onfocus="this.style.borderColor='rgba(139,92,246,0.60)'" onblur="this.style.borderColor='rgba(255,255,255,0.12)'"></textarea>
+          </div>
+          <!-- Info row: who + when -->
+          <div style="display:flex;gap:10px;margin-bottom:20px;">
+            <div style="flex:1;padding:10px 14px;background:rgba(139,92,246,0.07);border:1px solid rgba(139,92,246,0.20);border-radius:8px;">
+              <div style="font-size:0.62rem;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Sugerido por</div>
+              <div style="font-size:0.84rem;font-weight:700;color:#a78bfa;">${userName}</div>
+            </div>
+            <div style="flex:1;padding:10px 14px;background:rgba(139,92,246,0.07);border:1px solid rgba(139,92,246,0.20);border-radius:8px;">
+              <div style="font-size:0.62rem;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;">Data</div>
+              <div style="font-size:0.84rem;font-weight:700;color:#a78bfa;">${today}</div>
+            </div>
+          </div>
+          <!-- Actions -->
+          <div style="display:flex;gap:10px;">
+            <button onclick="libCloseSuggestModal()" style="flex:1;padding:10px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.10);border-radius:8px;color:#94a3b8;font-weight:700;font-size:0.84rem;cursor:pointer;">Cancelar</button>
+            <button onclick="libSubmitSuggest('${userName}','${today}')" style="flex:2;padding:10px;background:linear-gradient(135deg,rgba(139,92,246,0.80),rgba(109,40,217,0.90));border:none;border-radius:8px;color:#fff;font-weight:800;font-size:0.84rem;cursor:pointer;box-shadow:0 4px 16px rgba(139,92,246,0.30);">✨ Enviar Sugestão</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+  setTimeout(() => { const el = document.getElementById('lib-suggest-name'); if(el) el.focus(); }, 80);
+};
+
+window.libCloseSuggestModal = function() {
+  const el = document.getElementById('lib-suggest-overlay');
+  if (el) el.remove();
+};
+
+window.libSubmitSuggest = function(userName, today) {
+  const nome = (document.getElementById('lib-suggest-name')?.value || '').trim();
+  if (!nome) {
+    const inp = document.getElementById('lib-suggest-name');
+    if (inp) { inp.style.borderColor='#ef4444'; inp.focus(); }
+    showToast && showToast('❌ Informe o nome do curso.', 'error');
+    return;
+  }
+  const cat      = document.getElementById('lib-suggest-cat')?.value      || 'Cybersecurity';
+  const urgencia = document.getElementById('lib-suggest-urgencia')?.value  || 'Média';
+  const desc     = (document.getElementById('lib-suggest-desc')?.value     || '').trim();
+
+  if (!window.LIBRARY_PENDING_COURSES) window.LIBRARY_PENDING_COURSES = [];
+  window.LIBRARY_PENDING_COURSES.unshift({
+    titulo:      nome,
+    categoria:   cat,
+    urgencia:    urgencia,
+    descricao:   desc || `Curso sugerido por ${userName}.`,
+    campanha:    null,
+    addedAt:     today,
+    suggested:   true,
+    suggestedBy: userName,
+  });
+
+  // Update chip badge
+  const chip  = document.querySelector('#lib-chips .lib-chip-pending');
+  const badge = chip?.querySelector('span');
+  if (badge) badge.textContent = window.LIBRARY_PENDING_COURSES.length;
+
+  libCloseSuggestModal();
+
+  // Navigate to pending chip view
+  const pendingChip = document.querySelector('#lib-chips .lib-chip-pending');
+  if (pendingChip && typeof filterChip === 'function') filterChip(pendingChip, '__pending__');
+  else if (typeof filterLibrary === 'function') filterLibrary();
+
+  showToast && showToast(`✨ Sugestão "${nome}" adicionada aos cursos pendentes!`, 'success');
 };
 
 function courseCard(c, L) {
@@ -626,17 +752,28 @@ window.filterLibrary = function() {
 
     // Pending section header inside the grid (full-width)
     grid.innerHTML = `
-      <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;background:rgba(239,68,68,0.05);border:1px dashed rgba(239,68,68,0.30);border-radius:14px;margin-bottom:4px;">
+      <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px;background:rgba(239,68,68,0.05);border:1px dashed rgba(239,68,68,0.30);border-radius:14px;margin-bottom:4px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:10px;">
           <div style="width:4px;height:28px;background:linear-gradient(180deg,#ef4444,#b91c1c);border-radius:2px;flex-shrink:0;"></div>
           <div>
             <div style="font-size:0.95rem;font-weight:800;letter-spacing:-0.015em;color:#fca5a5;">Cursos Pendentes de Criação</div>
-            <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">Identificados pela IA — aguardando cadastro na biblioteca</div>
+            <div style="font-size:0.72rem;color:#6b7280;margin-top:2px;">Identificados pela IA ou sugeridos por usuários — aguardando cadastro na biblioteca</div>
           </div>
         </div>
-        <span style="font-size:0.68rem;font-weight:700;padding:3px 12px;border-radius:99px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.30);">${pending.length} pendente(s)</span>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:0.68rem;font-weight:700;padding:3px 12px;border-radius:99px;background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.30);">${pending.length} pendente(s)</span>
+          <button onclick="libOpenSuggestModal()" style="display:flex;align-items:center;gap:6px;background:rgba(139,92,246,0.12);color:#a78bfa;border:1px solid rgba(139,92,246,0.35);font-weight:700;font-size:0.76rem;padding:7px 14px;border-radius:8px;cursor:pointer;transition:all 0.18s;white-space:nowrap;"
+            onmouseenter="this.style.background='rgba(139,92,246,0.22)'" onmouseleave="this.style.background='rgba(139,92,246,0.12)'">
+            ✨ Sugerir Criação de Curso
+          </button>
+        </div>
       </div>
-      ${pending.map((p,i) => pendingCourseCard(p, L, i)).join('')}`;
+      ${pending.length ? pending.map((p,i) => pendingCourseCard(p, L, i)).join('') : `
+        <div style="grid-column:1/-1;text-align:center;padding:40px 20px;">
+          <div style="font-size:2.2rem;margin-bottom:10px;">📭</div>
+          <div style="font-size:0.92rem;font-weight:700;color:#f1f5f9;margin-bottom:5px;">Nenhum curso pendente</div>
+          <div style="font-size:0.78rem;color:#6b7280;">Use o botão acima para sugerir um novo curso.</div>
+        </div>`}`;
     return;
   }
 
