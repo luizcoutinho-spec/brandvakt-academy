@@ -1000,6 +1000,7 @@ window.dpDeleteTrail = function(id) {
 
 // ── Internal state for generated trail ───────────────────────
 let _dpAiTrail = null;
+let _dpAiEnrichedUsers = []; // tenant-isolated enriched user list
 
 // ── Step 1: Show scanning animation, then run analysis ────────
 window.dpAiGenerateTrail = function() {
@@ -1113,49 +1114,71 @@ window.dpAiGenerateTrail = function() {
 
 // ── Build the AI trail object from live HRM + tenant data ─────
 function dpAiBuildTrailData() {
-  // Gather live data
-  const users     = (typeof getActiveTenantUsers === 'function') ? getActiveTenantUsers() : [];
-  const tenant    = (typeof APP !== 'undefined' && APP.tenants)
+  // ── 1. Active tenant — single source of truth ────────────────
+  const tenantUsers = (typeof getActiveTenantUsers === 'function')
+    ? getActiveTenantUsers()
+    : [];
+  const tenant = (typeof APP !== 'undefined' && APP.tenants)
     ? (APP.tenants.find(t => t.active) || {}).name || 'Empresa'
     : 'Empresa';
+  const total = tenantUsers.length || 1;
 
-  // Pull from HRM_DATA if available, else use tenant users as fallback
-  const hrmUsers  = (typeof HRM_DATA !== 'undefined' && HRM_DATA.users && HRM_DATA.users.length)
-    ? HRM_DATA.users
-    : users;
-  const hrmDepts  = (typeof HRM_DATA !== 'undefined') ? HRM_DATA.depts : [];
+  // ── 2. Build per-user email index from HRM_DATA (optional enrichment) ──
+  // Only use HRM entries whose email matches a tenant user (tenant isolation).
+  const hrmByEmail = {};
+  if (typeof HRM_DATA !== 'undefined' && Array.isArray(HRM_DATA.users)) {
+    const tenantEmails = new Set(tenantUsers.map(u => (u.email || '').toLowerCase()));
+    HRM_DATA.users.forEach(h => {
+      const em = (h.email || '').toLowerCase();
+      if (tenantEmails.has(em)) hrmByEmail[em] = h;
+    });
+  }
 
-  // Total must come from the same source as all other HRM metrics
-  const total     = hrmUsers.length || users.length || 11;
+  // ── 3. Enrich tenant users with HRM scores (or approximate from fields) ──
+  const enriched = tenantUsers.map(u => {
+    const em  = (u.email || '').toLowerCase();
+    const hrm = hrmByEmail[em];
+    // HRM score: prefer explicit hrm.score, else map risk label → number
+    const riskMap = { high: 75, med: 45, low: 18 };
+    const score = hrm
+      ? (hrm.score ?? riskMap[u.risk] ?? 35)
+      : (u.riskScore ?? u.score ?? riskMap[u.risk] ?? 35);
+    // Factor scores from HRM if matched, else approximate
+    const completion = typeof u.completion === 'number' ? u.completion : 50;
+    const phishing   = hrm ? (hrm.phishing  ?? 50) : (u.risk === 'high' ? 72 : u.risk === 'med' ? 40 : 18);
+    const training   = hrm ? (hrm.training  ?? 50) : Math.max(0, 100 - completion);
+    const password   = hrm ? (hrm.password  ?? 40) : (u.risk === 'high' ? 60 : 30);
+    const certs      = hrm ? hrm.certs : (u.certs === 'expired' || u.certs === 0 ? 'expired' : 'valid');
+    return { ...u, score, phishing, training, password, certs };
+  });
 
-  const highRisk  = hrmUsers.filter(u => u.score > 60).length;
-  const medRisk   = hrmUsers.filter(u => u.score > 30 && u.score <= 60).length;
-  const expCerts  = hrmUsers.filter(u => u.certs === 'expired').length;
-  const avgScore  = total
-    ? Math.round(hrmUsers.reduce((s,u) => s+(u.score||0), 0) / total)
-    : 65;
+  // ── 4. Compute risk metrics from enriched active-tenant users ────────────
+  const highRisk = enriched.filter(u => u.score > 60).length;
+  const medRisk  = enriched.filter(u => u.score > 30 && u.score <= 60).length;
+  const expCerts = enriched.filter(u => u.certs === 'expired').length;
+  const avgScore = Math.round(enriched.reduce((s,u) => s + u.score, 0) / total);
+  const phAvg    = Math.round(enriched.reduce((s,u) => s + u.phishing, 0) / total);
+  const trAvg    = Math.round(enriched.reduce((s,u) => s + u.training, 0) / total);
+  const pwAvg    = Math.round(enriched.reduce((s,u) => s + u.password, 0) / total);
 
-  // Factor analysis
-  const factors = (typeof HRM_DATA !== 'undefined' && HRM_DATA.factors) ? HRM_DATA.factors : [];
-  const phFactor = factors.find(f => f.id === 'phishing') || { id:'phishing', label:'Phishing', weight:30 };
-  const trFactor = factors.find(f => f.id === 'training')  || { id:'training', label:'Treinamento', weight:25 };
-  const pwFactor = factors.find(f => f.id === 'password')  || { id:'password', label:'Senhas', weight:20 };
-
-  const phAvg = hrmUsers.length
-    ? Math.round(hrmUsers.reduce((s,u) => s+(u.phishing||0), 0) / hrmUsers.length)
-    : 72;
-  const trAvg = hrmUsers.length
-    ? Math.round(hrmUsers.reduce((s,u) => s+(u.training||0), 0) / hrmUsers.length)
-    : 45;
-  const pwAvg = hrmUsers.length
-    ? Math.round(hrmUsers.reduce((s,u) => s+(u.password||0), 0) / hrmUsers.length)
-    : 38;
-
-  // Highest-risk departments
-  const sortedDepts = [...hrmDepts].sort((a,b) => b.score - a.score).slice(0, 3);
+  // ── 5. Top-risk departments from active tenant users ─────────────────────
+  const deptScoreMap = {};
+  const deptCountMap = {};
+  enriched.forEach(u => {
+    const d = u.dept || u.department || 'Geral';
+    deptScoreMap[d] = (deptScoreMap[d] || 0) + u.score;
+    deptCountMap[d] = (deptCountMap[d] || 0) + 1;
+  });
+  const sortedDepts = Object.keys(deptScoreMap)
+    .map(d => ({ name: d, score: Math.round(deptScoreMap[d] / deptCountMap[d]) }))
+    .sort((a,b) => b.score - a.score)
+    .slice(0, 3);
   const topDeptNames = sortedDepts.length
     ? sortedDepts.map(d => d.name).join(' · ')
     : 'Operações · Comercial · Financeiro';
+
+  // Store enriched users on the trail for use in dpAiShowModuleUsers
+  _dpAiEnrichedUsers = enriched;
 
   // Deadline helpers
   const today = new Date();
@@ -1395,9 +1418,9 @@ window.dpAiShowModuleUsers = function(moduleIndex) {
   const m = t.modules[moduleIndex];
   const f = m.userFilter || { type:'all' };
 
-  // Get all users from HRM_DATA or tenant
-  const allUsers = (typeof HRM_DATA !== 'undefined' && HRM_DATA.users && HRM_DATA.users.length)
-    ? HRM_DATA.users
+  // Always use the enriched active-tenant user list built during generation
+  const allUsers = _dpAiEnrichedUsers.length
+    ? _dpAiEnrichedUsers
     : (typeof getActiveTenantUsers === 'function' ? getActiveTenantUsers() : []);
 
   // Filter according to the module's userFilter rule
