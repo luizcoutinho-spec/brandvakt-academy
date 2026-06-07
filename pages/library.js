@@ -589,7 +589,7 @@ window.launchCourse=function(tid,title){
   var ov=document.createElement('div');ov.id='cp-ov';
   ov.innerHTML='<div id="cp-tb"><div class="cp-brd"><div class="cp-lg">B</div><div><div class="cp-nm">'+title+'</div><div class="cp-mt">Brandvakt Academy · ISO 27001:2022 · '+badge+'</div></div></div><div style="display:flex;align-items:center;gap:12px;"><span style="font-size:.70rem;color:#6b7280;"><kbd style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:5px;padding:2px 7px;font-size:.68rem;">Esc</kbd> para fechar</span><button class="cp-cls" onclick="closeCoursePlayer()">✕ Fechar</button></div></div>'+tabs+'<div id="cp-bd" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;background:#060e1e;">'+videoPanel+contentPanel+materialPanel+'</div>';
   document.body.appendChild(ov);
-  if(!hasVideo){_cp.tab='content';var vt=document.getElementById('cp-tab-content');if(vt)vt.classList.add('active');_cpSlide();_cpProg();}
+  _cpTab('content');
   document.addEventListener('keydown',window._cpEsc=function(e){if(e.key==='Escape')closeCoursePlayer();});
 };
 
