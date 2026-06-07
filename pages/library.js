@@ -5,7 +5,7 @@
 // ── Inline Course Player v2 — fully embedded, zero iframe ──────────
 
 const COURSE_COMPLETIONS = {};
-const COURSE_FILES = { 1: true, 2: true, 3: true, 5: true, 6: true, 10: true, 11: true };
+const COURSE_FILES = { 1: true, 2: true, 3: true, 5: true, 6: true, 10: true, 11: true, 12: true };
 
 // Media assets per course (video by lang + PDF)
 var COURSE_MEDIA = {
@@ -310,6 +310,37 @@ var CD_QUIZ=[
   {q:'Quem tem acesso aos detalhes de uma denúncia registrada no canal?',opts:['Qualquer gestor da área envolvida, para agilizar a resolução','Toda a equipe de RH, por política de transparência interna','Uma equipe de apuração independente, com acesso restrito e controlado','Apenas o CEO e o conselho de administração'],ans:2,fb:'Correto! O canal é operado de forma independente, e o acesso aos detalhes é restrito a uma equipe de apuração especializada — preservando sigilo e imparcialidade.'}
 ];
 
+// ── Assédio Moral e Sexual ───────────────────────────────────
+var AS_SLIDES=[
+  {tag:'Abertura',title:'Assédio Moral<br><span>e Sexual</span>',dur:'0:40',sec:40,start:0,
+   body:'<p>Um ambiente de trabalho saudável é construído com <strong>respeito mútuo</strong>. Neste treinamento você vai aprender a reconhecer, prevenir e reportar situações de assédio moral e sexual.</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">📚</span><div class="lb">5 módulos</div><div class="vl">Conteúdo</div></div><div class="cp-vc"><span class="ic">⏱</span><div class="lb">Duração</div><div class="vl">40 minutos</div></div><div class="cp-vc"><span class="ic">📋</span><div class="lb">Quiz final</div><div class="vl">6 questões</div></div><div class="cp-vc"><span class="ic">🏅</span><div class="lb">Certificado</div><div class="vl">Compliance</div></div></div>'},
+  {tag:'Módulo 01 — O que é Assédio Moral',title:'Quando a Pressão<br><span>Vira Violência</span>',dur:'0:55',sec:55,start:40,
+   body:'<p><strong>Assédio moral</strong> é a exposição repetida e prolongada de uma pessoa a situações humilhantes e constrangedoras, geralmente em relações de hierarquia — desestabilizando sua dignidade e saúde mental.</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">📢</span><div class="lb">Humilhação pública</div><div class="vl">Críticas em frente a outros</div></div><div class="cp-vc"><span class="ic">🚫</span><div class="lb">Isolamento</div><div class="vl">Excluir de reuniões/decisões</div></div><div class="cp-vc"><span class="ic">📋</span><div class="lb">Sobrecarga proposital</div><div class="vl">Metas inatingíveis</div></div><div class="cp-vc"><span class="ic">🗯️</span><div class="lb">Apelidos/ironias</div><div class="vl">Depreciação constante</div></div></div><ul class="cp-ul"><li><span class="ci ci-i">→</span><span>O que diferencia de um conflito comum é a <strong>repetição, intenção e o impacto</strong> sobre a vítima</span></li></ul>'},
+  {tag:'Módulo 02 — O que é Assédio Sexual',title:'Limites Que<br><span>Devem Ser Respeitados</span>',dur:'0:55',sec:55,start:95,
+   body:'<p><strong>Assédio sexual</strong> é qualquer conduta de natureza sexual indesejada que constranja, intimide ou prejudique alguém — não depende de toque físico para se caracterizar.</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">💬</span><div class="lb">Comentários</div><div class="vl">Insinuações, "cantadas" repetidas</div></div><div class="cp-vc"><span class="ic">🖼️</span><div class="lb">Conteúdo</div><div class="vl">Imagens/mensagens de cunho sexual</div></div><div class="cp-vc"><span class="ic">✋</span><div class="lb">Contato físico</div><div class="vl">Toques não consentidos</div></div><div class="cp-vc"><span class="ic">⚖️</span><div class="lb">Chantagem</div><div class="vl">Favores em troca de benefícios</div></div></div><ul class="cp-ul"><li><span class="ci ci-b">!</span><span>O fator decisivo é sempre o <strong>consentimento</strong> — não a intenção de quem pratica a conduta</span></li></ul>'},
+  {tag:'Módulo 03 — Sinais de Alerta',title:'Reconhecendo o<br><span>Padrão Antes que se Agrave</span>',dur:'0:50',sec:50,start:150,
+   body:'<p>Assédio nem sempre é óbvio. Atenção a padrões que se repetem e geram desconforto — em você ou em colegas:</p>',
+   vis:'<div class="cp-vs"><div class="cp-sr"><span class="cp-sl2">Comentários "no limite" recorrentes</span><div class="cp-sb"><div class="cp-sf" style="width:75%;background:#F0A500"></div></div><span class="cp-st">Atenção</span></div><div class="cp-sr"><span class="cp-sl2">Pressão após recusa clara</span><div class="cp-sb"><div class="cp-sf" style="width:90%;background:#E24B4A"></div></div><span class="cp-st">Grave</span></div><div class="cp-sr"><span class="cp-sl2">Retaliação por não corresponder</span><div class="cp-sb"><div class="cp-sf" style="width:95%;background:#E24B4A"></div></div><span class="cp-st">Crítico</span></div></div><ul class="cp-ul"><li><span class="ci ci-g">✓</span><span>Confie no seu desconforto — se algo parece errado, <strong>provavelmente é</strong></span></li></ul>'},
+  {tag:'Módulo 04 — Como Agir e Reportar',title:'Você Não Precisa<br><span>Enfrentar Sozinho(a)</span>',dur:'0:55',sec:55,start:200,
+   body:'<p>Existem caminhos seguros e estruturados para lidar com situações de assédio — tanto para quem vivencia quanto para quem testemunha:</p>',
+   vis:'<div class="cp-fc"><div class="cp-fa fk"><span class="fi">📝</span><div class="ft">Registre</div><div class="fd">Datas, locais, mensagens e testemunhas</div></div><div class="cp-fa fh"><span class="fi">🗣️</span><div class="ft">Comunique</div><div class="fd">RH, liderança de confiança ou canal de denúncias</div></div><div class="cp-fa fa"><span class="fi">🛡️</span><div class="ft">Você é protegido(a)</div><div class="fd">Sigilo e não retaliação garantidos</div></div></div><ul class="cp-ul"><li><span class="ci ci-g">✓</span><span>Testemunhar uma situação? <strong>Reportar também é um ato de cuidado</strong> com o colega</span></li></ul>'},
+  {tag:'Encerramento',title:'Respeito é a Base<br><span>de Todas as Relações</span>',dur:'0:35',sec:35,start:255,
+   body:'<p>Um ambiente saudável depende da atitude de cada pessoa, todos os dias. Pontos para lembrar:</p>',
+   vis:'<ul class="cp-ul"><li><span class="ci ci-i">✓</span><span>Assédio pode ser <strong>moral ou sexual</strong>, com ou sem contato físico</span></li><li><span class="ci ci-i">✓</span><span>O que importa é o <strong>impacto sobre quem recebe</strong> — não a intenção de quem pratica</span></li><li><span class="ci ci-i">✓</span><span>Documente, comunique e use o <strong>canal de denúncias</strong> sem medo</span></li><li><span class="ci ci-i">✓</span><span>A empresa garante <strong>sigilo e proteção contra retaliação</strong></span></li></ul>'}
+];
+
+var AS_QUIZ=[
+  {q:'O que caracteriza o assédio moral no ambiente de trabalho?',opts:['Qualquer crítica construtiva sobre desempenho','Exposição repetida e prolongada a situações humilhantes que afetam a dignidade da pessoa','Cobrança pontual de prazos durante um projeto','Diferença de opinião em uma reunião de equipe'],ans:1,fb:'Correto! O que caracteriza o assédio moral é a repetição, a intenção de desestabilizar e o impacto sobre a dignidade e a saúde da vítima — não uma crítica isolada e construtiva.'},
+  {q:'O assédio sexual exige contato físico para ser caracterizado?',opts:['Sim, sem toque físico não há assédio sexual','Não — comentários, insinuações e mensagens indesejadas de cunho sexual também configuram assédio','Apenas se houver testemunhas do toque físico','Somente quando ocorre fora do horário de trabalho'],ans:1,fb:'Correto! Comentários, "cantadas" repetidas, imagens ou mensagens indesejadas de cunho sexual configuram assédio mesmo sem qualquer contato físico.'},
+  {q:'O que determina se uma conduta de natureza sexual é assédio?',opts:['A intenção de quem praticou a conduta','O cargo hierárquico de quem recebeu a conduta','O fato de a conduta ser indesejada — ou seja, a ausência de consentimento','O número de pessoas que presenciaram a situação'],ans:2,fb:'Correto! O fator decisivo é sempre o consentimento: uma conduta indesejada e que constrange configura assédio, independentemente da intenção de quem a praticou.'},
+  {q:'Você presencia um colega sendo constantemente humilhado por seu líder em reuniões. Qual é a atitude mais adequada?',opts:['Não se envolver, pois o problema não é seu','Comentar o caso informalmente com outros colegas','Apoiar o colega e reportar a situação ao RH ou ao canal de denúncias','Aguardar para ver se a situação se resolve sozinha'],ans:2,fb:'Correto! Testemunhar e reportar é um ato de cuidado — ajuda a proteger o colega e contribui para um ambiente mais seguro para todos.'},
+  {q:'Uma pessoa relata ter sido assediada e teme represálias ao denunciar. O que a empresa garante nesse caso?',opts:['Que o caso só será analisado se houver provas concretas e testemunhas','Confidencialidade do processo e proteção contra retaliação ao denunciante de boa-fé','Que o assunto será resolvido apenas entre as partes envolvidas','Que a denúncia será arquivada caso a pessoa não queira se identificar'],ans:1,fb:'Correto! A política de sigilo e não retaliação protege quem denuncia de boa-fé — denunciar não pode gerar prejuízo a quem relata.'},
+  {q:'Qual é uma boa prática ao identificar uma possível situação de assédio?',opts:['Ignorar o desconforto, pois pode ser apenas impressão pessoal','Confrontar publicamente a pessoa para constranger e fazer parar','Documentar datas, falas e evidências, e reportar pelos canais adequados','Resolver diretamente com a pessoa sem envolver RH ou liderança'],ans:2,fb:'Correto! Documentar evidências (datas, mensagens, testemunhas) e reportar pelos canais adequados é o caminho mais seguro e eficaz para uma apuração justa.'}
+];
+
 var CP_TOT=300;
 var _cp={cur:0,qi:0,qs:0,qa:false,mode:'slides',tmr:null,elapsed:0,tid:null};
 function _cpT(s){var m=Math.floor(s/60),sc=s%60;return m+(sc<10?':0':':')+sc;}
@@ -331,6 +362,7 @@ window.launchCourse=function(tid,title){
   else if(tid===5){CP_SLIDES=CS_SLIDES;CP_QUIZ=CS_QUIZ;CP_TOT=520;}
   else if(tid===6){CP_SLIDES=RI_SLIDES;CP_QUIZ=RI_QUIZ;CP_TOT=540;}
   else if(tid===11){CP_SLIDES=CD_SLIDES;CP_QUIZ=CD_QUIZ;CP_TOT=255;}
+  else if(tid===12){CP_SLIDES=AS_SLIDES;CP_QUIZ=AS_QUIZ;CP_TOT=290;}
   else if(tid===3){CP_SLIDES=HO_SLIDES;CP_QUIZ=HO_QUIZ;CP_TOT=600;}
   else if(tid===10){CP_SLIDES=AC_SLIDES;CP_QUIZ=AC_QUIZ;CP_TOT=260;}
   else{CP_SLIDES=MFA_SLIDES;CP_QUIZ=MFA_QUIZ;CP_TOT=300;}
