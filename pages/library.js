@@ -5,7 +5,7 @@
 // ── Inline Course Player v2 — fully embedded, zero iframe ──────────
 
 const COURSE_COMPLETIONS = {};
-const COURSE_FILES = { 1: true, 2: true, 3: true, 10: true };
+const COURSE_FILES = { 1: true, 2: true, 3: true, 5: true, 10: true };
 
 // Media assets per course (video by lang + PDF)
 var COURSE_MEDIA = {
@@ -212,6 +212,40 @@ var PH_QUIZ=[
   {q:'Você clicou acidentalmente em um link suspeito. Qual é o passo mais importante?',opts:['Não contar a ninguém para evitar constrangimento','Reiniciar o computador e seguir o dia normalmente','Avisar imediatamente a TI/Segurança para conter o incidente','Excluir o e-mail e aguardar para ver se algo acontece'],ans:2,fb:'Correto! Reportar imediatamente permite à equipe de segurança agir rápido e reduzir o impacto — quanto antes, menor o dano.'}
 ];
 
+// ── Cloud Security Awareness ─────────────────────────────────
+var CS_SLIDES=[
+  {tag:'Abertura',title:'Cloud Security<br><span>Awareness</span>',dur:'0:40',sec:40,start:0,
+   body:'<p>A nuvem move a infraestrutura da empresa para fora do perímetro tradicional. Isso traz agilidade — mas também exige que <strong>cada usuário entenda seu papel</strong> na proteção dos dados hospedados em nuvem.</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">📚</span><div class="lb">6 módulos</div><div class="vl">Conteúdo</div></div><div class="cp-vc"><span class="ic">⏱</span><div class="lb">Duração</div><div class="vl">50 minutos</div></div><div class="cp-vc"><span class="ic">📋</span><div class="lb">Quiz final</div><div class="vl">6 questões</div></div><div class="cp-vc"><span class="ic">🏅</span><div class="lb">Certificado</div><div class="vl">Cybersecurity</div></div></div>'},
+  {tag:'Módulo 01 — Fundamentos',title:'O que Muda<br><span>na Nuvem</span>',dur:'1:20',sec:80,start:40,
+   body:'<p>Nos modelos <strong>IaaS, PaaS e SaaS</strong>, parte da infraestrutura passa a ser gerenciada pelo provedor — mas a segurança continua sendo uma via de mão dupla.</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">🏗️</span><div class="lb">IaaS</div><div class="vl">Servidores e redes</div></div><div class="cp-vc"><span class="ic">🧩</span><div class="lb">PaaS</div><div class="vl">Plataformas de desenvolvimento</div></div><div class="cp-vc"><span class="ic">📦</span><div class="lb">SaaS</div><div class="vl">Aplicações prontas (e-mail, CRM)</div></div></div><ul class="cp-ul"><li><span class="ci ci-i">→</span><span>Quanto mais "pronto" o serviço (SaaS), <strong>maior</strong> é a parcela de responsabilidade do usuário sobre dados e acessos</span></li></ul>'},
+  {tag:'Módulo 02 — Responsabilidade Compartilhada',title:'Modelo de<br><span>Responsabilidade Compartilhada</span>',dur:'1:30',sec:90,start:120,
+   body:'<p>O provedor de nuvem protege a <strong>infraestrutura</strong> (data centers, hardware, rede física). Você e a empresa são responsáveis pelo que está <strong>"dentro" da nuvem</strong>.</p>',
+   vis:'<div class="cp-fc"><div class="cp-fa fk"><span class="fi">🏢</span><div class="ft">Provedor protege</div><div class="fd">Data centers · Hardware · Rede física · Virtualização</div></div><div class="cp-fa fh"><span class="fi">👤</span><div class="ft">Você protege</div><div class="fd">Dados · Identidades · Configurações · Acessos · Dispositivos</div></div></div><ul class="cp-ul"><li><span class="ci ci-b">!</span><span>A maioria dos incidentes em nuvem decorre de <strong>configurações incorretas do cliente</strong> — não de falhas do provedor</span></li></ul>'},
+  {tag:'Módulo 03 — Identidade & Acesso',title:'Identidade é o<br><span>Novo Perímetro</span>',dur:'1:30',sec:90,start:210,
+   body:'<p>Sem um data center físico para proteger, o controle de <strong>quem acessa o quê</strong> torna-se a principal linha de defesa na nuvem.</p>',
+   vis:'<div class="cp-vs"><div class="cp-sr"><span class="cp-sl2">Acesso amplo a todos</span><div class="cp-sb"><div class="cp-sf" style="width:10%;background:#E24B4A"></div></div><span class="cp-st">Alto risco</span></div><div class="cp-sr"><span class="cp-sl2">Privilégio mínimo (PoLP)</span><div class="cp-sb"><div class="cp-sf" style="width:90%;background:#27AE60"></div></div><span class="cp-st">Recomendado</span></div><div class="cp-sr"><span class="cp-sl2">MFA em contas cloud</span><div class="cp-sb"><div class="cp-sf" style="width:96%;background:#00B4D8"></div></div><span class="cp-st">Obrigatório</span></div></div><ul class="cp-ul"><li><span class="ci ci-g">✓</span><span><strong>Princípio do menor privilégio:</strong> cada conta acessa apenas o necessário para sua função</span></li><li><span class="ci ci-g">✓</span><span>Revise periodicamente permissões de contas e aplicativos conectados</span></li></ul>'},
+  {tag:'Módulo 04 — Compartilhamento & Configuração',title:'Um Clique Pode<br><span>Expor Dados ao Mundo</span>',dur:'1:30',sec:90,start:300,
+   body:'<p>A maioria dos vazamentos em nuvem acontece por <strong>permissões mal configuradas</strong> — pastas, links e buckets deixados abertos por engano.</p>',
+   vis:'<div class="cp-vs"><div class="cp-sr"><span class="cp-sl2">"Qualquer pessoa com o link"</span><div class="cp-sb"><div class="cp-sf" style="width:5%;background:#E24B4A"></div></div><span class="cp-st">Evitar sempre</span></div><div class="cp-sr"><span class="cp-sl2">Compartilhar com e-mail específico</span><div class="cp-sb"><div class="cp-sf" style="width:80%;background:#27AE60"></div></div><span class="cp-st">Padrão seguro</span></div><div class="cp-sr"><span class="cp-sl2">Domínio interno + expiração</span><div class="cp-sb"><div class="cp-sf" style="width:95%;background:#00B4D8"></div></div><span class="cp-st">Ideal</span></div></div><ul class="cp-ul"><li><span class="ci ci-b">✗</span><span>Nunca publique links de documentos corporativos como "públicos na internet"</span></li><li><span class="ci ci-g">✓</span><span>Defina <strong>data de expiração</strong> em links sensíveis sempre que possível</span></li></ul>'},
+  {tag:'Módulo 05 — Dados, Backup & Shadow IT',title:'Onde os Dados<br><span>Realmente Estão</span>',dur:'1:20',sec:80,start:390,
+   body:'<p>Ferramentas de nuvem não autorizadas (<strong>Shadow IT</strong>) escapam do controle da empresa e podem armazenar dados sensíveis sem proteção adequada.</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">🌫️</span><div class="lb">Shadow IT</div><div class="vl">Apps não aprovados pela TI</div></div><div class="cp-vc"><span class="ic">💾</span><div class="lb">Backup 3-2-1</div><div class="vl">3 cópias · 2 mídias · 1 externa</div></div><div class="cp-vc"><span class="ic">🔐</span><div class="lb">Criptografia</div><div class="vl">Em trânsito e em repouso</div></div></div><ul class="cp-ul"><li><span class="ci ci-b">✗</span><span>Não use contas pessoais (Drive, Dropbox) para armazenar dados corporativos</span></li><li><span class="ci ci-g">✓</span><span>Use somente <strong>ferramentas homologadas</strong> pela TI/Segurança da Informação</span></li></ul>'},
+  {tag:'Encerramento',title:'Sua Atitude Define<br><span>a Segurança da Nuvem</span>',dur:'0:50',sec:50,start:470,
+   body:'<p>A nuvem é tão segura quanto as pessoas que a utilizam. Checklist final de boas práticas:</p>',
+   vis:'<ul class="cp-ul"><li><span class="ci ci-i">✓</span><span>Ative <strong>MFA</strong> em todas as contas e ferramentas de nuvem</span></li><li><span class="ci ci-i">✓</span><span>Aplique o <strong>princípio do menor privilégio</strong> em acessos e permissões</span></li><li><span class="ci ci-i">✓</span><span>Compartilhe arquivos apenas com <strong>destinatários específicos</strong>, com expiração quando possível</span></li><li><span class="ci ci-i">✓</span><span>Use somente ferramentas <strong>homologadas</strong> — evite Shadow IT</span></li><li><span class="ci ci-i">✓</span><span>Mantenha backups regulares e revise configurações periodicamente</span></li></ul>'}
+];
+
+var CS_QUIZ=[
+  {q:'No modelo de responsabilidade compartilhada da nuvem, quem é responsável por proteger os DADOS armazenados?',opts:['Exclusivamente o provedor de nuvem','Exclusivamente a equipe de TI da empresa','O cliente (empresa e usuários), mesmo usando infraestrutura do provedor','Ninguém — o provedor assume todo o risco contratualmente'],ans:2,fb:'Correto! O provedor protege a infraestrutura física; dados, identidades e configurações são responsabilidade do cliente — inclusive de cada usuário.'},
+  {q:'Qual é a principal causa de incidentes de segurança em ambientes de nuvem?',opts:['Falhas de hardware nos data centers do provedor','Configurações incorretas feitas pelo próprio cliente','Quedas de energia nos servidores','Ataques físicos aos data centers'],ans:1,fb:'Correto! A grande maioria dos vazamentos em nuvem decorre de configurações incorretas (permissões abertas, links públicos) feitas pelo cliente — não por falhas do provedor.'},
+  {q:'O que é o "princípio do menor privilégio" (PoLP)?',opts:['Dar acesso total a todos para agilizar o trabalho','Conceder a cada conta apenas as permissões mínimas necessárias para sua função','Permitir que qualquer pessoa solicite acesso administrativo','Revisar permissões apenas uma vez por ano'],ans:1,fb:'Correto! O menor privilégio reduz a superfície de ataque: cada usuário ou sistema acessa somente o estritamente necessário.'},
+  {q:'Qual é a forma MAIS segura de compartilhar um documento sensível armazenado na nuvem?',opts:['Configurar como "qualquer pessoa com o link pode acessar"','Publicar o link em um canal aberto da empresa','Compartilhar diretamente com o e-mail específico do destinatário, com expiração quando possível','Enviar a senha da sua conta para que a pessoa acesse diretamente'],ans:2,fb:'Correto! Compartilhamento direcionado a destinatários específicos — com expiração — limita o acesso apenas a quem realmente precisa.'},
+  {q:'O que caracteriza "Shadow IT"?',opts:['Equipes de TI que trabalham remotamente','Uso de ferramentas e serviços de nuvem não homologados pela empresa','Sistemas de backup automatizado','Treinamentos de segurança não obrigatórios'],ans:1,fb:'Correto! Shadow IT são aplicativos e serviços usados sem aprovação da TI — eles escapam do controle de segurança e podem expor dados corporativos.'},
+  {q:'Qual prática reduz significativamente o risco de uma conta de nuvem comprometida?',opts:['Usar a mesma senha em todos os serviços para facilitar o acesso','Ativar a autenticação multifator (MFA) em todas as contas críticas','Compartilhar credenciais apenas com colegas de confiança','Desativar notificações de login para evitar distrações'],ans:1,fb:'Correto! O MFA bloqueia a grande maioria das tentativas de acesso indevido, mesmo quando a senha já foi comprometida.'}
+];
+
 var CP_TOT=300;
 var _cp={cur:0,qi:0,qs:0,qa:false,mode:'slides',tmr:null,elapsed:0,tid:null};
 function _cpT(s){var m=Math.floor(s/60),sc=s%60;return m+(sc<10?':0':':')+sc;}
@@ -230,6 +264,7 @@ window.launchCourse=function(tid,title){
   if(!COURSE_FILES[tid]){if(typeof showToast==='function')showToast('Curso em produção — disponível em breve','info');return;}
   closeCoursePlayer();
   if(tid===1){CP_SLIDES=PH_SLIDES;CP_QUIZ=PH_QUIZ;CP_TOT=540;}
+  else if(tid===5){CP_SLIDES=CS_SLIDES;CP_QUIZ=CS_QUIZ;CP_TOT=520;}
   else if(tid===3){CP_SLIDES=HO_SLIDES;CP_QUIZ=HO_QUIZ;CP_TOT=600;}
   else if(tid===10){CP_SLIDES=AC_SLIDES;CP_QUIZ=AC_QUIZ;CP_TOT=260;}
   else{CP_SLIDES=MFA_SLIDES;CP_QUIZ=MFA_QUIZ;CP_TOT=300;}
