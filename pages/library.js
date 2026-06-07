@@ -5,7 +5,7 @@
 // ── Inline Course Player v2 — fully embedded, zero iframe ──────────
 
 const COURSE_COMPLETIONS = {};
-const COURSE_FILES = { 1: true, 2: true, 3: true, 5: true, 6: true, 10: true, 11: true, 12: true };
+const COURSE_FILES = { 1: true, 2: true, 3: true, 5: true, 6: true, 10: true, 11: true, 12: true, 13: true };
 
 // Media assets per course (video by lang + PDF)
 var COURSE_MEDIA = {
@@ -341,6 +341,37 @@ var AS_QUIZ=[
   {q:'Qual é uma boa prática ao identificar uma possível situação de assédio?',opts:['Ignorar o desconforto, pois pode ser apenas impressão pessoal','Confrontar publicamente a pessoa para constranger e fazer parar','Documentar datas, falas e evidências, e reportar pelos canais adequados','Resolver diretamente com a pessoa sem envolver RH ou liderança'],ans:2,fb:'Correto! Documentar evidências (datas, mensagens, testemunhas) e reportar pelos canais adequados é o caminho mais seguro e eficaz para uma apuração justa.'}
 ];
 
+// ── Lavagem de Dinheiro (AML) ────────────────────────────────
+var AML_SLIDES=[
+  {tag:'Abertura',title:'Lavagem de<br><span>Dinheiro (AML)</span>',dur:'0:40',sec:40,start:0,
+   body:'<p><strong>Anti-Money Laundering (AML)</strong> reúne práticas para impedir que recursos de origem ilícita pareçam legítimos. Toda organização pode ser usada — sem saber — como elo nesse processo, e cada colaborador tem um papel na prevenção.</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">📚</span><div class="lb">5 módulos</div><div class="vl">Conteúdo</div></div><div class="cp-vc"><span class="ic">⏱</span><div class="lb">Duração</div><div class="vl">55 minutos</div></div><div class="cp-vc"><span class="ic">📋</span><div class="lb">Quiz final</div><div class="vl">6 questões</div></div><div class="cp-vc"><span class="ic">🏅</span><div class="lb">Certificado</div><div class="vl">Compliance</div></div></div>'},
+  {tag:'Módulo 01 — O que é Lavagem de Dinheiro',title:'Transformando Dinheiro<br><span>"Sujo" em "Limpo"</span>',dur:'1:00',sec:60,start:40,
+   body:'<p><strong>Lavagem de dinheiro</strong> é o processo de disfarçar a origem ilícita de recursos (corrupção, tráfico, fraude) para que pareçam provenientes de atividades legais. O processo costuma seguir três etapas:</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">1️⃣</span><div class="lb">Colocação</div><div class="vl">Insere o dinheiro ilícito no sistema financeiro</div></div><div class="cp-vc"><span class="ic">2️⃣</span><div class="lb">Ocultação</div><div class="vl">Movimentações complexas dificultam o rastreio</div></div><div class="cp-vc"><span class="ic">3️⃣</span><div class="lb">Integração</div><div class="vl">O valor "limpo" retorna à economia formal</div></div></div><ul class="cp-ul"><li><span class="ci ci-i">→</span><span>Empresas de qualquer porte podem ser usadas — propositalmente ou não — em qualquer dessas etapas</span></li></ul>'},
+  {tag:'Módulo 02 — Sinais de Alerta (Red Flags)',title:'Reconhecendo<br><span>Operações Suspeitas</span>',dur:'1:10',sec:70,start:100,
+   body:'<p>Identificar <strong>red flags</strong> antes de seguir adiante com uma transação ou parceria é a primeira linha de defesa contra o envolvimento — mesmo involuntário — em esquemas de lavagem.</p>',
+   vis:'<div class="cp-vs"><div class="cp-sr"><span class="cp-sl2">Pagamentos fracionados sem motivo</span><div class="cp-sb"><div class="cp-sf" style="width:85%;background:#E24B4A"></div></div><span class="cp-st">Alto risco</span></div><div class="cp-sr"><span class="cp-sl2">Recursos de paraísos fiscais</span><div class="cp-sb"><div class="cp-sf" style="width:90%;background:#E24B4A"></div></div><span class="cp-st">Alto risco</span></div><div class="cp-sr"><span class="cp-sl2">Cliente recusa identificar-se</span><div class="cp-sb"><div class="cp-sf" style="width:95%;background:#E24B4A"></div></div><span class="cp-st">Crítico</span></div><div class="cp-sr"><span class="cp-sl2">Estrutura societária sem propósito claro</span><div class="cp-sb"><div class="cp-sf" style="width:88%;background:#E24B4A"></div></div><span class="cp-st">Alto risco</span></div></div><ul class="cp-ul"><li><span class="ci ci-b">!</span><span>Operações sem justificativa econômica aparente, com urgência incomum, merecem atenção redobrada</span></li></ul>'},
+  {tag:'Módulo 03 — Conheça Seu Cliente (KYC)',title:'KYC: A Base da<br><span>Prevenção</span>',dur:'1:00',sec:60,start:170,
+   body:'<p><strong>"Know Your Customer" (KYC)</strong> é o processo de verificar a identidade e o perfil de clientes e parceiros antes — e durante — o relacionamento comercial.</p>',
+   vis:'<div class="cp-fc"><div class="cp-fa fk"><span class="fi">🪪</span><div class="ft">Identifique</div><div class="fd">Documentos, beneficiários finais, origem dos recursos</div></div><div class="cp-fa fh"><span class="fi">🔍</span><div class="ft">Avalie o risco</div><div class="fd">Setor, localização, volume e perfil das operações</div></div><div class="cp-fa fa"><span class="fi">🔄</span><div class="ft">Monitore</div><div class="fd">Reavalie periodicamente — perfis mudam</div></div></div><ul class="cp-ul"><li><span class="ci ci-g">✓</span><span>KYC robusto reduz o risco de a empresa ser usada — sem saber — em um esquema de lavagem</span></li></ul>'},
+  {tag:'Módulo 04 — Como Reportar',title:'Identificou Algo<br><span>Suspeito? Aja Assim</span>',dur:'1:00',sec:60,start:230,
+   body:'<p>Ao se deparar com uma operação ou comportamento suspeito, sua ação correta segue um caminho simples e seguro:</p>',
+   vis:'<div class="cp-fc"><div class="cp-fa fk"><span class="fi">⏸️</span><div class="ft">1. Não avance</div><div class="fd">Não conclua a transação por conta própria</div></div><div class="cp-fa fh"><span class="fi">📝</span><div class="ft">2. Registre</div><div class="fd">Documente o que observou, sem alertar o envolvido</div></div><div class="cp-fa fa"><span class="fi">📢</span><div class="ft">3. Reporte</div><div class="fd">Acione Compliance/Canal de Denúncias imediatamente</div></div></div><ul class="cp-ul"><li><span class="ci ci-b">✗</span><span>Nunca avise a pessoa ou empresa de que a operação foi considerada suspeita ("tipping off")</span></li></ul>'},
+  {tag:'Encerramento',title:'Vigilância é<br><span>Responsabilidade de Todos</span>',dur:'0:45',sec:45,start:290,
+   body:'<p>Programas de AML eficazes dependem da atenção diária de cada colaborador — não apenas das áreas de Compliance e Jurídico. Pontos para lembrar:</p>',
+   vis:'<ul class="cp-ul"><li><span class="ci ci-i">✓</span><span>Lavagem de dinheiro segue, normalmente, três etapas: <strong>colocação, ocultação e integração</strong></span></li><li><span class="ci ci-i">✓</span><span>Reconheça <strong>red flags</strong>: fracionamento, urgência, sigilo excessivo, estruturas confusas</span></li><li><span class="ci ci-i">✓</span><span>O processo <strong>KYC</strong> é a base da prevenção — conheça com quem você está fazendo negócio</span></li><li><span class="ci ci-i">✓</span><span>Suspeitou? <strong>Não avance, documente e reporte</strong> ao Compliance — sem alertar o envolvido</span></li></ul>'}
+];
+
+var AML_QUIZ=[
+  {q:'Qual é o objetivo central da lavagem de dinheiro?',opts:['Reduzir impostos pagos por uma empresa','Disfarçar a origem ilícita de recursos para que pareçam provenientes de atividades legais','Aumentar a velocidade das transferências bancárias','Facilitar investimentos internacionais legítimos'],ans:1,fb:'Correto! O objetivo é "limpar" a origem ilícita do dinheiro, fazendo-o parecer legítimo dentro do sistema financeiro.'},
+  {q:'Qual é a sequência típica das três etapas da lavagem de dinheiro?',opts:['Integração → Ocultação → Colocação','Colocação → Ocultação → Integração','Ocultação → Colocação → Integração','Colocação → Integração → Ocultação'],ans:1,fb:'Correto! Primeiro o dinheiro entra no sistema (colocação), depois é movimentado para dificultar o rastreio (ocultação) e por fim retorna "limpo" à economia (integração).'},
+  {q:'Qual destas situações é um red flag (sinal de alerta) de possível lavagem de dinheiro?',opts:['Cliente que apresenta toda a documentação solicitada sem objeções','Pagamentos fracionados em valores pequenos sem justificativa econômica aparente','Empresa que opera há mais de 20 anos no mesmo segmento','Cliente que realiza pagamentos dentro do prazo contratado'],ans:1,fb:'Correto! Fracionar pagamentos sem motivo aparente é uma técnica clássica para evitar limites de monitoramento — um red flag clássico.'},
+  {q:'O que significa o processo de KYC ("Know Your Customer")?',opts:['Um sistema de cobrança automatizada de clientes inadimplentes','O processo de verificar a identidade, o perfil e a origem dos recursos de clientes e parceiros','Uma ferramenta de marketing para fidelizar clientes','Um relatório financeiro exigido apenas de empresas públicas'],ans:1,fb:'Correto! KYC é a prática de conhecer bem com quem você faz negócios — reduzindo o risco de a empresa ser usada, sem saber, em esquemas ilícitos.'},
+  {q:'Você identifica uma operação que parece suspeita. Qual é a atitude correta?',opts:['Avisar o cliente de que a operação parece suspeita, para que ele se explique','Concluir a operação normalmente e relatar depois, se der tempo','Não avançar com a operação, documentar o que observou e reportar ao Compliance','Comentar o caso com colegas para ter uma segunda opinião antes de agir'],ans:2,fb:'Correto! O caminho correto é não avançar, registrar os fatos com discrição e reportar imediatamente ao Compliance — sem alertar o envolvido.'},
+  {q:'O que é "tipping off" e por que deve ser evitado?',opts:['Um tipo de gorjeta proibida em transações comerciais','Avisar a pessoa ou empresa de que sua operação foi considerada suspeita, o que pode comprometer a investigação','Uma técnica legítima de verificação de identidade do cliente','Um relatório obrigatório enviado às autoridades reguladoras'],ans:1,fb:'Correto! "Tipping off" é alertar o suspeito sobre a investigação — isso pode permitir que ele destrua provas ou fuja, comprometendo toda a apuração.'}
+];
+
 var CP_TOT=300;
 var _cp={cur:0,qi:0,qs:0,qa:false,mode:'slides',tmr:null,elapsed:0,tid:null};
 function _cpT(s){var m=Math.floor(s/60),sc=s%60;return m+(sc<10?':0':':')+sc;}
@@ -363,6 +394,7 @@ window.launchCourse=function(tid,title){
   else if(tid===6){CP_SLIDES=RI_SLIDES;CP_QUIZ=RI_QUIZ;CP_TOT=540;}
   else if(tid===11){CP_SLIDES=CD_SLIDES;CP_QUIZ=CD_QUIZ;CP_TOT=255;}
   else if(tid===12){CP_SLIDES=AS_SLIDES;CP_QUIZ=AS_QUIZ;CP_TOT=290;}
+  else if(tid===13){CP_SLIDES=AML_SLIDES;CP_QUIZ=AML_QUIZ;CP_TOT=335;}
   else if(tid===3){CP_SLIDES=HO_SLIDES;CP_QUIZ=HO_QUIZ;CP_TOT=600;}
   else if(tid===10){CP_SLIDES=AC_SLIDES;CP_QUIZ=AC_QUIZ;CP_TOT=260;}
   else{CP_SLIDES=MFA_SLIDES;CP_QUIZ=MFA_QUIZ;CP_TOT=300;}
