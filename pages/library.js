@@ -5,10 +5,15 @@
 // ── Inline Course Player v2 — fully embedded, zero iframe ──────────
 
 const COURSE_COMPLETIONS = {};
-const COURSE_FILES = { 2: true, 3: true, 10: true };
+const COURSE_FILES = { 1: true, 2: true, 3: true, 10: true };
 
 // Media assets per course (video by lang + PDF)
 var COURSE_MEDIA = {
+  1: {
+    video: {
+      pt: 'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Mastering.Phishing.Social.Engineering_.PT.mp4'
+    }
+  },
   3: {
     video: {
       pt:   'https://github.com/luizcoutinho-spec/brandvakt-academy/releases/download/v1.0-media/Proteja.Seu.Home.Office_.PT.mp4',
