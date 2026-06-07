@@ -5,7 +5,7 @@
 // ── Inline Course Player v2 — fully embedded, zero iframe ──────────
 
 const COURSE_COMPLETIONS = {};
-const COURSE_FILES = { 1: true, 2: true, 3: true, 5: true, 6: true, 10: true };
+const COURSE_FILES = { 1: true, 2: true, 3: true, 5: true, 6: true, 10: true, 11: true };
 
 // Media assets per course (video by lang + PDF)
 var COURSE_MEDIA = {
@@ -280,6 +280,36 @@ var RI_QUIZ=[
   {q:'Por que reportar um incidente rapidamente é tão importante?',opts:['Porque é uma exigência burocrática sem impacto real','Porque o tempo de resposta é o que mais influencia o tamanho do dano causado','Porque apenas relatórios trimestrais são analisados pela TI','Porque reportar tarde isenta o colaborador de qualquer responsabilidade'],ans:1,fb:'Correto! Quanto mais cedo a equipe de segurança é acionada, menor é o tempo de exposição e menor o impacto do incidente.'}
 ];
 
+// ── Canal de Denúncias ───────────────────────────────────────
+var CD_SLIDES=[
+  {tag:'Abertura',title:'Canal de<br><span>Denúncias</span>',dur:'0:30',sec:30,start:0,
+   body:'<p>O <strong>Canal de Denúncias</strong> é a ferramenta que permite reportar, com segurança e confidencialidade, condutas que violam a lei, as políticas internas ou o Código de Ética da empresa.</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">📚</span><div class="lb">5 módulos</div><div class="vl">Conteúdo</div></div><div class="cp-vc"><span class="ic">⏱</span><div class="lb">Duração</div><div class="vl">25 minutos</div></div><div class="cp-vc"><span class="ic">📋</span><div class="lb">Quiz final</div><div class="vl">5 questões</div></div><div class="cp-vc"><span class="ic">🏅</span><div class="lb">Certificado</div><div class="vl">Compliance</div></div></div>'},
+  {tag:'Módulo 01 — O que reportar',title:'Quando Usar<br><span>o Canal de Denúncias</span>',dur:'0:50',sec:50,start:30,
+   body:'<p>O canal existe para situações que comprometem a integridade da organização — não para reclamações pessoais cotidianas. Exemplos de condutas que devem ser reportadas:</p>',
+   vis:'<div class="cp-vr"><div class="cp-vc"><span class="ic">💰</span><div class="lb">Corrupção/Suborno</div><div class="vl">Vantagens indevidas</div></div><div class="cp-vc"><span class="ic">📊</span><div class="lb">Fraude</div><div class="vl">Manipulação de dados/relatórios</div></div><div class="cp-vc"><span class="ic">🤝</span><div class="lb">Assédio</div><div class="vl">Moral ou sexual</div></div><div class="cp-vc"><span class="ic">⚖️</span><div class="lb">Violação de leis/políticas</div><div class="vl">Conduta antiética</div></div></div><ul class="cp-ul"><li><span class="ci ci-i">→</span><span>Na dúvida se algo deve ser reportado, <strong>reporte</strong> — a triagem é feita por especialistas</span></li></ul>'},
+  {tag:'Módulo 02 — Como funciona',title:'Como Registrar<br><span>uma Denúncia</span>',dur:'0:50',sec:50,start:80,
+   body:'<p>O processo é simples e foi desenhado para reduzir barreiras a quem deseja relatar uma irregularidade:</p>',
+   vis:'<div class="cp-fc"><div class="cp-fa fk"><span class="fi">🌐</span><div class="ft">1. Acesse</div><div class="fd">Portal, telefone ou app do canal de denúncias</div></div><div class="cp-fa fh"><span class="fi">📝</span><div class="ft">2. Relate</div><div class="fd">Descreva fatos, datas, pessoas envolvidas e evidências</div></div><div class="cp-fa fa"><span class="fi">🔑</span><div class="ft">3. Acompanhe</div><div class="fd">Use o protocolo gerado para consultar o andamento</div></div></div><ul class="cp-ul"><li><span class="ci ci-g">✓</span><span>Você pode optar por se identificar ou permanecer <strong>completamente anônimo</strong></span></li><li><span class="ci ci-g">✓</span><span>Quanto mais detalhes (datas, nomes, documentos), mais rápida e eficaz é a apuração</span></li></ul>'},
+  {tag:'Módulo 03 — Confidencialidade & Anonimato',title:'Sua Identidade é<br><span>Protegida por Padrão</span>',dur:'0:50',sec:50,start:130,
+   body:'<p>O canal é operado de forma <strong>independente</strong> (geralmente por terceiro especializado), garantindo sigilo em todas as etapas do processo.</p>',
+   vis:'<div class="cp-vs"><div class="cp-sr"><span class="cp-sl2">Denúncia identificada</span><div class="cp-sb"><div class="cp-sf" style="width:70%;background:#00B4D8"></div></div><span class="cp-st">Sigilo garantido</span></div><div class="cp-sr"><span class="cp-sl2">Denúncia anônima</span><div class="cp-sb"><div class="cp-sf" style="width:95%;background:#27AE60"></div></div><span class="cp-st">Total anonimato</span></div></div><ul class="cp-ul"><li><span class="ci ci-g">✓</span><span>Apenas a equipe de apuração — independente da liderança envolvida — tem acesso aos detalhes</span></li><li><span class="ci ci-b">✗</span><span>A empresa nunca tenta identificar denunciantes anônimos</span></li></ul>'},
+  {tag:'Módulo 04 — Proteção contra Retaliação',title:'Denunciar de Boa-Fé<br><span>é Sempre Protegido</span>',dur:'0:45',sec:45,start:180,
+   body:'<p>A política de <strong>não retaliação</strong> é um pilar do programa de integridade: ninguém pode ser prejudicado por relatar uma irregularidade de boa-fé.</p>',
+   vis:'<ul class="cp-ul"><li><span class="ci ci-b">✗</span><span>Demissão, rebaixamento, isolamento ou perseguição contra o denunciante são <strong>proibidos e investigados</strong></span></li><li><span class="ci ci-g">✓</span><span>Retaliar um denunciante é, em si, uma <strong>infração grave</strong> sujeita a medidas disciplinares</span></li><li><span class="ci ci-i">→</span><span>"Boa-fé" significa relatar o que você acredita ser verdade — mesmo que a apuração não confirme a irregularidade</span></li></ul>'},
+  {tag:'Encerramento',title:'Sua Voz Fortalece<br><span>a Cultura de Integridade</span>',dur:'0:35',sec:35,start:225,
+   body:'<p>Cada denúncia responsável é um passo para um ambiente mais ético, seguro e justo para todos. Pontos-chave para lembrar:</p>',
+   vis:'<ul class="cp-ul"><li><span class="ci ci-i">✓</span><span>Use o canal para <strong>condutas que violem lei, políticas ou o Código de Ética</strong></span></li><li><span class="ci ci-i">✓</span><span>Você pode denunciar <strong>com ou sem identificação</strong> — o sigilo é garantido</span></li><li><span class="ci ci-i">✓</span><span>A empresa possui política de <strong>não retaliação</strong> a denunciantes de boa-fé</span></li><li><span class="ci ci-i">✓</span><span>Inclua o máximo de <strong>detalhes e evidências</strong> possível no relato</span></li></ul>'}
+];
+
+var CD_QUIZ=[
+  {q:'Qual destas situações é apropriada para ser reportada pelo Canal de Denúncias?',opts:['Discordância sobre o cardápio do refeitório','Suspeita de manipulação de relatórios financeiros para enganar auditores','Atraso de 5 minutos de um colega em uma reunião','Preferência pessoal por outro estilo de gestão'],ans:1,fb:'Correto! Suspeitas de fraude, corrupção, assédio ou violação de políticas e leis são exatamente o que o canal existe para apurar.'},
+  {q:'É possível registrar uma denúncia sem se identificar?',opts:['Não, a identificação é sempre obrigatória','Sim, o canal permite denúncias totalmente anônimas','Apenas para gestores e diretores','Somente em casos de corrupção, não em outros temas'],ans:1,fb:'Correto! O canal foi projetado para aceitar denúncias anônimas, garantindo total sigilo sobre a identidade de quem relata.'},
+  {q:'O que significa a política de "não retaliação" do Canal de Denúncias?',opts:['A empresa não investiga denúncias anônimas','Quem denuncia de boa-fé não pode sofrer prejuízos como demissão, perseguição ou isolamento','Apenas denúncias confirmadas têm proteção contra retaliação','Retaliar um denunciante é permitido se houver justificativa da liderança'],ans:1,fb:'Correto! A não retaliação protege qualquer pessoa que denuncie de boa-fé — independentemente do resultado da apuração — e retaliar é, por si só, uma infração grave.'},
+  {q:'Por que é importante incluir datas, nomes e evidências ao registrar uma denúncia?',opts:['Porque sem esses dados a denúncia é automaticamente rejeitada','Porque mais detalhes tornam a apuração mais rápida e eficaz','Porque esses dados serão divulgados publicamente para transparência','Porque é uma exigência apenas para denúncias identificadas'],ans:1,fb:'Correto! Quanto mais completas as informações fornecidas, mais ágil e precisa é a investigação pela equipe responsável.'},
+  {q:'Quem tem acesso aos detalhes de uma denúncia registrada no canal?',opts:['Qualquer gestor da área envolvida, para agilizar a resolução','Toda a equipe de RH, por política de transparência interna','Uma equipe de apuração independente, com acesso restrito e controlado','Apenas o CEO e o conselho de administração'],ans:2,fb:'Correto! O canal é operado de forma independente, e o acesso aos detalhes é restrito a uma equipe de apuração especializada — preservando sigilo e imparcialidade.'}
+];
+
 var CP_TOT=300;
 var _cp={cur:0,qi:0,qs:0,qa:false,mode:'slides',tmr:null,elapsed:0,tid:null};
 function _cpT(s){var m=Math.floor(s/60),sc=s%60;return m+(sc<10?':0':':')+sc;}
@@ -300,6 +330,7 @@ window.launchCourse=function(tid,title){
   if(tid===1){CP_SLIDES=PH_SLIDES;CP_QUIZ=PH_QUIZ;CP_TOT=540;}
   else if(tid===5){CP_SLIDES=CS_SLIDES;CP_QUIZ=CS_QUIZ;CP_TOT=520;}
   else if(tid===6){CP_SLIDES=RI_SLIDES;CP_QUIZ=RI_QUIZ;CP_TOT=540;}
+  else if(tid===11){CP_SLIDES=CD_SLIDES;CP_QUIZ=CD_QUIZ;CP_TOT=255;}
   else if(tid===3){CP_SLIDES=HO_SLIDES;CP_QUIZ=HO_QUIZ;CP_TOT=600;}
   else if(tid===10){CP_SLIDES=AC_SLIDES;CP_QUIZ=AC_QUIZ;CP_TOT=260;}
   else{CP_SLIDES=MFA_SLIDES;CP_QUIZ=MFA_QUIZ;CP_TOT=300;}
